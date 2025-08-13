@@ -1,0 +1,69 @@
+{
+  "name": "Constrained Engineering Problem",
+  "description": "A representative constrained engineering optimization problem with 4 design variables, 2 conflicting objectives, and 3 constraints. This problem demonstrates real-world optimization scenarios where constraints must be satisfied.",
+  "type": "Engineering Problem",
+  "variables": [
+    {
+      "name": "diameter",
+      "type": "Real",
+      "lower_bound": 0.1,
+      "upper_bound": 10.0,
+      "initial_value": 1.0
+    },
+    {
+      "name": "thickness",
+      "type": "Real",
+      "lower_bound": 0.01,
+      "upper_bound": 1.0,
+      "initial_value": 0.1
+    },
+    {
+      "name": "length",
+      "type": "Real",
+      "lower_bound": 1.0,
+      "upper_bound": 20.0,
+      "initial_value": 10.0
+    },
+    {
+      "name": "material_factor",
+      "type": "Real",
+      "lower_bound": 0.5,
+      "upper_bound": 2.0,
+      "initial_value": 1.0
+    }
+  ],
+  "objectives": [
+    {
+      "name": "weight",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "pi * diameter * thickness * length * material_factor"
+    },
+    {
+      "name": "cost",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "diameter**2 * length + 100 * material_factor**2"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "strength",
+      "type": "≥ (Greater than or equal)",
+      "function": "thickness * material_factor",
+      "value": 0.05
+    },
+    {
+      "name": "stability",
+      "type": "≤ (Less than or equal)",
+      "function": "length / diameter",
+      "value": 15.0
+    },
+    {
+      "name": "volume",
+      "type": "≤ (Less than or equal)",
+      "function": "pi * (diameter/2)**2 * length",
+      "value": 500.0
+    }
+  ]
+}

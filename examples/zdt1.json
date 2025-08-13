@@ -1,0 +1,52 @@
+{
+  "name": "ZDT1 Test Problem",
+  "description": "Zitzler-Deb-Thiele function 1 is a classic bi-objective test problem with a convex Pareto-optimal front. It has 30 decision variables and is commonly used to benchmark multi-objective optimization algorithms.",
+  "type": "Test Function",
+  "variables": [
+    {"name": "x1", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x2", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x3", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x4", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x5", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x6", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x7", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x8", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x9", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x10", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x11", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x12", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x13", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x14", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x15", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x16", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x17", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x18", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x19", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x20", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x21", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x22", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x23", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x24", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x25", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x26", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x27", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x28", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x29", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+    {"name": "x30", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5}
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "x1"
+    },
+    {
+      "name": "f2", 
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + 9 * sum([x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30]) / 29) * (1 - sqrt(x1 / (1 + 9 * sum([x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30]) / 29)))"
+    }
+  ],
+  "constraints": []
+}

@@ -1,6 +1,6 @@
 {
-  "name": "ZDT1 Test Problem",
-  "description": "Zitzler-Deb-Thiele function 1 is a classic bi-objective test problem with a convex Pareto-optimal front. Simplified version with 5 decision variables for demonstration.",
+  "name": "DTLZ2 Test Problem",
+  "description": "Deb-Thiele-Laumanns-Zitzler function 2 is a scalable test problem for many-objective optimization. This simplified version has 3 objectives and 5 variables.",
   "type": "Test Function",
   "variables": [
     {"name": "x1", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
@@ -14,13 +14,19 @@
       "name": "f1",
       "direction": "Minimize",
       "weight": 1.0,
-      "function": "x1"
+      "function": "(1 + (x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2) * cos(x1 * pi / 2) * cos(x2 * pi / 2)"
     },
     {
-      "name": "f2", 
+      "name": "f2",
       "direction": "Minimize",
       "weight": 1.0,
-      "function": "(1 + 9 * (x2 + x3 + x4 + x5) / 4) * (1 - sqrt(x1 / (1 + 9 * (x2 + x3 + x4 + x5) / 4)))"
+      "function": "(1 + (x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
+    },
+    {
+      "name": "f3",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + (x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2) * sin(x1 * pi / 2)"
     }
   ],
   "constraints": []

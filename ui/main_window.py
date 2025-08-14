@@ -184,12 +184,24 @@ class MainWindow(QMainWindow):
     def open_problem(self):
         """Open a problem from file"""
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Open Problem", "",
+            self, "Open Problem", "examples",
             "JSON Files (*.json);;All Files (*)"
         )
         if filename:
-            # TODO: Implement problem loading
-            self.status_bar.showMessage(f"Problem loaded from {filename}")
+            try:
+                import json
+                with open(filename, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                
+                # Set the problem configuration
+                self.problem_tab.set_configuration(config)
+                self.status_bar.showMessage(f"Problem loaded from {filename}")
+                
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Error Loading Problem",
+                    f"Failed to load problem from {filename}:\n{str(e)}"
+                )
             
     def save_problem(self):
         """Save current problem to file"""
@@ -198,8 +210,21 @@ class MainWindow(QMainWindow):
             "JSON Files (*.json);;All Files (*)"
         )
         if filename:
-            # TODO: Implement problem saving
-            self.status_bar.showMessage(f"Problem saved to {filename}")
+            try:
+                # Get the current problem configuration
+                config = self.problem_tab.get_configuration()
+                
+                import json
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                
+                self.status_bar.showMessage(f"Problem saved to {filename}")
+                
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Error Saving Problem",
+                    f"Failed to save problem to {filename}:\n{str(e)}"
+                )
             
     def export_results(self):
         """Export optimization results"""

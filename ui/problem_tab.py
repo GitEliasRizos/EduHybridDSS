@@ -447,14 +447,115 @@ class ProblemTab(QWidget):
         # Set variables
         if "variables" in config:
             self.n_variables.setValue(len(config["variables"]))
-            # Variables will be updated by the valueChanged signal
+            # Use QTimer to delay setting values until table is updated
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self._set_variable_values(config["variables"]))
             
         # Set objectives
         if "objectives" in config:
             self.n_objectives.setValue(len(config["objectives"]))
-            # Objectives will be updated by the valueChanged signal
+            # Use QTimer to delay setting values until table is updated
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self._set_objective_values(config["objectives"]))
             
-        # TODO: Implement constraint setting
+        # Set constraints
+        if "constraints" in config:
+            QTimer.singleShot(100, lambda: self._set_constraint_values(config["constraints"]))
+            
+    def _set_variable_values(self, variables):
+        """Set values in the variables table"""
+        for i, var in enumerate(variables):
+            if i < self.variables_table.rowCount():
+                # Name
+                if "name" in var:
+                    self.variables_table.item(i, 0).setText(var["name"])
+                
+                # Type
+                if "type" in var:
+                    type_combo = self.variables_table.cellWidget(i, 1)
+                    if type_combo:
+                        index = type_combo.findText(var["type"])
+                        if index >= 0:
+                            type_combo.setCurrentIndex(index)
+                
+                # Lower bound
+                if "lower_bound" in var:
+                    lower_widget = self.variables_table.cellWidget(i, 2)
+                    if lower_widget:
+                        lower_widget.setValue(var["lower_bound"])
+                
+                # Upper bound
+                if "upper_bound" in var:
+                    upper_widget = self.variables_table.cellWidget(i, 3)
+                    if upper_widget:
+                        upper_widget.setValue(var["upper_bound"])
+                
+                # Initial value
+                if "initial_value" in var:
+                    initial_widget = self.variables_table.cellWidget(i, 4)
+                    if initial_widget:
+                        initial_widget.setValue(var["initial_value"])
+    
+    def _set_objective_values(self, objectives):
+        """Set values in the objectives table"""
+        for i, obj in enumerate(objectives):
+            if i < self.objectives_table.rowCount():
+                # Name
+                if "name" in obj:
+                    self.objectives_table.item(i, 0).setText(obj["name"])
+                
+                # Direction
+                if "direction" in obj:
+                    direction_combo = self.objectives_table.cellWidget(i, 1)
+                    if direction_combo:
+                        index = direction_combo.findText(obj["direction"])
+                        if index >= 0:
+                            direction_combo.setCurrentIndex(index)
+                
+                # Weight
+                if "weight" in obj:
+                    weight_widget = self.objectives_table.cellWidget(i, 2)
+                    if weight_widget:
+                        weight_widget.setValue(obj["weight"])
+                
+                # Function
+                if "function" in obj:
+                    self.objectives_table.item(i, 3).setText(obj["function"])
+    
+    def _set_constraint_values(self, constraints):
+        """Set values in the constraints table"""
+        # Clear existing constraints
+        self.constraints_table.setRowCount(0)
+        
+        # Add constraints
+        for constraint in constraints:
+            row = self.constraints_table.rowCount()
+            self.constraints_table.insertRow(row)
+            
+            # Name
+            name_item = QTableWidgetItem(constraint.get("name", f"g{row + 1}"))
+            self.constraints_table.setItem(row, 0, name_item)
+            
+            # Type combo box
+            type_combo = QComboBox()
+            type_combo.addItems(["≤ (Less than or equal)", "≥ (Greater than or equal)", "= (Equal to)"])
+            if "type" in constraint:
+                index = type_combo.findText(constraint["type"])
+                if index >= 0:
+                    type_combo.setCurrentIndex(index)
+            type_combo.currentTextChanged.connect(self._on_problem_changed)
+            self.constraints_table.setCellWidget(row, 1, type_combo)
+            
+            # Function
+            function_item = QTableWidgetItem(constraint.get("function", "x1 + x2"))
+            self.constraints_table.setItem(row, 2, function_item)
+            
+            # Value
+            value_spinbox = QDoubleSpinBox()
+            value_spinbox.setRange(-1000000, 1000000)
+            value_spinbox.setValue(constraint.get("value", 0.0))
+            value_spinbox.valueChanged.connect(self._on_problem_changed)
+            self.constraints_table.setCellWidget(row, 3, value_spinbox)
         
     def clear(self):
         """Clear all problem settings"""

@@ -1,24 +1,57 @@
 {
-  "name": "Rosenbrock Multi-objective",
-  "description": "A bi-objective version of the famous Rosenbrock function, which has a challenging narrow valley leading to the global optimum.",
-  "type": "Mathematical Function",
-  "variables": [
-    {"name": "x1", "type": "Real", "lower_bound": -2.0, "upper_bound": 2.0, "initial_value": 0.0},
-    {"name": "x2", "type": "Real", "lower_bound": -2.0, "upper_bound": 2.0, "initial_value": 0.0}
-  ],
-  "objectives": [
-    {
-      "name": "rosenbrock",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "100 * (x2 - x1**2)**2 + (1 - x1)**2"
+  "problem": {
+    "name": "Rosenbrock Multi-objective",
+    "description": "A bi-objective version of the famous Rosenbrock function, which has a challenging narrow valley leading to the global optimum.",
+    "type": "Mathematical Function",
+    "variables": [
+      {"name": "x1", "type": "Real", "lower_bound": -2.0, "upper_bound": 2.0, "initial_value": 0.0},
+      {"name": "x2", "type": "Real", "lower_bound": -2.0, "upper_bound": 2.0, "initial_value": 0.0}
+    ],
+    "objectives": [
+      {
+        "name": "rosenbrock",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "100 * (x2 - x1**2)**2 + (1 - x1)**2"
+      },
+      {
+        "name": "distance_from_origin",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1**2 + x2**2"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 200,
+      "seed": 42
     },
-    {
-      "name": "distance_from_origin",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "x1**2 + x2**2"
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 20000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Multi-objective Rosenbrock function with NSGA-II",
+    "recommended_for": "Algorithm testing, challenging landscapes"
+  }
 }

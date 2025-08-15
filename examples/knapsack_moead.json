@@ -1,0 +1,79 @@
+{
+  "problem": {
+    "name": "Multi-Objective Knapsack",
+    "description": "A multi-objective knapsack problem where we need to maximize profit and minimize weight while staying within capacity constraints. Items have different profit-to-weight ratios for each objective.",
+    "type": "Combinatorial Optimization",
+    "variables": [
+      {"name": "item_1", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_2", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_3", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_4", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_5", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_6", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_7", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_8", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_9", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_10", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0}
+    ],
+    "objectives": [
+      {
+        "name": "profit_1",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "10*item_1 + 13*item_2 + 18*item_3 + 31*item_4 + 7*item_5 + 15*item_6 + 4*item_7 + 22*item_8 + 11*item_9 + 19*item_10"
+      },
+      {
+        "name": "profit_2",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "11*item_1 + 15*item_2 + 20*item_3 + 35*item_4 + 10*item_5 + 25*item_6 + 9*item_7 + 30*item_8 + 18*item_9 + 21*item_10"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "weight_constraint",
+        "type": "<=",
+        "value": 40.0,
+        "function": "5*item_1 + 7*item_2 + 9*item_3 + 16*item_4 + 6*item_5 + 12*item_6 + 4*item_7 + 13*item_8 + 8*item_9 + 11*item_10"
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Decomposition-based",
+    "name": "MOEA/D",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 300,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "Uniform Crossover",
+      "probability": 1.0,
+      "eta": 1.0
+    },
+    "mutation": {
+      "operator": "Bitflip Mutation",
+      "probability": 0.1,
+      "eta": 1.0
+    },
+    "reference_directions": {
+      "method": "Uniform Random",
+      "n_directions": 50,
+      "n_partitions": 4,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 15000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Multi-objective knapsack problem with MOEA/D decomposition approach",
+    "recommended_for": "Combinatorial optimization, discrete problems",
+    "reference": "Zitzler, E., Thiele, L. (1999). Multiobjective evolutionary algorithms: A comparative case study and the strength Pareto approach"
+  }
+}

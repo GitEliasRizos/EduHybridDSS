@@ -1,0 +1,85 @@
+{
+  "problem": {
+    "name": "Pressure Vessel Design",
+    "description": "Engineering optimization problem for designing a pressure vessel to minimize cost and weight while satisfying structural and operational constraints. This is a classic constrained multi-objective optimization problem.",
+    "type": "Engineering Design",
+    "variables": [
+      {"name": "shell_thickness", "type": "Real", "lower_bound": 0.0625, "upper_bound": 6.1875, "initial_value": 1.0},
+      {"name": "head_thickness", "type": "Real", "lower_bound": 0.0625, "upper_bound": 6.1875, "initial_value": 1.0},
+      {"name": "radius", "type": "Real", "lower_bound": 10.0, "upper_bound": 200.0, "initial_value": 40.0},
+      {"name": "length", "type": "Real", "lower_bound": 10.0, "upper_bound": 200.0, "initial_value": 100.0}
+    ],
+    "objectives": [
+      {
+        "name": "cost",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.6224 * shell_thickness * radius * length + 1.7781 * head_thickness * radius**2 + 3.1661 * shell_thickness**2 * length + 19.84 * shell_thickness**2 * radius"
+      },
+      {
+        "name": "weight",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "pi * length * radius**2 + (4/3) * pi * radius**3"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "pressure_constraint",
+        "type": "<=",
+        "value": 0.0,
+        "function": "-shell_thickness + 0.0193 * radius"
+      },
+      {
+        "name": "head_constraint",
+        "type": "<=",
+        "value": 0.0,
+        "function": "-head_thickness + 0.00954 * radius"
+      },
+      {
+        "name": "volume_constraint",
+        "type": "<=",
+        "value": 0.0,
+        "function": "-pi * radius**2 * length - (4/3) * pi * radius**3 + 1296000"
+      },
+      {
+        "name": "length_constraint",
+        "type": "<=",
+        "value": 0.0,
+        "function": "length - 240"
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "SPEA2",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 200,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 20000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Constrained pressure vessel design optimization with SPEA2",
+    "recommended_for": "Engineering design, constrained optimization",
+    "reference": "Kannan, B.K., Kramer, S.N. (1994). An Augmented Lagrange Multiplier Based Method for Mixed Integer Discrete Continuous Optimization"
+  }
+}

@@ -184,23 +184,37 @@ class MainWindow(QMainWindow):
     def open_problem(self):
         """Open a problem from file"""
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Open Problem", "examples",
+            self, "Open Problem", "",
             "JSON Files (*.json);;All Files (*)"
         )
         if filename:
             try:
-                import json
-                with open(filename, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
+                from utils.helpers import load_complete_config, load_problem_config
                 
-                # Set the problem configuration
-                self.problem_tab.set_configuration(config)
-                self.status_bar.showMessage(f"Problem loaded from {filename}")
-                
+                # Try to load as complete config first (new format)
+                complete_config = load_complete_config(filename)
+                if complete_config:
+                    # New format with both problem and algorithm
+                    if "problem" in complete_config:
+                        self.problem_tab.set_configuration(complete_config["problem"])
+                    if "algorithm" in complete_config:
+                        self.algorithm_tab.set_configuration(complete_config["algorithm"])
+                    self.status_bar.showMessage(f"Complete configuration loaded from {filename}")
+                else:
+                    # Try old format (problem only)
+                    config = load_problem_config(filename)
+                    if config:
+                        self.problem_tab.set_configuration(config)
+                        self.status_bar.showMessage(f"Problem loaded from {filename} (algorithm settings not included)")
+                    else:
+                        QMessageBox.warning(
+                            self, "Load Error",
+                            "Failed to load configuration from file."
+                        )
             except Exception as e:
                 QMessageBox.critical(
-                    self, "Error Loading Problem",
-                    f"Failed to load problem from {filename}:\n{str(e)}"
+                    self, "Load Error",
+                    f"Error loading configuration: {str(e)}"
                 )
             
     def save_problem(self):
@@ -211,19 +225,30 @@ class MainWindow(QMainWindow):
         )
         if filename:
             try:
-                # Get the current problem configuration
-                config = self.problem_tab.get_configuration()
+                from utils.helpers import save_complete_config
                 
-                import json
-                with open(filename, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=2, ensure_ascii=False)
+                # Create complete configuration including problem and algorithm
+                complete_config = {
+                    "problem": self.problem_tab.get_configuration(),
+                    "algorithm": self.algorithm_tab.get_configuration(),
+                    "metadata": {
+                        "created_by": "PyMOO GUI",
+                        "version": "1.0.0",
+                        "created_date": self._get_current_timestamp()
+                    }
+                }
                 
-                self.status_bar.showMessage(f"Problem saved to {filename}")
-                
+                if save_complete_config(complete_config, filename):
+                    self.status_bar.showMessage(f"Complete configuration saved to {filename}")
+                else:
+                    QMessageBox.warning(
+                        self, "Save Error",
+                        "Failed to save configuration to file."
+                    )
             except Exception as e:
                 QMessageBox.critical(
-                    self, "Error Saving Problem",
-                    f"Failed to save problem to {filename}:\n{str(e)}"
+                    self, "Save Error",
+                    f"Error saving configuration: {str(e)}"
                 )
             
     def export_results(self):
@@ -237,11 +262,35 @@ class MainWindow(QMainWindow):
             
         filename, _ = QFileDialog.getSaveFileName(
             self, "Export Results", "",
-            "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)"
+            "CSV Files (*.csv);;JSON Files (*.json);;Excel Files (*.xlsx);;All Files (*)"
         )
         if filename:
-            # TODO: Implement results export
-            self.status_bar.showMessage(f"Results exported to {filename}")
+            try:
+                from utils.helpers import export_results_csv, export_results_json, export_results_excel
+                results = self.results_tab.results
+                
+                if filename.lower().endswith('.csv'):
+                    success = export_results_csv(results, filename)
+                elif filename.lower().endswith('.json'):
+                    success = export_results_json(results, filename)
+                elif filename.lower().endswith('.xlsx'):
+                    success = export_results_excel(results, filename)
+                else:
+                    # Default to CSV
+                    success = export_results_csv(results, filename)
+                    
+                if success:
+                    self.status_bar.showMessage(f"Results exported to {filename}")
+                else:
+                    QMessageBox.warning(
+                        self, "Export Error",
+                        "Failed to export results to file."
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Export Error",
+                    f"Error exporting results: {str(e)}"
+                )
             
     def clear_all(self):
         """Clear all settings and results"""
@@ -350,3 +399,8 @@ class MainWindow(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+            
+    def _get_current_timestamp(self):
+        """Get current timestamp for metadata"""
+        from datetime import datetime
+        return datetime.now().isoformat()

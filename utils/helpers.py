@@ -79,6 +79,46 @@ def load_algorithm_config(filepath: Union[str, Path]) -> Optional[Dict[str, Any]
         return None
 
 
+def save_complete_config(config: Dict[str, Any], filepath: Union[str, Path]) -> bool:
+    """Save complete configuration (problem + algorithm) to JSON file"""
+    try:
+        filepath = Path(filepath)
+        
+        # Create a serializable copy of the config
+        serializable_config = make_serializable(config)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(serializable_config, f, indent=2, ensure_ascii=False)
+            
+        return True
+    except Exception as e:
+        print(f"Error saving complete config: {e}")
+        return False
+
+
+def load_complete_config(filepath: Union[str, Path]) -> Optional[Dict[str, Any]]:
+    """Load complete configuration (problem + algorithm) from JSON file"""
+    try:
+        filepath = Path(filepath)
+        
+        if not filepath.exists():
+            return None
+            
+        with open(filepath, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            
+        # Check if this is a complete config (has problem and/or algorithm sections)
+        if "problem" in config or "algorithm" in config:
+            return config
+        else:
+            # This might be an old-format problem-only config
+            return None
+            
+    except Exception as e:
+        print(f"Error loading complete config: {e}")
+        return None
+
+
 def export_results_csv(results: Dict[str, Any], filepath: Union[str, Path], 
                       include_objectives: bool = True, include_variables: bool = True) -> bool:
     """Export optimization results to CSV file"""

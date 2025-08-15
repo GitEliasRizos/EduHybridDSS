@@ -1,27 +1,61 @@
 {
-  "name": "ZDT1 Test Problem",
-  "description": "Zitzler-Deb-Thiele function 1 is a classic bi-objective test problem with a convex Pareto-optimal front. Simplified version with 5 decision variables for demonstration.",
-  "type": "Test Function",
-  "variables": [
-    {"name": "x1", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
-    {"name": "x2", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
-    {"name": "x3", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
-    {"name": "x4", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
-    {"name": "x5", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5}
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "x1"
+  "problem": {
+    "name": "ZDT1 Test Problem",
+    "description": "Zitzler-Deb-Thiele function 1 is a classic bi-objective test problem with a convex Pareto-optimal front. It has 30 decision variables and is commonly used to benchmark multi-objective optimization algorithms.",
+    "type": "Test Function",
+    "variables": [
+      {"name": "x1", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+      {"name": "x2", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+      {"name": "x3", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+      {"name": "x4", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5},
+      {"name": "x5", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.5}
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1"
+      },
+      {
+        "name": "f2", 
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + 9 * (x2 + x3 + x4 + x5) / 4) * (1 - sqrt(x1 / (1 + 9 * (x2 + x3 + x4 + x5) / 4)))"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 300,
+      "seed": 42
     },
-    {
-      "name": "f2", 
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(1 + 9 * (x2 + x3 + x4 + x5) / 4) * (1 - sqrt(x1 / (1 + 9 * (x2 + x3 + x4 + x5) / 4)))"
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.2,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 30000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Classic ZDT1 benchmark problem with NSGA-II configuration",
+    "recommended_for": "Algorithm benchmarking, bi-objective optimization testing",
+    "reference": "Zitzler, E., Deb, K., Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms"
+  }
 }

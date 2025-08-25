@@ -1,67 +1,193 @@
 """
 Problem Manager - Core functionality for managing optimization problems
+
+This module provides the ProblemManager class which serves as the bridge between
+the GUI's problem configuration and PyMOO's problem representation. It handles
+the conversion of user-defined problems into proper PyMOO problem instances.
+
+Key Features:
+- Support for mixed variable types (Real, Integer, Binary)
+- Custom objective function evaluation with numpy support
+- Constraint handling and evaluation
+- Variable bounds and type enforcement
+- Repair mechanisms for integer/binary constraints
+- Expression parsing with security considerations
+
+The ProblemManager creates either FunctionalProblem instances for simple cases
+or CustomProblem instances for complex mixed-variable optimization problems.
+
+Classes:
+    ProblemManager: Main interface for problem creation and management
+    CustomProblem: PyMOO Problem subclass for mixed-variable problems
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 import numpy as np
 from pymoo.core.problem import Problem
 from pymoo.problems.functional import FunctionalProblem
-import re
+from pymoo.core.variable import Real, Integer, Binary
 
 
 class ProblemManager:
-    """Manages optimization problem definitions and configurations"""
+    """
+    Manages optimization problem definitions and configurations
+    
+    This class serves as the central hub for problem management, converting
+    GUI-based problem configurations into PyMOO-compatible problem instances.
+    It supports various variable types, custom objective functions, and
+    constraint definitions.
+    
+    Key Responsibilities:
+    - Parse problem configuration from GUI
+    - Create appropriate PyMOO problem instances
+    - Handle mixed variable types (Real, Integer, Binary)
+    - Evaluate custom objective functions with numpy support
+    - Apply constraint functions
+    - Ensure variable type constraints through repair mechanisms
+    
+    Attributes:
+        current_problem: The active PyMOO problem instance
+        problem_config: Dictionary containing the current problem configuration
+    """
     
     def __init__(self):
-        self.current_problem = None
-        self.problem_config = None
+        """
+        Initialize the ProblemManager
+        
+        Sets up empty problem state. Problems are created dynamically
+        when create_problem_from_config is called.
+        """
+        self.current_problem = None  # Active PyMOO problem instance
+        self.problem_config = None   # Current problem configuration dict
         
     def create_problem_from_config(self, config):
-        """Create a PyMOO problem from configuration"""
+        """
+        Create a PyMOO problem instance from GUI configuration
+        
+        This is the main interface for problem creation. It analyzes the
+        configuration to determine the appropriate problem type and creates
+        either a FunctionalProblem (for simple cases) or CustomProblem
+        (for mixed variables or complex constraints).
+        
+        Args:
+            config (dict): Problem configuration containing:
+                - variables: List of variable definitions with bounds and types
+                - objectives: List of objective functions with expressions
+                - constraints: List of constraint definitions (optional)
+        
+        Returns:
+            Problem: A PyMOO problem instance ready for optimization
+            
+        Raises:
+            ValueError: If configuration is invalid or contains errors
+            SyntaxError: If objective/constraint expressions are malformed
+        """
         self.problem_config = config
         
-        # Extract problem information
-        n_var = len(config['variables'])
-        n_obj = len(config['objectives'])
-        n_constr = len(config['constraints'])
+        # Extract fundamental problem dimensions
+        n_var = len(config['variables'])      # Number of decision variables
+        n_obj = len(config['objectives'])     # Number of objectives  
+        n_constr = len(config['constraints']) # Number of constraints
         
-        # Get variable bounds
-        xl = []
-        xu = []
+        # Analyze variable types to determine problem complexity
+        var_types = [var.get('type', 'Real') for var in config['variables']]
+        has_integer = any(t.lower() in ['integer', 'int'] for t in var_types)
+        has_binary = any(t.lower() in ['binary', 'bool'] for t in var_types)
+        has_real = any(t.lower() in ['real', 'continuous', 'float'] for t in var_types)
+        
+        # Extract variable bounds and normalize types for PyMOO
+        xl = []  # Lower bounds array
+        xu = []  # Upper bounds array  
+        vtype = []  # Variable types for PyMOO
+        
         for var in config['variables']:
             xl.append(var['lower_bound'])
             xu.append(var['upper_bound'])
             
+            # Map GUI variable types to PyMOO internal format
+            var_type = var.get('type', 'Real').lower()
+            if var_type in ['integer', 'int']:
+                vtype.append('int')
+            elif var_type in ['binary', 'bool']:
+                vtype.append('bool')
+            else:  # Default to real/continuous for all other cases
+                vtype.append('real')
+                
         xl = np.array(xl)
         xu = np.array(xu)
         
-        # Create objective function
-        def objective_function(x):
-            """Evaluate objectives for decision vector x"""
-            return self._evaluate_objectives(x, config['objectives'])
-            
-        # Create constraint function if constraints exist
-        constraint_function = None
-        if n_constr > 0:
-            def constraint_function(x):
-                """Evaluate constraints for decision vector x"""
-                return self._evaluate_constraints(x, config['constraints'])
+        # Check if we have mixed variable types or can use FunctionalProblem
+        all_real = all(t == 'real' for t in vtype)
         
-        # Create the problem
-        if constraint_function is not None:
+        if all_real and n_constr == 0:
+            # Use FunctionalProblem for simple continuous problems without constraints
+            objective_functions = []
+            for i, obj_config in enumerate(config['objectives']):
+                def make_obj_func(obj_idx):
+                    def objective_func(x):
+                        """Evaluate single objective for decision vector x"""
+                        result = self._evaluate_objectives(x, [config['objectives'][obj_idx]])
+                        return result[0]  # Return single objective value
+                    return objective_func
+                objective_functions.append(make_obj_func(i))
+                
             self.current_problem = FunctionalProblem(
                 n_var=n_var,
-                objs=objective_function,
-                constr_ieq=constraint_function,
+                objs=objective_functions,
                 xl=xl,
                 xu=xu
             )
         else:
-            self.current_problem = FunctionalProblem(
-                n_var=n_var,
-                objs=objective_function,
-                xl=xl,
-                xu=xu
-            )
+            # Use custom Problem class for mixed variables or constraints
+            class CustomProblem(Problem):
+                def __init__(self, problem_manager, config, xl, xu, vtype):
+                    self.problem_manager = problem_manager
+                    self.config = config
+                    self.vtype_list = vtype  # Store variable types for repair
+                    super().__init__(
+                        n_var=len(config['variables']),
+                        n_obj=len(config['objectives']),
+                        n_ieq_constr=len(config['constraints']),
+                        xl=xl,
+                        xu=xu,
+                        vtype=vtype
+                    )
+                
+                def _repair(self, X, **kwargs):
+                    """Repair variables to satisfy integer/binary constraints"""
+                    if X.ndim == 1:
+                        X = X.reshape(1, -1)
+                    
+                    X_repaired = X.copy()
+                    
+                    for i, vtype in enumerate(self.vtype_list):
+                        if vtype == 'int':
+                            # Round to nearest integer and clip to bounds
+                            X_repaired[:, i] = np.round(X_repaired[:, i])
+                            X_repaired[:, i] = np.clip(X_repaired[:, i], self.xl[i], self.xu[i])
+                        elif vtype == 'bool':
+                            # Round to 0 or 1 (binary)
+                            X_repaired[:, i] = np.round(X_repaired[:, i])
+                            X_repaired[:, i] = np.clip(X_repaired[:, i], 0, 1)
+                    
+                    return X_repaired
+                
+                def _evaluate(self, X, out, *args, **kwargs):
+                    # Apply repair to ensure integer/binary constraints
+                    X_repaired = self._repair(X)
+                    
+                    # Evaluate objectives with repaired variables
+                    F = self.problem_manager._evaluate_objectives(X_repaired, self.config['objectives'])
+                    out["F"] = F
+                    
+                    # Evaluate constraints if any
+                    if len(self.config['constraints']) > 0:
+                        G = self.problem_manager._evaluate_constraints(X_repaired, self.config['constraints'])
+                        out["G"] = G
+            
+            self.current_problem = CustomProblem(self, config, xl, xu, vtype)
             
         return self.current_problem
         
@@ -97,7 +223,9 @@ class ProblemManager:
                         'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
                         'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
                         'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                        'e': np.e
+                        'e': np.e, 'log2': np.log2, 'log10': np.log10,
+                        # Full numpy module access for advanced functions
+                        'np': np, 'numpy': np
                     })
                     
                     # Evaluate the function
@@ -150,7 +278,9 @@ class ProblemManager:
                         'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
                         'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
                         'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                        'e': np.e
+                        'e': np.e, 'log2': np.log2, 'log10': np.log10,
+                        # Full numpy module access for advanced functions
+                        'np': np, 'numpy': np
                     })
                     
                     # Evaluate the function
@@ -229,7 +359,9 @@ class ProblemManager:
                 'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
                 'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
                 'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                'e': np.e
+                'e': np.e, 'log2': np.log2, 'log10': np.log10,
+                # Full numpy module access for advanced functions
+                'np': np, 'numpy': np
             })
             
             # Try to evaluate

@@ -1,5 +1,45 @@
 """
 Algorithm Configuration Tab - Configure optimization algorithms
+
+This module provides the AlgorithmTab class which serves as the interface for
+configuring multi-objective optimization algorithms. It allows users to select
+algorithms, configure parameters, and customize genetic operators for their
+specific optimization problems.
+
+Key Features:
+- Algorithm selection (NSGA-II, NSGA-III, SPEA2, MOEA/D, RVEA)
+- Population and generation parameter configuration
+- Genetic operator customization (crossover, mutation)
+- Reference direction setup for many-objective algorithms
+- Termination criteria specification
+- Real-time parameter validation and suggestions
+- Algorithm-specific parameter adaptation
+- Import/export of algorithm configurations
+
+The AlgorithmTab dynamically adjusts available options based on the selected
+algorithm and number of objectives in the problem. It provides intelligent
+defaults while allowing advanced users to fine-tune all parameters.
+
+Supported Algorithms:
+    - NSGA-II: Best for 2-3 objectives, fast convergence
+    - NSGA-III: Excellent for many objectives (4+), reference-based
+    - SPEA2: Alternative multi-objective approach with archive
+    - MOEA/D: Decomposition-based, good for complex Pareto fronts
+    - RVEA: Reference vector guided, efficient for many objectives
+
+Algorithm Components:
+    - Population sampling strategies
+    - Crossover operators (SBX, PCX, UX)
+    - Mutation operators (Polynomial, Gaussian)  
+    - Selection mechanisms
+    - Reference direction generation
+    - Termination criteria (generations, evaluations, time)
+
+Classes:
+    AlgorithmTab: Main widget for algorithm configuration
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
@@ -11,40 +51,90 @@ from PyQt6.QtCore import Qt, pyqtSignal
 
 
 class AlgorithmTab(QWidget):
-    """Widget for configuring optimization algorithms"""
+    """
+    Widget for configuring optimization algorithms
     
-    # Signal emitted when algorithm configuration changes
+    This class provides a comprehensive interface for selecting and configuring
+    multi-objective optimization algorithms. It dynamically adapts its interface
+    based on the chosen algorithm and provides intelligent parameter suggestions.
+    
+    Key Responsibilities:
+    - Present available algorithms with descriptions and recommendations
+    - Configure algorithm-specific parameters (population size, generations)
+    - Set up genetic operators (crossover, mutation) with appropriate parameters
+    - Handle reference directions for many-objective algorithms
+    - Configure termination criteria and stopping conditions
+    - Validate parameter combinations and provide warnings/suggestions
+    - Enable advanced users to fine-tune all algorithm aspects
+    
+    The interface is organized into logical groups that appear/disappear based
+    on algorithm requirements. For example, reference directions are only shown
+    for algorithms that use them (NSGA-III, RVEA, etc.).
+    
+    UI Organization:
+    - Algorithm Selection: Choose primary algorithm
+    - Parameters: Population size, generations, seed
+    - Genetic Operators: Crossover and mutation configuration
+    - Reference Directions: For many-objective algorithms
+    - Termination: Stopping criteria and limits
+    
+    Dynamic Behavior:
+    - Options change based on selected algorithm
+    - Parameter ranges adapt to problem characteristics
+    - Intelligent defaults are provided for all settings
+    - Advanced options can be revealed for expert users
+    
+    Attributes:
+        algorithm_changed (pyqtSignal): Emitted when configuration changes
+    """
+    
+    # Signal emitted when any aspect of algorithm configuration changes
+    # Allows other components to react to algorithm updates
     algorithm_changed = pyqtSignal()
     
     def __init__(self):
+        """
+        Initialize the AlgorithmTab widget
+        
+        Sets up the complete interface for algorithm configuration including
+        all parameter groups, connects signals, and establishes default
+        algorithm settings.
+        """
         super().__init__()
-        self._init_ui()
-        self._connect_signals()
-        self._update_algorithm_options()
+        self._init_ui()                    # Create UI components
+        self._connect_signals()            # Connect change notifications
+        self._update_algorithm_options()   # Set up algorithm-specific options
         
     def _init_ui(self):
-        """Initialize the user interface"""
+        """
+        Initialize the user interface layout and components
+        
+        Creates a scrollable interface with five main configuration groups:
+        1. Algorithm Selection - choose the optimization algorithm
+        2. Algorithm Parameters - population size, generations, random seed
+        3. Genetic Operators - crossover and mutation operator configuration
+        4. Reference Directions - for many-objective algorithms (NSGA-III, RVEA)
+        5. Termination Criteria - stopping conditions and limits
+        
+        Uses QScrollArea to accommodate all configuration options comfortably.
+        """
         layout = QVBoxLayout(self)
         
-        # Create scroll area for the content
+        # Create scroll area for algorithm configuration options
+        # This ensures all options are accessible even on smaller screens
         scroll_area = QScrollArea()
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout(scroll_widget)
         
-        # Algorithm Selection Group
-        self._init_algorithm_selection_group(scroll_layout)
+        # Initialize configuration sections in logical workflow order
+        self._init_algorithm_selection_group(scroll_layout)     # Choose algorithm
+        self._init_algorithm_parameters_group(scroll_layout)    # Basic parameters
+        self._init_genetic_operators_group(scroll_layout)       # Crossover/mutation
+        self._init_reference_directions_group(scroll_layout)    # Many-objective setup
+        self._init_termination_group(scroll_layout)             # Stopping criteria
         
-        # Algorithm Parameters Group
-        self._init_algorithm_parameters_group(scroll_layout)
-        
-        # Genetic Operators Group
-        self._init_genetic_operators_group(scroll_layout)
-        
-        # Reference Directions Group
-        self._init_reference_directions_group(scroll_layout)
-        
-        # Termination Criteria Group
-        self._init_termination_group(scroll_layout)
+        # Add stretch to prevent UI components from being cramped together
+        scroll_layout.addStretch()
         
         scroll_area.setWidget(scroll_widget)
         scroll_area.setWidgetResizable(True)
@@ -72,8 +162,9 @@ class AlgorithmTab(QWidget):
         
         # Algorithm description
         self.algorithm_description = QTextEdit()
-        self.algorithm_description.setMaximumHeight(60)
+        self.algorithm_description.setMaximumHeight(80)  # Increased from 60 for better visibility
         self.algorithm_description.setReadOnly(True)
+        self.algorithm_description.setStyleSheet("QTextEdit { background-color: #303030; }")  # Light background
         layout.addRow("Description:", self.algorithm_description)
         
         parent_layout.addWidget(group)
@@ -342,7 +433,7 @@ class AlgorithmTab(QWidget):
         
     def _update_specific_parameters(self):
         """Update algorithm-specific parameters"""
-        # Clear existing specific parameters
+        # Clear existing specific parameters safely
         while self.specific_params_layout.count():
             child = self.specific_params_layout.takeAt(0)
             if child.widget():
@@ -378,10 +469,16 @@ class AlgorithmTab(QWidget):
     def _add_specific_param_widget(self, label, widget):
         """Add a specific parameter widget"""
         layout = QHBoxLayout()
-        layout.addWidget(QLabel(label + ":"))
+        label_widget = QLabel(label + ":")
+        label_widget.setMinimumWidth(150)  # Set minimum width for consistent alignment
+        layout.addWidget(label_widget)
         layout.addWidget(widget)
         layout.addStretch()
-        self.specific_params_layout.addLayout(layout)
+        
+        # Create a container widget for better layout control
+        container = QWidget()
+        container.setLayout(layout)
+        self.specific_params_layout.addWidget(container)
         
     def _on_algorithm_changed(self):
         """Handle algorithm configuration changes"""

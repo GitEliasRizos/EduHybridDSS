@@ -1,5 +1,42 @@
 """
 Problem Definition Tab - Define optimization problems
+
+This module provides the ProblemTab class which serves as the primary interface
+for users to define their optimization problems. It handles the specification
+of decision variables, objective functions, and constraints through an intuitive
+graphical interface.
+
+Key Features:
+- Variable definition with type selection (Real, Integer, Binary)
+- Objective function specification with mathematical expressions
+- Constraint definition with inequality/equality operators
+- Problem information and metadata management
+- Import/export functionality for problem configurations
+- Real-time validation and error checking
+- Expression syntax highlighting and validation
+- Example problem templates and presets
+
+The ProblemTab uses a table-based interface for variables, objectives, and
+constraints, allowing users to add, remove, and modify problem components
+dynamically. It supports mathematical expressions with numpy functions
+and provides immediate feedback on syntax errors.
+
+Supported Features:
+    - Mixed variable types (Real, Integer, Binary) with bounds
+    - Multiple objectives (minimize/maximize) with weights  
+    - Linear and nonlinear constraints
+    - Mathematical expressions with numpy support
+    - Problem validation and error reporting
+    - JSON-based problem save/load functionality
+
+Classes:
+    ProblemTab: Main widget for problem definition interface
+
+Signal Communication:
+    problem_changed: Emitted whenever problem configuration is modified
+    
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
@@ -12,42 +49,96 @@ import json
 
 
 class ProblemTab(QWidget):
-    """Widget for defining optimization problems"""
+    """
+    Widget for defining optimization problems
     
-    # Signal emitted when problem configuration changes
+    This class provides a comprehensive interface for users to specify their
+    optimization problems including variables, objectives, and constraints.
+    The interface is organized into logical groups with tables for easy
+    manipulation of problem components.
+    
+    Key Responsibilities:
+    - Collect variable definitions (names, types, bounds)
+    - Gather objective function expressions and settings
+    - Handle constraint specifications  
+    - Validate problem configuration completeness
+    - Provide real-time feedback on syntax errors
+    - Support problem import/export functionality
+    
+    The tab uses a scrollable layout to accommodate problems with many
+    variables or constraints, and provides immediate validation feedback
+    to help users create valid problem definitions.
+    
+    UI Organization:
+    - Problem Information: Basic metadata and description
+    - Variables Table: Decision variable specifications  
+    - Objectives Table: Objective function definitions
+    - Constraints Table: Constraint expressions
+    
+    Attributes:
+        problem_changed (pyqtSignal): Emitted when problem configuration changes
+    """
+    
+    # Signal emitted when any aspect of the problem configuration changes
+    # This allows other components to react to problem updates in real-time
     problem_changed = pyqtSignal()
     
     def __init__(self):
+        """
+        Initialize the ProblemTab widget
+        
+        Sets up the complete user interface including all tables, forms,
+        and controls for problem definition. Also connects signals for
+        real-time problem validation and change notification.
+        """
         super().__init__()
-        self._init_ui()
-        self._connect_signals()
+        self._init_ui()          # Create all UI components
+        self._connect_signals()  # Wire up signal-slot connections
         
     def _init_ui(self):
-        """Initialize the user interface"""
+        """
+        Initialize the user interface layout and components
+        
+        Creates a scrollable interface with four main sections:
+        1. Problem Information - basic metadata
+        2. Variables - decision variable specifications
+        3. Objectives - objective function definitions  
+        4. Constraints - constraint expressions
+        
+        Uses QScrollArea to handle problems with many components.
+        """
         layout = QVBoxLayout(self)
         
-        # Create scroll area for the content
+        # Create scroll area to handle large problem definitions
+        # This ensures the interface remains usable even with many variables/constraints
         scroll_area = QScrollArea()
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout(scroll_widget)
         
-        # Problem Information Group
-        self._init_problem_info_group(scroll_layout)
+        # Initialize each problem definition section in logical order
+        self._init_problem_info_group(scroll_layout)    # Basic problem info
+        self._init_variables_group(scroll_layout)       # Decision variables
+        self._init_objectives_group(scroll_layout)      # Objective functions
+        self._init_constraints_group(scroll_layout)     # Constraints
         
-        # Variables Group
-        self._init_variables_group(scroll_layout)
-        
-        # Objectives Group
-        self._init_objectives_group(scroll_layout)
-        
-        # Constraints Group
-        self._init_constraints_group(scroll_layout)
-        
+        # Configure scroll area for proper content display
         scroll_area.setWidget(scroll_widget)
-        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidgetResizable(True)  # Allow content to resize with window
         layout.addWidget(scroll_area)
         
     def _init_problem_info_group(self, parent_layout):
+        """
+        Initialize the problem information section
+        
+        Creates form fields for basic problem metadata including:
+        - Problem name and description
+        - Problem type and category
+        - Author and creation date information
+        - Notes and documentation fields
+        
+        Args:
+            parent_layout: The parent layout to add this group to
+        """
         """Initialize problem information group"""
         group = QGroupBox("Problem Information")
         layout = QFormLayout(group)

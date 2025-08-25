@@ -1,5 +1,38 @@
 """
 Results Tab - Display and analyze optimization results
+
+This module provides the ResultsTab class which handles optimization execution,
+progress monitoring, and result visualization. It serves as the final stage
+of the optimization workflow where users run their configured problems and
+analyze the obtained results.
+
+Key Features:
+- Multi-threaded optimization execution to prevent GUI freezing  
+- Real-time progress monitoring with detailed status updates
+- Comprehensive result visualization (Pareto front, objective space plots)
+- Solution table with sortable columns and filtering capabilities
+- Export functionality for results and plots
+- Integration with matplotlib for high-quality visualizations
+- Error handling and user feedback mechanisms
+
+The ResultsTab coordinates with the ProblemManager and AlgorithmManager to
+execute optimizations and processes the returned results for user consumption.
+It uses Qt's signal-slot mechanism to provide responsive user interaction
+during potentially long-running optimizations.
+
+Classes:
+    OptimizationWorker: Background thread for optimization execution
+    ResultsTab: Main UI component for results display and management
+
+Workflow:
+    1. User clicks "Run Optimization"
+    2. OptimizationWorker thread is created and started
+    3. Progress updates are emitted and displayed to user
+    4. Upon completion, results are processed and visualized
+    5. User can explore results, export data, or run new optimizations
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
@@ -16,98 +49,144 @@ import numpy as np
 
 
 class OptimizationWorker(QThread):
-    """Worker thread for running optimization"""
+    """
+    Worker thread for running optimization in the background
     
-    progress_update = pyqtSignal(int, str)
-    results_ready = pyqtSignal(object)
-    error_occurred = pyqtSignal(str)
+    This class handles the actual optimization execution in a separate thread
+    to prevent the GUI from freezing during potentially long-running optimizations.
+    It communicates with the main thread through Qt signals to provide progress
+    updates and deliver results.
+    
+    Key Features:
+    - Runs optimization in separate thread (non-blocking)
+    - Provides real-time progress updates with descriptive messages
+    - Handles errors gracefully and reports them to the main thread
+    - Can be safely cancelled by the user
+    - Integrates with ProblemManager, AlgorithmManager, and Optimizer
+    
+    Signals:
+        progress_update(int, str): Progress percentage (0-100) and status message
+        results_ready(object): Emitted when optimization completes successfully
+        error_occurred(str): Emitted when an error occurs during optimization
+    
+    Thread Safety:
+        All optimization work is done in this thread, while GUI updates
+        are handled in the main thread through signal connections.
+    """
+    
+    # Qt signals for thread-safe communication with main GUI thread
+    progress_update = pyqtSignal(int, str)  # (percentage, status_message)
+    results_ready = pyqtSignal(object)      # (optimization_results)
+    error_occurred = pyqtSignal(str)        # (error_message)
     
     def __init__(self, problem_config, algorithm_config):
+        """
+        Initialize the optimization worker thread
+        
+        Args:
+            problem_config (dict): Complete problem configuration from GUI
+            algorithm_config (dict): Complete algorithm configuration from GUI
+        """
         super().__init__()
-        self.problem_config = problem_config
-        self.algorithm_config = algorithm_config
-        self._is_running = True
+        self.problem_config = problem_config      # Problem definition from GUI
+        self.algorithm_config = algorithm_config  # Algorithm settings from GUI  
+        self._is_running = True                   # Flag for cancellation support
         
     def run(self):
-        """Run the optimization"""
+        """
+        Execute the optimization process
+        
+        This method runs in the worker thread and performs the complete
+        optimization workflow:
+        1. Initialize problem and algorithm managers
+        2. Create PyMOO problem and algorithm instances
+        3. Set up optimization parameters and termination
+        4. Run optimization with progress callbacks
+        5. Process and emit results
+        
+        Progress is reported at key stages to keep users informed.
+        Any exceptions are caught and reported through the error_occurred signal.
+        """
         try:
+            # Phase 1: Initialize optimization components (10% progress)
             self.progress_update.emit(10, "Initializing problem...")
             
-            # Simulate problem initialization
-            self.msleep(500)
+            # Import required core modules (done here to avoid circular imports)
+            from core.problem_manager import ProblemManager
+            from core.algorithm_manager import AlgorithmManager
+            from core.optimizer import Optimizer
             
-            self.progress_update.emit(20, "Setting up algorithm...")
+            # Initialize management objects
+            problem_manager = ProblemManager()
+            algorithm_manager = AlgorithmManager()
+            optimizer = Optimizer()
             
-            # Simulate algorithm setup
-            self.msleep(500)
+            # Phase 2: Problem setup (20% progress)
+            self.progress_update.emit(20, "Setting up problem...")
             
-            self.progress_update.emit(30, "Starting optimization...")
+            # Convert GUI configuration to PyMOO problem instance
+            problem = problem_manager.create_problem_from_config(self.problem_config)
             
-            # Simulate optimization process
-            n_generations = self.algorithm_config.get("parameters", {}).get("n_generations", 250)
-            for gen in range(n_generations):
+            self.progress_update.emit(30, "Setting up algorithm...")
+            
+            # Create PyMOO algorithm from configuration
+            n_objectives = len(self.problem_config.get("objectives", []))
+            algorithm = algorithm_manager.create_algorithm_from_config(
+                self.algorithm_config, 
+                n_objectives, 
+                self.problem_config
+            )
+            
+            self.progress_update.emit(40, "Starting optimization...")
+            
+            # Set up termination properly using PyMOO's get_termination
+            from pymoo.termination import get_termination
+            n_generations = self.algorithm_config.get("parameters", {}).get("n_generations", 50)
+            termination = get_termination("n_gen", n_generations)
+            
+            # Setup optimizer
+            optimizer.setup(problem, algorithm, termination)
+            
+            # Progress callback for real-time updates
+            def progress_callback(callback):
                 if not self._is_running:
                     return
-                    
-                progress = 30 + int((gen / n_generations) * 60)
-                self.progress_update.emit(progress, f"Generation {gen + 1}/{n_generations}")
-                
-                self.msleep(20)  # Simulate computation time
-                
-            self.progress_update.emit(95, "Finalizing results...")
-            self.msleep(200)
+                if hasattr(callback, 'history') and callback.history['n_gen']:
+                    current_gen = callback.history['n_gen'][-1]
+                    progress = 40 + int((current_gen / n_generations) * 50)
+                    self.progress_update.emit(progress, f"Generation {current_gen}/{n_generations}")
+                else:
+                    # Fallback if no history available
+                    self.progress_update.emit(50, "Optimization in progress...")
             
-            # Generate mock results
-            results = self._generate_mock_results()
+            # Run the actual optimization
+            optimizer.run(progress_callback)
+            
+            self.progress_update.emit(95, "Processing results...")
+            
+            # Extract results in GUI format
+            results = optimizer.extract_results(self.problem_config, self.algorithm_config)
             
             self.progress_update.emit(100, "Optimization completed")
             self.results_ready.emit(results)
             
         except Exception as e:
-            self.error_occurred.emit(str(e))
+            self.error_occurred.emit(f"Optimization failed: {str(e)}")
+            import traceback
+            print(f"Optimization error: {traceback.format_exc()}")
             
     def stop(self):
         """Stop the optimization"""
         self._is_running = False
         
     def _generate_mock_results(self):
-        """Generate mock optimization results for demonstration"""
-        n_solutions = 50
-        n_objectives = len(self.problem_config.get("objectives", []))
-        n_variables = len(self.problem_config.get("variables", []))
+        """Generate mock optimization results for demonstration
         
-        # Generate random Pareto front
-        if n_objectives == 2:
-            # Generate a typical Pareto front shape
-            f1 = np.linspace(0, 1, n_solutions)
-            f2 = 1 - np.sqrt(f1) + np.random.normal(0, 0.05, n_solutions)
-            f2 = np.maximum(f2, 0)  # Ensure non-negative
-            objectives = np.column_stack([f1, f2])
-        else:
-            # Random objectives for higher dimensions
-            objectives = np.random.rand(n_solutions, n_objectives)
-            
-        # Generate random decision variables
-        variables = np.random.rand(n_solutions, n_variables)
-        
-        # Scale variables to their bounds
-        for i, var_config in enumerate(self.problem_config.get("variables", [])):
-            lower = var_config.get("lower_bound", 0)
-            upper = var_config.get("upper_bound", 1)
-            variables[:, i] = lower + variables[:, i] * (upper - lower)
-            
-        results = {
-            "objectives": objectives,
-            "variables": variables,
-            "n_solutions": n_solutions,
-            "n_generations": self.algorithm_config.get("parameters", {}).get("n_generations", 250),
-            "algorithm": self.algorithm_config.get("name", "Unknown"),
-            "problem_config": self.problem_config,
-            "algorithm_config": self.algorithm_config,
-            "convergence": np.random.rand(self.algorithm_config.get("parameters", {}).get("n_generations", 250))
-        }
-        
-        return results
+        NOTE: This method is deprecated and should not be used.
+        The optimization now uses real PyMOO algorithms.
+        """
+        # This method is kept for compatibility but should not be called
+        raise NotImplementedError("Mock results are deprecated. Use real PyMOO optimization instead.")
 
 
 class PlotCanvas(FigureCanvas):
@@ -207,9 +286,14 @@ class PlotCanvas(FigureCanvas):
 class ResultsTab(QWidget):
     """Widget for displaying optimization results"""
     
+    # Signals to communicate with main window
+    optimization_completed = pyqtSignal(object)  # Emitted when optimization finishes successfully
+    optimization_error = pyqtSignal(str)         # Emitted when optimization fails
+    
     def __init__(self):
         super().__init__()
         self.results = None
+        self.current_result = None  # Store current optimization result
         self.worker = None
         self._init_ui()
         
@@ -438,6 +522,7 @@ class ResultsTab(QWidget):
     def _on_results_ready(self, results):
         """Handle optimization results"""
         self.results = results
+        self.current_result = results  # Store for performance metrics
         self.progress_bar.setVisible(False)
         self.status_label.setText("Optimization completed successfully")
         self.results_tabs.setEnabled(True)
@@ -447,11 +532,17 @@ class ResultsTab(QWidget):
         self._update_plot()
         self._update_table()
         
+        # Emit signal to main window that optimization completed successfully
+        self.optimization_completed.emit(results)
+        
     def _on_error_occurred(self, error_message):
         """Handle optimization errors"""
         self.progress_bar.setVisible(False)
         self.status_label.setText(f"Error: {error_message}")
         self.log_text.append(f"[ERROR] {error_message}")
+        
+        # Emit signal to main window that optimization failed
+        self.optimization_error.emit(error_message)
         
     def _update_summary(self):
         """Update the summary tab"""

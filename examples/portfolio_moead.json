@@ -1,0 +1,71 @@
+{
+  "problem": {
+    "name": "Portfolio Optimization - MOEA/D",
+    "description": "Multi-objective portfolio optimization problem suitable for MOEA/D. Optimizes expected return vs risk (variance) without constraints.",
+    "type": "Financial Optimization",
+    "variables": [
+      {"name": "asset_1", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_2", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_3", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_4", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_5", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_6", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_7", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1},
+      {"name": "asset_8", "type": "Real", "lower_bound": 0.0, "upper_bound": 1.0, "initial_value": 0.1}
+    ],
+    "objectives": [
+      {
+        "name": "expected_return",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "0.12*asset_1 + 0.10*asset_2 + 0.08*asset_3 + 0.15*asset_4 + 0.09*asset_5 + 0.11*asset_6 + 0.07*asset_7 + 0.13*asset_8"
+      },
+      {
+        "name": "risk_minimization", 
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.04*asset_1**2 + 0.02*asset_2**2 + 0.01*asset_3**2 + 0.06*asset_4**2 + 0.02*asset_5**2 + 0.03*asset_6**2 + 0.01*asset_7**2 + 0.05*asset_8**2"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Decomposition-based",
+    "name": "MOEA/D",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 250,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 20.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "reference_directions": {
+      "method": "Das-Dennis",
+      "n_directions": 100,
+      "n_partitions": 12,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 25000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Multi-objective portfolio optimization using MOEA/D decomposition. Balances expected return vs risk without constraints.",
+    "recommended_for": "Financial optimization, continuous variables, bi-objective problems",
+    "reference": "Zhang, Q., & Li, H. (2007). MOEA/D: A multiobjective evolutionary algorithm based on decomposition",
+    "note": "MOEA/D is well-suited for problems without constraints where decomposition methods excel"
+  }
+}

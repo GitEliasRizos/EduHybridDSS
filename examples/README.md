@@ -26,18 +26,44 @@ This directory contains example problem configurations that can be loaded into t
 - Many-objective test problem
 - Spherical Pareto front
 
-### 4. Constrained Engineering Problem
+### 4. DTLZ2 with NSGA-III
+**File:** `dtlz2_nsga3.json`
+- Same as DTLZ2 but configured for NSGA-III
+- Demonstrates reference point-based optimization
+- Many-objective optimization showcase
+
+### 5. Constrained Engineering Problem
 **File:** `constrained_engineering.json`
 - 4 variables
 - 2 objectives
 - 3 constraints
 - Representative of real engineering problems
 
-### 5. Rosenbrock Multi-objective
+### 6. Pressure Vessel Design (SPEA2)
+**File:** `pressure_vessel_spea2.json`
+- Engineering design optimization
+- Demonstrates SPEA2 algorithm
+- Real-world engineering constraints
+
+### 7. Rosenbrock Multi-objective
 **File:** `rosenbrock_mo.json`
 - 2 variables
 - 2 objectives based on Rosenbrock function
 - Challenging optimization landscape
+
+### 8. Knapsack Problem (Binary Variables)
+**File:** `knapsack_nsga2.json`
+- 10 binary variables (item selection)
+- 2 profit objectives to maximize
+- Combinatorial optimization example
+- Demonstrates binary variable handling
+
+### 9. Portfolio Optimization (MOEA/D)
+**File:** `portfolio_moead.json`
+- 8 continuous variables (asset weights)
+- Expected return vs risk minimization
+- Constraint-free formulation suitable for MOEA/D
+- Financial optimization example
 
 ## How to Use
 

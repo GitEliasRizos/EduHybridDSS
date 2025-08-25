@@ -1,5 +1,21 @@
 """
 Main Window for PyMOO GUI Application
+
+This module contains the MainWindow class which serves as the primary interface
+for the multi-objective optimization GUI. It coordinates between different tabs
+(Problem Definition, Algorithm Configuration, and Results Visualization) and 
+manages the overall application workflow.
+
+Key Features:
+- Tab-based interface for different optimization phases
+- Menu system for file operations and settings
+- Toolbar for quick actions
+- Status bar for user feedback
+- Signal-slot architecture for component communication
+- Automatic optimization workflow management
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -16,64 +32,116 @@ from .results_tab import ResultsTab
 
 
 class MainWindow(QMainWindow):
-    """Main application window"""
+    """
+    Main application window for the PyMOO GUI
     
-    # Signals
+    This class creates and manages the primary user interface, including:
+    - Tab widget with Problem, Algorithm, and Results tabs
+    - Menu bar with File, Edit, View, and Help menus
+    - Toolbar with common actions
+    - Status bar for displaying application state
+    
+    The MainWindow coordinates optimization workflow by:
+    1. Collecting problem definition from ProblemTab
+    2. Getting algorithm configuration from AlgorithmTab
+    3. Running optimization in ResultsTab
+    4. Managing UI state during optimization process
+    
+    Signals:
+        optimization_started: Emitted when optimization begins
+        optimization_finished: Emitted when optimization completes with results
+    """
+    
+    # Custom signals for coordinating optimization workflow
     optimization_started = pyqtSignal()
-    optimization_finished = pyqtSignal(object)
+    optimization_finished = pyqtSignal(object)  # object = optimization results
     
     def __init__(self):
+        """
+        Initialize the main window
+        
+        Sets up the complete user interface including tabs, menus, toolbar,
+        and status bar. Also connects all necessary signals for component
+        communication.
+        """
         super().__init__()
         self.setWindowTitle("PyMOO GUI - Multi-Objective Optimization")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 1200, 800)  # x, y, width, height
         
-        # Initialize UI components
-        self._init_ui()
-        self._init_menubar()
-        self._init_toolbar()
-        self._init_statusbar()
+        # Initialize UI components in order
+        self._init_ui()          # Main layout and tabs
+        self._init_menubar()     # File, Edit, View, Help menus
+        self._init_toolbar()     # Quick action buttons
+        self._init_statusbar()   # Status information display
         
-        # Connect signals
+        # Connect inter-component communication signals
         self._connect_signals()
         
     def _init_ui(self):
-        """Initialize the main UI components"""
-        # Central widget
+        """
+        Initialize the main user interface components
+        
+        Creates the central widget with tab interface:
+        - ProblemTab: Define optimization problem (variables, objectives, constraints)
+        - AlgorithmTab: Configure optimization algorithm (NSGA-II, NSGA-III, etc.)
+        - ResultsTab: Run optimization and view results (plots, tables, export)
+        
+        Uses a splitter layout to allow user-resizable sections.
+        """
+        # Central widget serves as the main container
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        # Main layout
+        # Main layout organizes components vertically
         main_layout = QVBoxLayout(central_widget)
         
-        # Create splitter for resizable panes
+        # Create horizontal splitter for resizable panes
+        # This allows users to adjust space between sections
         splitter = QSplitter(Qt.Orientation.Horizontal)
         main_layout.addWidget(splitter)
         
-        # Left side - Configuration tabs
+        # Left side - Configuration tabs (70% of window width)
+        # Contains problem definition and algorithm configuration
         self.tab_widget = QTabWidget()
         
-        # Create tabs
-        self.problem_tab = ProblemTab()
-        self.algorithm_tab = AlgorithmTab()
+        # Create individual tabs for different optimization phases
+        self.problem_tab = ProblemTab()      # Variables, objectives, constraints
+        self.algorithm_tab = AlgorithmTab()  # Algorithm selection and parameters
         
-        # Add tabs
+        # Add tabs to the tab widget with descriptive labels
         self.tab_widget.addTab(self.problem_tab, "Problem Definition")
         self.tab_widget.addTab(self.algorithm_tab, "Algorithm & Settings")
         
+        # Add tab widget to left side of splitter
         splitter.addWidget(self.tab_widget)
         
-        # Right side - Results
+        # Right side - Results tab (30% of window width)
+        # Contains optimization execution, progress, and result visualization
         self.results_tab = ResultsTab()
+        
+        # Add results tab to right side of splitter
         splitter.addWidget(self.results_tab)
         
-        # Set splitter proportions (70% left, 30% right)
-        splitter.setSizes([840, 360])
+        # Set initial splitter proportions (70% left configuration, 30% right results)
+        # Users can adjust these proportions by dragging the splitter
+        splitter.setSizes([840, 360])  # Based on 1200px total width
         
     def _init_menubar(self):
-        """Initialize the menu bar"""
+        """
+        Initialize the application menu bar
+        
+        Creates a comprehensive menu system with:
+        - File menu: New, Open, Save, Export operations
+        - Edit menu: Cut, Copy, Paste, Undo, Redo
+        - View menu: UI customization and display options
+        - Help menu: Documentation and about information
+        
+        Each menu item is configured with appropriate shortcuts,
+        icons, and status tips for enhanced usability.
+        """
         menubar = self.menuBar()
         
-        # File menu
+        # File menu - handles project and data operations
         file_menu = menubar.addMenu("&File")
         
         # New problem
@@ -170,6 +238,10 @@ class MainWindow(QMainWindow):
         """Connect internal signals"""
         self.problem_tab.problem_changed.connect(self.on_problem_changed)
         self.algorithm_tab.algorithm_changed.connect(self.on_algorithm_changed)
+        
+        # Connect results tab signals to handle optimization completion
+        self.results_tab.optimization_completed.connect(self._on_optimization_finished)
+        self.results_tab.optimization_error.connect(lambda error: self._on_optimization_finished(None))
         
     def new_problem(self):
         """Create a new problem"""
@@ -368,7 +440,7 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self, "About PyMOO GUI",
             """
-            <h3>PyMOO GUI v1.0.0</h3>
+            <h3>PyMOO GUI v2.0.0</h3>
             <p>A comprehensive graphical user interface for PyMOO 
             (Multi-objective Optimization in Python).</p>
             
@@ -377,13 +449,16 @@ class MainWindow(QMainWindow):
             <li>Problem definition with variables, objectives, and constraints</li>
             <li>Algorithm selection and configuration</li>
             <li>Results visualization and analysis</li>
+            <li>Real-time optimization visualization</li>
+            <li>Multi-algorithm comparison</li>
+            <li>Performance metrics dashboard</li>
             <li>Export capabilities</li>
             </ul>
             
             <p>Built with PyQt6 and PyMOO</p>
             """
         )
-        
+    
     def closeEvent(self, event):
         """Handle application close event"""
         if self.results_tab.is_running():

@@ -53,7 +53,7 @@
     "name": "NSGA-III",
     "parameters": {
       "population_size": 105,
-      "n_generations": 101,
+      "n_generations": 100,
       "seed": 1
     },
     "crossover": {
@@ -63,7 +63,7 @@
     },
     "mutation": {
       "operator": "Polynomial Mutation",
-      "probability": 0.8999999999999999,
+      "probability": 0.9,
       "eta": 15.0
     },
     "termination": {

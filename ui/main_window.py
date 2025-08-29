@@ -29,6 +29,7 @@ from PyQt6.QtGui import QAction, QIcon, QKeySequence
 from .problem_tab import ProblemTab
 from .algorithm_tab import AlgorithmTab
 from .results_tab import ResultsTab
+from .mcda_tab import MCDATab
 
 
 class MainWindow(QMainWindow):
@@ -107,10 +108,16 @@ class MainWindow(QMainWindow):
         # Create individual tabs for different optimization phases
         self.problem_tab = ProblemTab()      # Variables, objectives, constraints
         self.algorithm_tab = AlgorithmTab()  # Algorithm selection and parameters
+        self.mcda_tab = MCDATab()            # Multi-criteria decision analysis
         
         # Add tabs to the tab widget with descriptive labels
         self.tab_widget.addTab(self.problem_tab, "Problem Definition")
         self.tab_widget.addTab(self.algorithm_tab, "Algorithm & Settings")
+        self.tab_widget.addTab(self.mcda_tab, "MCDA Analysis")
+        
+        # Initially disable MCDA tab until optimization is completed
+        # For testing: comment next line to enable MCDA tab immediately  
+        # self.tab_widget.setTabEnabled(2, False)
         
         # Add tab widget to left side of splitter
         splitter.addWidget(self.tab_widget)
@@ -413,14 +420,38 @@ class MainWindow(QMainWindow):
         
     def _on_optimization_finished(self, results):
         """Handle optimization completion"""
+        print(f"🏁 Main Window: Optimization finished!")
+        print(f"   - Results: {results is not None}")
+        
         # Update UI state
         self.run_action.setEnabled(True)
         self.run_button.setEnabled(True)
         self.stop_action.setEnabled(False)
         self.stop_button.setEnabled(False)
-        
+
         if results is not None:
             self.status_bar.showMessage("Optimization completed successfully")
+            
+            # Pass results to MCDA tab for analysis
+            try:
+                # Get objectives information from problem tab
+                problem_config = self.problem_tab.get_configuration()
+                objectives_info = problem_config.get('objectives', [])
+                
+                print(f"   - Problem config objectives: {len(objectives_info)}")
+                print(f"   - Objective details: {objectives_info}")
+                
+                # Set optimization results in MCDA tab
+                self.mcda_tab.set_optimization_results(results, objectives_info)
+                
+                # Switch to MCDA tab to show analysis is available
+                self.tab_widget.setTabEnabled(2, True)  # Enable MCDA tab
+                print(f"   - MCDA tab enabled!")
+                
+            except Exception as e:
+                print(f"Warning: Could not initialize MCDA analysis: {e}")
+                import traceback
+                traceback.print_exc()
         else:
             self.status_bar.showMessage("Optimization stopped")
             

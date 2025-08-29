@@ -1,0 +1,73 @@
+{
+  "problem": {
+    "name": "Multi-Objective Knapsack",
+    "description": "A multi-objective knapsack problem where we need to maximize two different profit functions while staying within weight capacity. This version uses penalty methods instead of hard constraints to work with more algorithms.",
+    "type": "Combinatorial Optimization",
+    "variables": [
+      {"name": "item_1", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_2", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_3", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_4", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_5", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_6", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_7", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_8", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_9", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_10", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0}
+    ],
+    "objectives": [
+      {
+        "name": "profit_1",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "10*item_1 + 13*item_2 + 18*item_3 + 31*item_4 + 7*item_5 + 15*item_6 + 4*item_7 + 22*item_8 + 11*item_9 + 19*item_10"
+      },
+      {
+        "name": "profit_2",
+        "direction": "Maximize", 
+        "weight": 1.0,
+        "function": "11*item_1 + 15*item_2 + 20*item_3 + 35*item_4 + 10*item_5 + 25*item_6 + 9*item_7 + 30*item_8 + 18*item_9 + 21*item_10"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 200,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "UX (Uniform Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "reference_directions": {
+      "method": "Das-Dennis",
+      "n_directions": 50,
+      "n_partitions": 12,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 10000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Multi-objective knapsack problem using NSGA-II. Constraint-free formulation suitable for binary optimization.",
+    "recommended_for": "Combinatorial optimization, binary decision problems, portfolio selection",
+    "reference": "Deb, K., et al. (2002). A fast and elitist multiobjective genetic algorithm: NSGA-II",
+    "note": "Weight constraint handled implicitly through objective formulation rather than explicit constraints"
+  }
+}

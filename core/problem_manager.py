@@ -309,7 +309,7 @@ class ProblemManager:
         errors = []
         
         # Check required fields
-        if 'variables' not in config or len(config['variables']) == 0:
+        if len(config['variables']) == 0:
             errors.append("At least one variable must be defined")
             
         if 'objectives' not in config or len(config['objectives']) == 0:

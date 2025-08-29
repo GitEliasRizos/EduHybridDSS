@@ -112,10 +112,10 @@ python main.py
 
 ### Advanced Workflow
 1. **Problem Setup**: Define your optimization problem
-2. **Real-time Testing**: Use real-time visualization to understand algorithm behavior  
-3. **Algorithm Comparison**: Compare multiple algorithms to find the best one
-4. **Performance Analysis**: Generate comprehensive metrics and reports
-5. **Export Results**: Save everything for documentation or publication
+2. **Algorithm Selection**: Choose and configure optimization algorithm
+3. **Run Optimization**: Execute optimization and view Pareto front
+4. **MCDA Analysis**: Apply AHP or TOPSIS to rank solutions based on preferences
+5. **Export Results**: Save optimization results and decision analysis
 
 ### Example Configurations
 The `examples/` directory contains ready-to-use problem configurations:
@@ -123,21 +123,54 @@ The `examples/` directory contains ready-to-use problem configurations:
 - `zdt1.json` - ZDT1 benchmark problem
 - `dtlz2_nsga3.json` - Many-objective DTLZ2 with NSGA-III
 - `pressure_vessel_spea2.json` - Engineering design optimization
-- `knapsack_moead.json` - Combinatorial optimization
+- `knapsack_nsga2.json` - Binary knapsack optimization with NSGA-II
+- `portfolio_moead.json` - Portfolio optimization with MOEA/D
+- `constrained_engineering.json` - Engineering design with constraints
+- `rosenbrock_mo.json` - Multi-objective Rosenbrock function
+
+## 🎯 **Multi-Criteria Decision Analysis (MCDA)**
+
+**NEW FEATURE**: The application now includes comprehensive MCDA capabilities to help you select the best solution from Pareto optimal results.
+
+### **AHP (Analytic Hierarchy Process)**
+- **Interactive pairwise comparisons** using 1-9 scale
+- **Automatic consistency checking** (CR < 0.1)
+- **Criteria weight calculation** via eigenvalue method
+- **Best for**: When you can express preferences as pairwise comparisons
+
+### **TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution)**  
+- **Configurable criteria weights** (0-1 scale with normalization)
+- **Ideal and anti-ideal solution identification**
+- **Distance-based ranking** using Euclidean distance
+- **Best for**: When you have specific weight preferences for each criterion
+
+### **MCDA Workflow**
+1. **Complete Optimization**: Run any PyMOO algorithm to get Pareto solutions
+2. **Access MCDA Tab**: Automatically enabled after optimization completion
+3. **Choose Method**: Select AHP (pairwise) or TOPSIS (weights)
+4. **Configure Preferences**: Set comparisons (AHP) or weights (TOPSIS)
+5. **Analyze Results**: View rankings, scores, and detailed analysis
+6. **Export Rankings**: Save to CSV or JSON for documentation
+
+### **MCDA Demo**
+Test the MCDA integration:
+```bash
+python demo_mcda.py
 
 ## Quick Start
 
 1. **Load Example**: File → Open Problem → `simple_biobjective.json`
-2. **Run Basic Optimization**: F5 or Run → Start Optimization  
-3. **Try Real-time**: Advanced → Real-time Visualization
-4. **Compare Algorithms**: Advanced → Multi-Algorithm Comparison
-5. **Analyze Performance**: Advanced → Performance Metrics
+2. **Run Optimization**: F5 or Run → Start Optimization  
+3. **Analyze Solutions**: Switch to "MCDA Analysis" tab (enabled after optimization)
+4. **Configure MCDA**: Choose AHP or TOPSIS and set your preferences
+5. **View Rankings**: See which solutions best match your criteria
+6. **Export Results**: Save rankings and analysis to CSV/JSON
 
-## New Feature Demo
+## 🧪 **Feature Demos**
 
-Run the interactive demo to learn about new features:
+**MCDA Integration Demo**: Test the complete workflow with sample data
 ```bash  
-python demo_new_features.py
+python demo_mcda.py
 ```
 
 ## Dependencies
@@ -161,10 +194,13 @@ PyMOO GUI/
 │   ├── main_window.py     # Main application window
 │   ├── problem_tab.py     # Problem definition interface
 │   ├── algorithm_tab.py   # Algorithm configuration
-│   ├── results_tab.py     # Basic results display
-│   ├── realtime_viz.py    # 🆕 Real-time visualization
-│   ├── multi_algorithm.py # 🆕 Algorithm comparison
-│   └── performance_metrics.py # 🆕 Metrics dashboard
+│   ├── results_tab.py     # Optimization results display
+│   └── mcda_tab.py        # 🆕 Multi-criteria decision analysis
+├── core/                   # Core functionality
+│   ├── problem_manager.py # Problem creation and validation
+│   ├── algorithm_manager.py # Algorithm configuration
+│   ├── optimizer.py       # Optimization execution
+│   └── mcda.py            # 🆕 AHP and TOPSIS implementation
 ├── core/                  # Core optimization logic
 │   ├── problem_manager.py # Problem evaluation
 │   ├── algorithm_manager.py # Algorithm instantiation  

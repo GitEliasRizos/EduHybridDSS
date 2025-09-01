@@ -378,12 +378,12 @@ class ProblemManager:
             
         config = self.problem_config
         summary = f"""
-Problem: {config.get('name', 'Unnamed')}
-Variables: {len(config['variables'])}
-Objectives: {len(config['objectives'])}
-Constraints: {len(config['constraints'])}
-Type: {config.get('type', 'Unknown')}
-"""
+                    Problem: {config.get('name', 'Unnamed')}
+                    Variables: {len(config['variables'])}
+                    Objectives: {len(config['objectives'])}
+                    Constraints: {len(config['constraints'])}
+                    Type: {config.get('type', 'Unknown')}
+                  """
         return summary.strip()
         
     def get_test_point(self):

@@ -1,0 +1,83 @@
+{
+  "problem": {
+    "name": "Multi-Objective Knapsack (Diverse)",
+    "description": "A multi-objective knapsack problem designed to create conflicting objectives and ensure a diverse Pareto front. Items have very different value patterns for the two objectives.",
+    "type": "Combinatorial Optimization",
+    "variables": [
+      {"name": "item_1", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_2", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_3", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_4", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_5", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_6", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_7", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_8", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_9", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_10", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_11", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_12", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_13", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_14", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "item_15", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0}
+    ],
+    "objectives": [
+      {
+        "name": "tech_value",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "50*item_1 + 10*item_2 + 45*item_3 + 15*item_4 + 40*item_5 + 5*item_6 + 35*item_7 + 20*item_8 + 30*item_9 + 25*item_10 + 42*item_11 + 8*item_12 + 38*item_13 + 12*item_14 + 33*item_15"
+      },
+      {
+        "name": "comfort_value", 
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "5*item_1 + 45*item_2 + 12*item_3 + 40*item_4 + 18*item_5 + 48*item_6 + 22*item_7 + 35*item_8 + 28*item_9 + 38*item_10 + 15*item_11 + 43*item_12 + 20*item_13 + 41*item_14 + 25*item_15"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "weight_capacity",
+        "type": "Less than",
+        "value": 100,
+        "function": "8*item_1 + 12*item_2 + 6*item_3 + 15*item_4 + 10*item_5 + 9*item_6 + 7*item_7 + 13*item_8 + 11*item_9 + 14*item_10 + 8*item_11 + 16*item_12 + 9*item_13 + 12*item_14 + 10*item_15"
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 300,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "UX (Uniform Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Bitflip Mutation", 
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "reference_directions": {
+      "method": "Das-Dennis",
+      "n_directions": 50,
+      "n_partitions": 12,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 30000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Multi-objective knapsack with highly conflicting objectives designed to create diverse Pareto front",
+    "note": "Tech items (1,3,5,7,9,11,13,15) have high tech_value but low comfort_value. Comfort items (2,4,6,8,10,12,14) have opposite pattern."
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "problem": {
+    "name": "Strategic Investment Portfolio",
+    "description": "Multi-objective portfolio optimization with 25 investment opportunities across different sectors. Optimize for Financial Return, ESG Impact, and Innovation Score while managing risk constraints and budget limitations.",
+    "type": "Strategic Portfolio Optimization",
+    "variables": [
+      {"name": "tech_startup_ai", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "tech_startup_quantum", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "tech_startup_biotech", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "tech_startup_fintech", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "tech_startup_cleantech", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "renewable_solar", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "renewable_wind", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "renewable_hydro", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "renewable_geothermal", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "healthcare_pharma", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "healthcare_devices", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "healthcare_digital", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "education_online", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "education_vocational", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "education_research", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "infrastructure_smart_city", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "infrastructure_transport", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "infrastructure_data_center", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "manufacturing_automation", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "manufacturing_3d_printing", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "agriculture_vertical_farm", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "agriculture_precision", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "finance_blockchain", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "finance_robo_advisor", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "social_impact_housing", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0}
+    ],
+    "objectives": [
+      {
+        "name": "financial_return",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "85*tech_startup_ai + 95*tech_startup_quantum + 75*tech_startup_biotech + 70*tech_startup_fintech + 60*tech_startup_cleantech + 45*renewable_solar + 50*renewable_wind + 40*renewable_hydro + 35*renewable_geothermal + 80*healthcare_pharma + 70*healthcare_devices + 65*healthcare_digital + 55*education_online + 45*education_vocational + 90*education_research + 75*infrastructure_smart_city + 50*infrastructure_transport + 85*infrastructure_data_center + 95*manufacturing_automation + 80*manufacturing_3d_printing + 40*agriculture_vertical_farm + 35*agriculture_precision + 90*finance_blockchain + 75*finance_robo_advisor + 25*social_impact_housing"
+      },
+      {
+        "name": "esg_impact",
+        "direction": "Maximize", 
+        "weight": 1.0,
+        "function": "30*tech_startup_ai + 40*tech_startup_quantum + 85*tech_startup_biotech + 35*tech_startup_fintech + 95*tech_startup_cleantech + 90*renewable_solar + 85*renewable_wind + 80*renewable_hydro + 75*renewable_geothermal + 60*healthcare_pharma + 70*healthcare_devices + 65*healthcare_digital + 80*education_online + 85*education_vocational + 75*education_research + 70*infrastructure_smart_city + 60*infrastructure_transport + 45*infrastructure_data_center + 50*manufacturing_automation + 55*manufacturing_3d_printing + 95*agriculture_vertical_farm + 90*agriculture_precision + 40*finance_blockchain + 45*finance_robo_advisor + 100*social_impact_housing"
+      },
+      {
+        "name": "innovation_score",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "100*tech_startup_ai + 95*tech_startup_quantum + 90*tech_startup_biotech + 75*tech_startup_fintech + 80*tech_startup_cleantech + 50*renewable_solar + 55*renewable_wind + 45*renewable_hydro + 40*renewable_geothermal + 85*healthcare_pharma + 80*healthcare_devices + 90*healthcare_digital + 70*education_online + 40*education_vocational + 95*education_research + 85*infrastructure_smart_city + 60*infrastructure_transport + 75*infrastructure_data_center + 100*manufacturing_automation + 95*manufacturing_3d_printing + 85*agriculture_vertical_farm + 80*agriculture_precision + 90*finance_blockchain + 85*finance_robo_advisor + 50*social_impact_housing"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "total_budget",
+        "type": "Less than",
+        "value": 500,
+        "function": "50*tech_startup_ai + 60*tech_startup_quantum + 45*tech_startup_biotech + 35*tech_startup_fintech + 40*tech_startup_cleantech + 25*renewable_solar + 30*renewable_wind + 35*renewable_hydro + 40*renewable_geothermal + 55*healthcare_pharma + 40*healthcare_devices + 35*healthcare_digital + 25*education_online + 20*education_vocational + 65*education_research + 45*infrastructure_smart_city + 50*infrastructure_transport + 40*infrastructure_data_center + 55*manufacturing_automation + 45*manufacturing_3d_printing + 30*agriculture_vertical_farm + 25*agriculture_precision + 35*finance_blockchain + 30*finance_robo_advisor + 20*social_impact_housing"
+      },
+      {
+        "name": "high_risk_limit",
+        "type": "Less than", 
+        "value": 8,
+        "function": "tech_startup_ai + tech_startup_quantum + tech_startup_biotech + tech_startup_fintech + tech_startup_cleantech + manufacturing_automation + manufacturing_3d_printing + finance_blockchain"
+      },
+      {
+        "name": "sector_diversity",
+        "type": "Greater than",
+        "value": 3,
+        "function": "(tech_startup_ai + tech_startup_quantum + tech_startup_biotech + tech_startup_fintech + tech_startup_cleantech > 0) + (renewable_solar + renewable_wind + renewable_hydro + renewable_geothermal > 0) + (healthcare_pharma + healthcare_devices + healthcare_digital > 0) + (education_online + education_vocational + education_research > 0) + (infrastructure_smart_city + infrastructure_transport + infrastructure_data_center > 0) + (manufacturing_automation + manufacturing_3d_printing > 0) + (agriculture_vertical_farm + agriculture_precision > 0) + (finance_blockchain + finance_robo_advisor > 0) + (social_impact_housing > 0)"
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 150,
+      "n_generations": 400,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "UX (Uniform Crossover)",
+      "probability": 0.85,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Bitflip Mutation", 
+      "probability": 0.08,
+      "eta": 20.0
+    },
+    "reference_directions": {
+      "method": "Das-Dennis",
+      "n_directions": 91,
+      "n_partitions": 12,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 60000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Strategic investment portfolio optimization with 25 opportunities across 9 sectors. Three conflicting objectives: Financial Return (favors high-profit tech/finance), ESG Impact (favors renewables/social), Innovation Score (favors cutting-edge tech). Multiple constraints ensure realistic portfolio balance.",
+    "recommended_for": "Portfolio optimization, strategic planning, multi-criteria investment decisions, resource allocation under constraints",
+    "note": "Creates rich trade-offs: Tech startups = high return + innovation but low ESG; Renewables = high ESG but moderate return/innovation; Social impact = high ESG but low return. Risk and diversity constraints add realism.",
+    "sectors": [
+      "Technology Startups (5 items) - High risk, high return, high innovation",
+      "Renewable Energy (4 items) - Medium risk, medium return, high ESG", 
+      "Healthcare (3 items) - Medium risk, high return, high innovation",
+      "Education (3 items) - Low risk, medium return, high ESG",
+      "Infrastructure (3 items) - Medium risk, medium return, medium innovation",
+      "Manufacturing (2 items) - High risk, high return, very high innovation",
+      "Agriculture (2 items) - Medium risk, low return, very high ESG",
+      "Finance (2 items) - High risk, high return, high innovation", 
+      "Social Impact (1 item) - Low risk, very low return, maximum ESG"
+    ],
+    "expected_outcomes": "Rich Pareto front with distinct solution clusters: Tech-focused (high return/innovation, low ESG), Balanced portfolios (moderate all objectives), ESG-focused (high ESG, lower return), Innovation-focused (maximum innovation, mixed return/ESG)"
+  }
+}

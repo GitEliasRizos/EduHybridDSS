@@ -42,6 +42,7 @@ from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.crossover.pcx import PCX
 from pymoo.operators.crossover.ux import UX
 from pymoo.operators.mutation.pm import PM
+from pymoo.operators.mutation.bitflip import BitflipMutation
 # Note: GM (Gaussian Mutation) might not be available in all PyMOO versions
 # We handle this gracefully with a try-except block
 # TODO: DO I NEED GAUSSIAN MUTATION? Or SHOULD I REMOVE IT 
@@ -232,7 +233,10 @@ class AlgorithmManager:
         prob = mutation_config.get('probability', 0.1)
         eta = mutation_config.get('eta', 20.0)
         
-        if 'Polynomial' in operator_name:
+        if 'Bitflip' in operator_name:
+            # For binary optimization problems
+            return BitflipMutation(prob=prob, repair=repair)
+        elif 'Polynomial' in operator_name:
             return PM(prob=prob, eta=eta, repair=repair)
         elif 'Gaussian' in operator_name and GM is not None:
             return GM(prob=prob, sigma=0.1)

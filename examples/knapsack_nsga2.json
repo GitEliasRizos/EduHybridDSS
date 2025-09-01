@@ -1,7 +1,7 @@
 {
   "problem": {
     "name": "Multi-Objective Knapsack",
-    "description": "A multi-objective knapsack problem where we need to maximize two different profit functions while staying within weight capacity. This version uses penalty methods instead of hard constraints to work with more algorithms.",
+    "description": "A multi-objective knapsack problem where we need to maximize two different profit functions while staying within weight capacity constraint of 75 units. Each item has different weights and profit values for both objectives.",
     "type": "Combinatorial Optimization",
     "variables": [
       {"name": "item_1", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
@@ -29,13 +29,20 @@
         "function": "11*item_1 + 15*item_2 + 20*item_3 + 35*item_4 + 10*item_5 + 25*item_6 + 9*item_7 + 30*item_8 + 18*item_9 + 21*item_10"
       }
     ],
-    "constraints": []
+    "constraints": [
+      {
+        "name": "weight_capacity",
+        "type": "Less than",
+        "value": 75,
+        "function": "11*item_1 + 14*item_2 + 21*item_3 + 11*item_4 + 16*item_5 + 10*item_6 + 5*item_7 + 20*item_8 + 18*item_9 + 17*item_10"
+      }
+    ]
   },
   "algorithm": {
     "category": "Pareto-based",
     "name": "NSGA-II",
     "parameters": {
-      "population_size": 50,
+      "population_size": 100,
       "n_generations": 200,
       "seed": 42
     },
@@ -45,8 +52,8 @@
       "eta": 15.0
     },
     "mutation": {
-      "operator": "Polynomial Mutation",
-      "probability": 0.1,
+      "operator": "Bitflip Mutation",
+      "probability": 0.05,
       "eta": 20.0
     },
     "reference_directions": {
@@ -65,9 +72,9 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "Multi-objective knapsack problem using NSGA-II. Constraint-free formulation suitable for binary optimization.",
-    "recommended_for": "Combinatorial optimization, binary decision problems, portfolio selection",
+    "description": "Multi-objective knapsack problem using NSGA-II with explicit weight capacity constraint. Items have different profits and weights, creating trade-offs.",
+    "recommended_for": "Combinatorial optimization, binary decision problems, portfolio selection, resource allocation",
     "reference": "Deb, K., et al. (2002). A fast and elitist multiobjective genetic algorithm: NSGA-II",
-    "note": "Weight constraint handled implicitly through objective formulation rather than explicit constraints"
+    "note": "Weight constraint (≤75 units) forces trade-offs between items, creating a proper Pareto front with multiple solutions"
   }
 }

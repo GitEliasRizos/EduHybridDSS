@@ -1,3 +1,4 @@
 .github/
 tests/
 */__pycache__/
+*test*

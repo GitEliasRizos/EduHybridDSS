@@ -203,19 +203,38 @@ class PlotCanvas(FigureCanvas):
         objectives = results["objectives"]
         n_objectives = objectives.shape[1]
         
+        # Debug: Check what's in results
+        print(f"🎯 Plot Objectives Debug:")
+        print(f"   - Results keys: {list(results.keys())}")
+        print(f"   - Has problem_config: {'problem_config' in results}")
+        if 'problem_config' in results:
+            print(f"   - Problem config keys: {list(results['problem_config'].keys())}")
+            if 'objectives' in results['problem_config']:
+                obj_names_debug = [obj['name'] for obj in results['problem_config']['objectives']]
+                print(f"   - Objective names found: {obj_names_debug}")
+        
+        # Get objective names from problem configuration
+        if 'problem_config' in results and 'objectives' in results['problem_config']:
+            obj_names = [obj['name'] for obj in results['problem_config']['objectives']]
+            print(f"   - Using objective names: {obj_names}")
+        else:
+            # Fallback to generic names
+            obj_names = [f"Objective {i+1}" for i in range(n_objectives)]
+            print(f"   - Using fallback names: {obj_names}")
+        
         if n_objectives == 2:
             ax = self.fig.add_subplot(111)
             ax.scatter(objectives[:, 0], objectives[:, 1], alpha=0.7, s=30)
-            ax.set_xlabel(f"Objective 1")
-            ax.set_ylabel(f"Objective 2")
+            ax.set_xlabel(obj_names[0])
+            ax.set_ylabel(obj_names[1])
             ax.set_title("Pareto Front")
             ax.grid(True, alpha=0.3)
         elif n_objectives == 3:
             ax = self.fig.add_subplot(111, projection='3d')
             ax.scatter(objectives[:, 0], objectives[:, 1], objectives[:, 2], alpha=0.7, s=30)
-            ax.set_xlabel("Objective 1")
-            ax.set_ylabel("Objective 2")
-            ax.set_zlabel("Objective 3")
+            ax.set_xlabel(obj_names[0])
+            ax.set_ylabel(obj_names[1])
+            ax.set_zlabel(obj_names[2])
             ax.set_title("3D Pareto Front")
         else:
             # Parallel coordinates plot for many objectives
@@ -226,6 +245,7 @@ class PlotCanvas(FigureCanvas):
             ax.set_ylabel("Objective Value")
             ax.set_title("Parallel Coordinates Plot")
             ax.set_xticks(range(n_objectives))
+            ax.set_xticklabels(obj_names, rotation=45)
             ax.grid(True, alpha=0.3)
             
         self.fig.tight_layout()
@@ -256,16 +276,23 @@ class PlotCanvas(FigureCanvas):
         variables = results["variables"]
         n_variables = variables.shape[1]
         
+        # Get variable names from problem configuration
+        if 'problem_config' in results and 'variables' in results['problem_config']:
+            var_names = [var['name'] for var in results['problem_config']['variables']]
+        else:
+            # Fallback to generic names
+            var_names = [f"Variable {i+1}" for i in range(n_variables)]
+        
         if n_variables <= 2:
             ax = self.fig.add_subplot(111)
             if n_variables == 1:
                 ax.hist(variables[:, 0], bins=20, alpha=0.7)
-                ax.set_xlabel("Variable 1")
+                ax.set_xlabel(var_names[0])
                 ax.set_ylabel("Frequency")
             else:
                 ax.scatter(variables[:, 0], variables[:, 1], alpha=0.7, s=30)
-                ax.set_xlabel("Variable 1")
-                ax.set_ylabel("Variable 2")
+                ax.set_xlabel(var_names[0])
+                ax.set_ylabel(var_names[1])
             ax.set_title("Decision Variables")
             ax.grid(True, alpha=0.3)
         else:
@@ -277,6 +304,7 @@ class PlotCanvas(FigureCanvas):
             ax.set_ylabel("Variable Value")
             ax.set_title("Decision Variables (Parallel Coordinates)")
             ax.set_xticks(range(n_variables))
+            ax.set_xticklabels(var_names, rotation=45)
             ax.grid(True, alpha=0.3)
             
         self.fig.tight_layout()

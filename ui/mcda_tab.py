@@ -323,6 +323,11 @@ class MCDAResultsWidget(QWidget):
         criteria_names = self.current_results.get('criteria_names', 
                                                   [f'Criterion_{i+1}' for i in range(alternatives_matrix.shape[1])])
         
+        print(f"📊 Results Widget Debug:")
+        print(f"   - Results keys: {list(self.current_results.keys())}")
+        print(f"   - Criteria names from results: {self.current_results.get('criteria_names', 'NOT FOUND')}")
+        print(f"   - Using criteria names: {criteria_names}")
+        
         # Update summary
         n_alternatives = len(scores)
         self.summary_label.setText(

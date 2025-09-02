@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 
 from PyQt6.QtCore import Qt, pyqtSignal
 
-from PyQt6.QtGui import QAction, QIcon, QKeySequence
+from PyQt6.QtGui import QAction, QKeySequence
 
 from .problem_tab import ProblemTab
 from .algorithm_tab import AlgorithmTab

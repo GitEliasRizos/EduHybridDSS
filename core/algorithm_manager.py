@@ -296,7 +296,6 @@ class AlgorithmManager:
     def _create_repair_operator(self, problem_config):
         """Create repair operator for integer/binary variables"""
         from pymoo.core.repair import Repair
-        import numpy as np
         
         if not problem_config or 'variables' not in problem_config:
             return None

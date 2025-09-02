@@ -28,7 +28,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
                             QScrollArea, QGridLayout, QFrame, QSplitter)
 
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
-from PyQt6.QtGui import QFont, QPixmap, QPainter, QColor
+from PyQt6.QtGui import QFont
 
 import numpy as np
 import pandas as pd
@@ -37,7 +37,6 @@ import json
 
 try:
     import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     MATPLOTLIB_AVAILABLE = True
@@ -48,7 +47,7 @@ from core.mcda import MCDAManager, AHPAnalyzer, TOPSISAnalyzer
 
 
 class PairwiseComparisonWidget(QWidget):
-    """Widget for creating AHP pairwise comparison matrices"""
+    # Widget for creating AHP pairwise comparison matrices
     
     def __init__(self, criteria_names: List[str], parent=None):
         super().__init__(parent)

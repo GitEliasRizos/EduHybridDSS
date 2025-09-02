@@ -85,7 +85,7 @@
       "eta": 15.0
     },
     "mutation": {
-      "operator": "Bitflip Mutation", 
+      "operator": "Bit-flip Mutation", 
       "probability": 0.08,
       "eta": 20.0
     },

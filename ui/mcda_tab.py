@@ -92,7 +92,7 @@ class PairwiseComparisonWidget(QWidget):
                     comparison_layout.addWidget(spinbox, row, 1)
                     
                     explanation = QLabel("Equal importance")
-                    explanation.setStyleSheet("QLabel { color: #666; font-style: italic; }")
+                    explanation.setStyleSheet("QLabel { color: #303030; font-style: italic; }")
                     comparison_layout.addWidget(explanation, row, 2)
                     
                     # Update explanation when value changes
@@ -153,7 +153,7 @@ class WeightConfigurationWidget(QWidget):
             "Weights will be automatically normalized to sum to 1."
         )
         instructions.setWordWrap(True)
-        instructions.setStyleSheet("QLabel { background-color: #f0f8ff; padding: 10px; border-radius: 5px; }")
+        instructions.setStyleSheet("QLabel { background-color: #303030; padding: 10px; border-radius: 5px; }")
         layout.addWidget(instructions)
         
         # Weight inputs
@@ -551,6 +551,25 @@ class MCDAResultsWidget(QWidget):
                 
             except Exception as e:
                 QMessageBox.critical(self, "Export Error", f"Failed to export JSON: {str(e)}")
+    
+    def clear_results(self):
+        """Clear all results and reset the widget to initial state"""
+        self.current_results = None
+        
+        # Clear summary
+        self.summary_label.setText("No analysis results")
+        
+        # Clear rankings table
+        self.rankings_table.setRowCount(0)
+        self.rankings_table.setColumnCount(0)
+        
+        # Clear details text
+        self.details_text.clear()
+        
+        # Clear visualization if available
+        if MATPLOTLIB_AVAILABLE:
+            self.figure.clear()
+            self.canvas.draw()
 
 
 class MCDATab(QWidget):
@@ -826,6 +845,61 @@ class MCDATab(QWidget):
             
         except Exception as e:
             QMessageBox.critical(self, "Analysis Error", f"Failed to perform analysis: {str(e)}")
+    
+    def clear(self):
+        """Clear all MCDA results and reset the tab to initial state"""
+        # Reset data
+        self.current_pymoo_result = None
+        self.current_objectives_info = None
+        
+        # Reset status
+        self.status_label.setText("No optimization results loaded")
+        self.status_label.setStyleSheet("QLabel { background-color: #8a3030; padding: 8px; border-radius: 4px; }")
+        
+        # Only disable the analyze button, not the entire interface
+        # This allows users to see the configuration tabs with placeholder content
+        self.analyze_button.setEnabled(False)
+        
+        # Clear configuration widgets and recreate empty ones
+        self._clear_and_reset_config_widgets()
+        
+        # Clear results widget
+        if hasattr(self, 'results_widget') and self.results_widget:
+            self.results_widget.clear_results()
+            
+        # Reset method selection to AHP
+        self.ahp_radio.setChecked(True)
+        
+    def _clear_and_reset_config_widgets(self):
+        """Clear existing configuration widgets and prepare for new ones"""
+        # Clear AHP configuration widget completely
+        if hasattr(self, 'ahp_config_widget') and self.ahp_config_widget.layout():
+            layout = self.ahp_config_widget.layout()
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            # Important: Delete the layout itself to ensure clean slate
+            layout.deleteLater()
+        
+        # Clear TOPSIS configuration widget completely
+        if hasattr(self, 'topsis_config_widget') and self.topsis_config_widget.layout():
+            layout = self.topsis_config_widget.layout()
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            # Important: Delete the layout itself to ensure clean slate
+            layout.deleteLater()
+        
+        # DO NOT create new layouts here - let set_optimization_results handle it
+        # This ensures the widgets are in a completely clean state
+        
+        # Clear references to the specific widgets
+        if hasattr(self, 'ahp_comparisons_widget'):
+            delattr(self, 'ahp_comparisons_widget')
+        if hasattr(self, 'topsis_weights_widget'):
+            delattr(self, 'topsis_weights_widget')
     
     def _test_with_demo_data(self):
         """Test the MCDA functionality with demo data"""

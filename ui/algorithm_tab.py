@@ -552,7 +552,41 @@ class AlgorithmTab(QWidget):
             if "seed" in params:
                 self.seed.setValue(params["seed"])
                 
-        # TODO: Set other configuration parameters
+        # Set crossover configuration
+        if "crossover" in config:
+            crossover = config["crossover"]
+            if "operator" in crossover:
+                index = self.crossover_operator.findText(crossover["operator"])
+                if index >= 0:
+                    self.crossover_operator.setCurrentIndex(index)
+            if "probability" in crossover:
+                self.crossover_prob.setValue(crossover["probability"])
+            if "eta" in crossover:
+                self.crossover_eta.setValue(crossover["eta"])
+                
+        # Set mutation configuration
+        if "mutation" in config:
+            mutation = config["mutation"]
+            if "operator" in mutation:
+                index = self.mutation_operator.findText(mutation["operator"])
+                if index >= 0:
+                    self.mutation_operator.setCurrentIndex(index)
+            if "probability" in mutation:
+                self.mutation_prob.setValue(mutation["probability"])
+            if "eta" in mutation:
+                self.mutation_eta.setValue(mutation["eta"])
+                
+        # Set termination configuration
+        if "termination" in config:
+            term = config["termination"]
+            if "max_evaluations" in term:
+                self.max_evaluations.setValue(term["max_evaluations"])
+            if "convergence_tolerance" in term:
+                self.convergence_tol.setValue(term["convergence_tolerance"])
+            if "enable_convergence" in term:
+                self.enable_convergence.setChecked(term["enable_convergence"])
+            if "verbose" in term:
+                self.verbose.setChecked(term["verbose"])
         
     def clear(self):
         """Clear all algorithm settings"""

@@ -178,15 +178,6 @@ class OptimizationWorker(QThread):
     def stop(self):
         """Stop the optimization"""
         self._is_running = False
-        
-    def _generate_mock_results(self):
-        """Generate mock optimization results for demonstration
-        
-        NOTE: This method is deprecated and should not be used.
-        The optimization now uses real PyMOO algorithms.
-        """
-        # This method is kept for compatibility but should not be called
-        raise NotImplementedError("Mock results are deprecated. Use real PyMOO optimization instead.")
 
 
 class PlotCanvas(FigureCanvas):
@@ -578,20 +569,20 @@ class ResultsTab(QWidget):
             return
             
         summary = f"""
-Optimization Results Summary
-============================
+                        Optimization Results Summary
+                        ============================
 
-Algorithm: {self.results['algorithm']}
-Number of Solutions: {self.results['n_solutions']}
-Number of Generations: {self.results['n_generations']}
+                        Algorithm: {self.results['algorithm']}
+                        Number of Solutions: {self.results['n_solutions']}
+                        Number of Generations: {self.results['n_generations']}
 
-Problem Configuration:
-- Variables: {len(self.results['problem_config']['variables'])}
-- Objectives: {len(self.results['problem_config']['objectives'])}
-- Constraints: {len(self.results['problem_config']['constraints'])}
+                        Problem Configuration:
+                        - Variables: {len(self.results['problem_config']['variables'])}
+                        - Objectives: {len(self.results['problem_config']['objectives'])}
+                        - Constraints: {len(self.results['problem_config']['constraints'])}
 
-Objective Statistics:
-"""
+                        Objective Statistics:
+                    """
         
         objectives = self.results['objectives']
         for i in range(objectives.shape[1]):
@@ -602,12 +593,12 @@ Objective Statistics:
             obj_std = objectives[:, i].std()
             
             summary += f"""
-{obj_name}:
-  Min: {obj_min:.6f}
-  Max: {obj_max:.6f}
-  Mean: {obj_mean:.6f}
-  Std: {obj_std:.6f}
-"""
+                            {obj_name}:
+                            Min: {obj_min:.6f}
+                            Max: {obj_max:.6f}
+                            Mean: {obj_mean:.6f}
+                            Std: {obj_std:.6f}
+                        """
         
         self.summary_text.setPlainText(summary)
         

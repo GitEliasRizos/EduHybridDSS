@@ -261,11 +261,17 @@ class Optimizer:
                 objectives[:, i] = -objectives[:, i]
                 
         # Create results dictionary
+        # Note: PyMOO's n_gen includes generation 0 (initial population), so we subtract 1 to match
+        # the configured number of evolution generations
+        actual_n_gen = getattr(self.results.algorithm, 'n_gen', 0)
+        configured_n_gen = algorithm_config.get('parameters', {}).get('n_generations', actual_n_gen)
+        displayed_n_gen = max(0, actual_n_gen - 1) if actual_n_gen > 0 else configured_n_gen
+        
         formatted_results = {
             'objectives': objectives,
             'variables': variables,
             'n_solutions': len(variables),
-            'n_generations': getattr(self.results.algorithm, 'n_gen', 0),
+            'n_generations': displayed_n_gen,
             'n_evaluations': getattr(self.results, 'n_eval', 0),
             'execution_time': getattr(self.results, 'exec_time', 0),
             'algorithm': algorithm_config.get('name', 'Unknown'),

@@ -376,6 +376,11 @@ class MainWindow(QMainWindow):
         self.problem_tab.clear()
         self.algorithm_tab.clear()
         self.results_tab.clear()
+        self.mcda_tab.clear()  # Clear MCDA tab as well
+        
+        # Disable MCDA tab at the tab level until new optimization results are loaded
+        self.tab_widget.setTabEnabled(2, False)  # MCDA tab is at index 2
+        
         self.status_bar.showMessage("All settings cleared")
         
     def start_optimization(self):

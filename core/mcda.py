@@ -438,7 +438,7 @@ class MCDAManager:
         if objectives_matrix.ndim == 1:
             objectives_matrix = objectives_matrix.reshape(1, -1)
             
-        # Since PyMOO converts everything to minimization, we need to handle directions
+        # Process objectives based on their intended direction
         processed_matrix = objectives_matrix.copy()
         criteria_names = []
         benefit_criteria = []
@@ -449,11 +449,11 @@ class MCDAManager:
             direction = obj_info.get('direction', 'Minimize')
             
             if direction == 'Maximize':
-                # PyMOO negated maximization objectives, so we negate them back
-                processed_matrix[:, i] = -processed_matrix[:, i]
+                # For maximization objectives, higher values are better (benefit criteria)
+                # No negation needed - use values as they come from PyMOO
                 benefit_criteria.append(i)
             else:  # Minimize
-                # For minimization, lower values are better (cost criteria)
+                # For minimization objectives, lower values are better (cost criteria)
                 cost_criteria.append(i)
                 
         return processed_matrix, criteria_names, benefit_criteria, cost_criteria

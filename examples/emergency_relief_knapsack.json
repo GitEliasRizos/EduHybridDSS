@@ -1,0 +1,153 @@
+{
+  "problem": {
+    "name": "Emergency Disaster Relief Kit Optimization",
+    "description": "Multi-objective optimization for assembling emergency disaster relief kits with limited weight capacity. Balance between survival utility, medical necessity, and comfort provisions while staying within transportation constraints.",
+    "type": "Multi-Objective Knapsack Problem",
+    "variables": [
+      {"name": "water_bottles", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "water_purification_tablets", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "emergency_food_rations", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "protein_bars", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "first_aid_kit", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "prescription_medications", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "pain_relievers", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "emergency_blanket", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "sleeping_bag", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "flashlight_led", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "battery_radio", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "solar_charger", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "waterproof_matches", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "multi_tool", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "rope_paracord", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "duct_tape", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "plastic_sheeting", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "hand_sanitizer", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "toilet_paper", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "cash_emergency", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "important_documents", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "whistle_signal", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "work_gloves", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0},
+      {"name": "emergency_contacts", "type": "Binary", "lower_bound": 0, "upper_bound": 1, "initial_value": 0}
+    ],
+    "objectives": [
+      {
+        "name": "survival_utility",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "95*water_bottles + 85*water_purification_tablets + 90*emergency_food_rations + 70*protein_bars + 85*first_aid_kit + 80*prescription_medications + 60*pain_relievers + 75*emergency_blanket + 80*sleeping_bag + 85*flashlight_led + 70*battery_radio + 65*solar_charger + 80*waterproof_matches + 75*multi_tool + 70*rope_paracord + 65*duct_tape + 75*plastic_sheeting + 55*hand_sanitizer + 40*toilet_paper + 50*cash_emergency + 90*important_documents + 85*whistle_signal + 60*work_gloves + 95*emergency_contacts"
+      },
+      {
+        "name": "medical_necessity",
+        "direction": "Maximize", 
+        "weight": 1.0,
+        "function": "40*water_bottles + 70*water_purification_tablets + 50*emergency_food_rations + 45*protein_bars + 100*first_aid_kit + 95*prescription_medications + 85*pain_relievers + 60*emergency_blanket + 55*sleeping_bag + 30*flashlight_led + 25*battery_radio + 20*solar_charger + 15*waterproof_matches + 40*multi_tool + 35*rope_paracord + 50*duct_tape + 45*plastic_sheeting + 90*hand_sanitizer + 80*toilet_paper + 10*cash_emergency + 60*important_documents + 70*whistle_signal + 75*work_gloves + 50*emergency_contacts"
+      },
+      {
+        "name": "comfort_provision",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "60*water_bottles + 30*water_purification_tablets + 75*emergency_food_rations + 80*protein_bars + 45*first_aid_kit + 40*prescription_medications + 70*pain_relievers + 85*emergency_blanket + 95*sleeping_bag + 50*flashlight_led + 80*battery_radio + 60*solar_charger + 40*waterproof_matches + 55*multi_tool + 45*rope_paracord + 35*duct_tape + 65*plastic_sheeting + 60*hand_sanitizer + 90*toilet_paper + 85*cash_emergency + 35*important_documents + 30*whistle_signal + 70*work_gloves + 25*emergency_contacts"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "weight_capacity_constraint",
+        "type": "Less than",
+        "value": 15,
+        "function": "3*water_bottles + 0.5*water_purification_tablets + 2.5*emergency_food_rations + 1.5*protein_bars + 2*first_aid_kit + 0.5*prescription_medications + 0.3*pain_relievers + 0.2*emergency_blanket + 3*sleeping_bag + 0.8*flashlight_led + 1.5*battery_radio + 1*solar_charger + 0.1*waterproof_matches + 0.5*multi_tool + 0.3*rope_paracord + 0.4*duct_tape + 0.6*plastic_sheeting + 0.5*hand_sanitizer + 1*toilet_paper + 0.1*cash_emergency + 0.2*important_documents + 0.1*whistle_signal + 0.3*work_gloves + 0.1*emergency_contacts"
+      },
+      {
+        "name": "essential_items_minimum",
+        "type": "Greater than",
+        "value": 2,
+        "function": "water_bottles + emergency_food_rations + first_aid_kit + flashlight_led + emergency_contacts"
+      },
+      {
+        "name": "water_source_requirement",
+        "type": "Greater than",
+        "value": 0,
+        "function": "water_bottles + water_purification_tablets - 1"
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 199,
+      "n_generations": 250,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "UX (Uniform Crossover)",
+      "probability": 0.42,   
+      "eta": 12.0
+    },
+    "mutation": {
+      "operator": "Bit-flip Mutation", 
+      "probability": 0.42,
+      "eta": 12.0
+    },
+    "reference_directions": {
+      "method": "Das-Dennis",
+      "n_directions": 91,
+      "n_partitions": 12,
+      "scaling": 1.0
+    },
+    "termination": {
+      "max_evaluations": 25000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": false,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Realistic emergency disaster relief kit optimization with 24 actual emergency items. Three conflicting objectives create meaningful trade-offs between immediate survival needs, medical requirements, and comfort provisions.",
+    "real_world_context": "Emergency preparedness for natural disasters (earthquakes, hurricanes, floods). Weight constraint represents single-person carry capacity (25kg/55lbs). Items based on FEMA emergency preparedness guidelines and Red Cross recommendations.",
+    "objective_conflicts": {
+      "survival_utility": "Prioritizes water, food, shelter, communication, and navigation items critical for immediate survival",
+      "medical_necessity": "Emphasizes first aid supplies, medications, hygiene items, and health-related provisions",
+      "comfort_provision": "Focuses on items that improve quality of life during emergency: sleeping comfort, entertainment, convenience items"
+    },
+    "constraints_explanation": {
+      "weight_capacity": "25kg maximum - realistic single-person emergency kit weight limit for portability",
+      "essential_items": "Must include at least 4 of the 5 most critical survival items (water, food, first aid, light, contacts)",
+      "water_source": "Must include either water bottles OR water purification tablets (or both) - ensures water availability"
+    },
+    "expected_pareto_solutions": [
+      {
+        "type": "Survival-focused",
+        "description": "High survival utility, moderate medical, low comfort",
+        "typical_items": "Water, food, emergency blanket, flashlight, multi-tool, documents, contacts"
+      },
+      {
+        "type": "Medical-focused", 
+        "description": "High medical necessity, moderate survival, low comfort",
+        "typical_items": "First aid kit, medications, pain relievers, sanitizer, gloves, whistle, purification tablets"
+      },
+      {
+        "type": "Comfort-focused",
+        "description": "High comfort, moderate survival, lower medical",
+        "typical_items": "Sleeping bag, protein bars, radio, cash, toilet paper, solar charger, pain relievers"
+      },
+      {
+        "type": "Balanced", 
+        "description": "Moderate scores across all three objectives",
+        "typical_items": "Mix of survival, medical, and comfort items within weight constraint"
+      }
+    ],
+    "item_categories": {
+      "Water & Food": ["water_bottles", "water_purification_tablets", "emergency_food_rations", "protein_bars"],
+      "Medical & Health": ["first_aid_kit", "prescription_medications", "pain_relievers", "hand_sanitizer"],
+      "Shelter & Warmth": ["emergency_blanket", "sleeping_bag", "plastic_sheeting"],
+      "Tools & Equipment": ["flashlight_led", "multi_tool", "rope_paracord", "duct_tape", "work_gloves"],
+      "Communication & Power": ["battery_radio", "solar_charger", "whistle_signal"],
+      "Fire & Light": ["waterproof_matches", "flashlight_led"],
+      "Personal & Admin": ["toilet_paper", "cash_emergency", "important_documents", "emergency_contacts"]
+    },
+    "weight_breakdown": "Heaviest items: Sleeping bag (3kg), Water bottles (3kg), Food rations (2.5kg). Lightest: Cash, documents, contacts (0.1kg each). Total possible weight: 35.2kg - requires careful selection.",
+    "optimization_insights": "Creates realistic trade-offs between immediate survival (water/food/shelter), medical preparedness (first aid/medications), and disaster comfort (sleeping/entertainment/convenience). Weight constraint forces difficult decisions."
+  }
+}

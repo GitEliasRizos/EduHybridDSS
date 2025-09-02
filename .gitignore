@@ -1,5 +1,6 @@
 .github/
 tests/
-*/__pycache__/
+pycache/
+*pycache*
 *test*
 .venv

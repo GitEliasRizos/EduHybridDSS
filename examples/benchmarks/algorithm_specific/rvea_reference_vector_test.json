@@ -1,96 +1,101 @@
 {
   "problem": {
-    "name": "RVEA Reference Vector Test",
-    "description": "4-objective problem designed for RVEA: Tests reference vector guided evolution and adaptive penalty. Use structured reference vectors. Expected: Solutions aligned with reference directions.",
+    "name": "RVEA Reference Vector Test - 4-Objective DTLZ3",
+    "description": "4-objective DTLZ3-based problem with multimodal landscape. Tests RVEA's reference vector guided search and angle-penalized distance. Features multiple local Pareto fronts.",
+    "type": "Reference Vector Test",
     "variables": [
       {
         "name": "x1",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
       },
       {
         "name": "x2",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
       },
       {
         "name": "x3",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
       },
       {
         "name": "x4",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
       },
       {
         "name": "x5",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
       },
       {
         "name": "x6",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.5
+        "initial_value": 0.25
+      },
+      {
+        "name": "x7",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.25
       }
     ],
     "objectives": [
       {
-        "name": "f1_convergence",
+        "name": "f1_rvea",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
-        "description": "Convergence-focused objective 1"
+        "weight": 0.25,
+        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2) * cos(x3 * pi / 2)"
       },
       {
-        "name": "f2_convergence",
+        "name": "f2_rvea",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "cos(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 2) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
-        "description": "Convergence-focused objective 2"
+        "weight": 0.25,
+        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2) * sin(x3 * pi / 2)"
       },
       {
-        "name": "f3_diversity",
+        "name": "f3_rvea",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "sin(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 4) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
-        "description": "Diversity-focused objective 3"
+        "weight": 0.25,
+        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
       },
       {
-        "name": "f4_balance",
+        "name": "f4_rvea",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "sin(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 4) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
-        "description": "Balance objective 4"
+        "weight": 0.25,
+        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * sin(x1 * pi / 2)"
       }
     ],
-    "constraints": [],
-    "type": "Custom Problem"
+    "constraints": []
   },
   "algorithm": {
-    "category": "Evolutionary Algorithms",
+    "category": "Reference Point-based",
     "name": "RVEA",
     "parameters": {
-      "population_size": 35,
-      "n_generations": 400,
-      "seed": 1
+      "population_size": 330,
+      "n_generations": 300,
+      "seed": 321,
+      "alpha": 2.0,
+      "adaptation_frequency": 0.2
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
       "probability": 0.9,
-      "eta": 15.0
+      "eta": 30.0
     },
     "mutation": {
       "operator": "Polynomial Mutation",
@@ -98,22 +103,20 @@
       "eta": 20.0
     },
     "termination": {
-      "max_evaluations": 14000,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 99000,
+      "convergence_tolerance": 1e-4,
       "enable_convergence": true,
       "verbose": true
     },
     "reference_directions": {
       "type": "Das-Dennis",
       "n_dim": 4,
-      "n_partitions": 6
+      "n_partitions": 8
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "RVEA",
-    "problem_type": "Many-objective (4D) with reference vectors",
-    "expected_performance": "Excellent - Solutions aligned with reference directions"
+    "description": "RVEA reference vector guided search test with 4-objective multimodal problem"
   }
 }

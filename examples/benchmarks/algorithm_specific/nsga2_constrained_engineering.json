@@ -1,78 +1,73 @@
 {
   "problem": {
     "name": "NSGA-II Constrained Engineering",
-    "description": "Engineering optimization problem perfect for NSGA-II: 2 objectives with realistic constraints. Tests NSGA-II's constraint handling and elitist selection. Expected: 5-15 feasible solutions.",
+    "description": "Engineering optimization problem perfect for NSGA-II: 2 objectives with realistic constraints. Tests NSGA-II's constraint handling and elitist selection. Expected: 10-30% feasible solutions with good constraint handling.",
     "type": "Custom Problem",
     "variables": [
-    {
-      "name": "beam_width",
-      "type": "Real",
-      "lower_bound": 10.0,
-      "upper_bound": 50.0,
-      "initial_value": 20.0
-    },
-    {
-      "name": "beam_height",
-      "type": "Real",
-      "lower_bound": 20.0,
-      "upper_bound": 100.0,
-      "initial_value": 40.0
-    },
-    {
-      "name": "material_grade",
-      "type": "integer",
-      "lower_bound": 1,
-      "upper_bound": 3,
-      "initial_value": 2
-    }
-  ],
-  "objectives": [
-    {
-      "name": "cost",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "beam_width * beam_height * 0.02 + material_grade * 100",
-      "description": "Total cost ($)"
-    },
-    {
-      "name": "strength",
-      "direction": "Maximize",
-      "weight": 1.0,
-      "function": "beam_width * beam_height**2 * material_grade * 0.001",
-      "description": "Beam strength (kN)"
-    }
-  ],
-  "constraints": [
-    {
-      "name": "aspect_ratio",
-      "type": "<=",
-      "function": "beam_height / beam_width",
-      "value": 4.0,
-      "description": "Maximum aspect ratio"
-    },
-    {
-      "name": "minimum_strength",
-      "type": ">=",
-      "function": "beam_width * beam_height**2 * material_grade * 0.001",
-      "value": 5.0,
-      "description": "Minimum required strength"
-    },
-    {
-      "name": "size_limit",
-      "type": "<=",
-      "function": "beam_width * beam_height",
-      "value": 3000,
-      "description": "Cross-sectional area limit"
-    }
-  ]
+      {
+        "name": "beam_width",
+        "type": "Real",
+        "lower_bound": 10.0,
+        "upper_bound": 50.0,
+        "initial_value": 20.0
+      },
+      {
+        "name": "beam_height",
+        "type": "Real",
+        "lower_bound": 20.0,
+        "upper_bound": 100.0,
+        "initial_value": 40.0
+      },
+      {
+        "name": "material_grade",
+        "type": "Integer",
+        "lower_bound": 1.0,
+        "upper_bound": 3.0,
+        "initial_value": 2.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "cost",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "beam_width * beam_height * 0.02 + material_grade * 100"
+      },
+      {
+        "name": "strength",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "beam_width * beam_height**2 * material_grade * 0.001"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "aspect_ratio",
+        "type": "<=",
+        "function": "beam_height / beam_width",
+        "value": 4.0
+      },
+      {
+        "name": "minimum_strength",
+        "type": ">=",
+        "function": "beam_width * beam_height**2 * material_grade * 0.001",
+        "value": 5.0
+      },
+      {
+        "name": "size_limit",
+        "type": "<=",
+        "function": "beam_width * beam_height",
+        "value": 3000.0
+      }
+    ]
   },
   "algorithm": {
-    "category": "Evolutionary Algorithms",
+    "category": "Pareto-based",
     "name": "NSGA-II",
     "parameters": {
-      "population_size": 50,
-      "n_generations": 200,
-      "seed": 1
+      "population_size": 100,
+      "n_generations": 250,
+      "seed": 42
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -85,17 +80,15 @@
       "eta": 20.0
     },
     "termination": {
-      "max_evaluations": 10000,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 25000,
+      "convergence_tolerance": 1e-6,
       "enable_convergence": true,
       "verbose": true
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "NSGA-II",
-    "problem_type": "Bi-objective with constraints",
-    "expected_performance": "Good - 10-30% feasible solutions, excellent constraint handling"
+    "description": "NSGA-II constrained engineering benchmark"
   }
 }

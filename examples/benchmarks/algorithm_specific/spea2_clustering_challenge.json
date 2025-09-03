@@ -1,27 +1,35 @@
 {
   "problem": {
-    "name": "SPEA2 Clustering Challenge",
-    "description": "Multi-modal problem designed for SPEA2: Multiple local fronts requiring good clustering. Tests SPEA2's density estimation and archive management. Expected: Diverse solutions across multiple fronts.",
+    "name": "SPEA2 Clustering Challenge - Deceptive Multimodal",
+    "description": "Complex multimodal problem with multiple local Pareto fronts and clustering challenges. Tests SPEA2's fitness assignment and environmental selection. Features deceptive objective space.",
+    "type": "Multimodal Test Problem",
     "variables": [
       {
         "name": "x1",
         "type": "Real",
-        "lower_bound": -2.0,
-        "upper_bound": 2.0,
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
         "initial_value": 0.0
       },
       {
         "name": "x2",
         "type": "Real",
-        "lower_bound": -2.0,
-        "upper_bound": 2.0,
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
         "initial_value": 0.0
       },
       {
         "name": "x3",
         "type": "Real",
-        "lower_bound": -2.0,
-        "upper_bound": 2.0,
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
         "initial_value": 0.0
       }
     ],
@@ -30,51 +38,59 @@
         "name": "f1_multimodal",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "x1**2 + x2**2 + sin(4 * 3.14159 * x1) * cos(4 * 3.14159 * x2)",
-        "description": "Multi-modal objective 1"
+        "function": "sum(i * xi^4 - 16 * xi^2 + 5 * xi for i, xi in enumerate([x1, x2, x3, x4], 1)) + 100"
       },
       {
-        "name": "f2_multimodal",
+        "name": "f2_clustering",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "(x1 - 1)**2 + (x2 - 1)**2 + x3**2 + sin(4 * 3.14159 * (x1-1)) * cos(4 * 3.14159 * (x2-1))",
-        "description": "Multi-modal objective 2"
+        "function": "sum(xi^2 + sin(5 * pi * xi) for xi in [x1, x2, x3, x4]) + 50"
       }
     ],
-    "constraints": [],
-    "type": "Custom Problem"
+    "constraints": [
+      {
+        "name": "c1_boundary",
+        "type": "Inequality",
+        "function": "x1^2 + x2^2 - 16",
+        "operator": "<="
+      },
+      {
+        "name": "c2_nonlinear",
+        "type": "Inequality",
+        "function": "x3^2 + x4^2 - 9",
+        "operator": "<="
+      }
+    ]
   },
   "algorithm": {
-    "category": "Evolutionary Algorithms",
+    "category": "Archive-based",
     "name": "SPEA2",
     "parameters": {
-      "population_size": 50,
-      "archive_size": 50,
-      "n_generations": 250,
-      "seed": 1
+      "population_size": 120,
+      "archive_size": 80,
+      "n_generations": 500,
+      "seed": 123
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
-      "probability": 0.9,
-      "eta": 15.0
+      "probability": 0.95,
+      "eta": 20.0
     },
     "mutation": {
       "operator": "Polynomial Mutation",
-      "probability": 0.1,
-      "eta": 20.0
+      "probability": 0.15,
+      "eta": 25.0
     },
     "termination": {
-      "max_evaluations": 12500,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 60000,
+      "convergence_tolerance": 1e-5,
       "enable_convergence": true,
       "verbose": true
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "SPEA2",
-    "problem_type": "Bi-objective multi-modal",
-    "expected_performance": "Excellent - Good clustering of multiple optimal regions"
+    "description": "SPEA2 clustering and fitness assignment challenge benchmark"
   }
 }

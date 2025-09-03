@@ -535,12 +535,45 @@ class AlgorithmTab(QWidget):
             index = self.algorithm_category.findText(config["category"])
             if index >= 0:
                 self.algorithm_category.setCurrentIndex(index)
+                self._update_algorithm_options()  # Update options after category change
                 
         if "name" in config:
-            self._update_algorithm_options()  # Refresh options first
             index = self.algorithm_name.findText(config["name"])
             if index >= 0:
                 self.algorithm_name.setCurrentIndex(index)
+                # Force update of algorithm description and visibility
+                self._update_algorithm_description()
+                self._update_specific_parameters()
+                
+        # Set reference directions configuration (after algorithm is set and visibility updated)
+        if "reference_directions" in config:
+            ref_dirs = config["reference_directions"]
+            if "type" in ref_dirs:
+                index = self.ref_dir_method.findText(ref_dirs["type"])
+                if index >= 0:
+                    self.ref_dir_method.setCurrentIndex(index)
+            if "n_partitions" in ref_dirs:
+                self.n_partitions.setValue(ref_dirs["n_partitions"])
+            # Handle both n_ref_dirs and n_dim (number of objectives/dimensions)
+            if "n_ref_dirs" in ref_dirs:
+                self.n_ref_dirs.setValue(ref_dirs["n_ref_dirs"])
+            elif "n_dim" in ref_dirs and "n_partitions" in ref_dirs:
+                # Calculate number of reference directions for Das-Dennis method
+                # Formula: C(n_dim + n_partitions - 1, n_partitions)
+                import math
+                n_dim = ref_dirs["n_dim"]
+                n_partitions = ref_dirs["n_partitions"]
+                try:
+                    n_ref_dirs = math.comb(n_dim + n_partitions - 1, n_partitions)
+                    self.n_ref_dirs.setValue(n_ref_dirs)
+                except:
+                    # Fallback to using n_dim if calculation fails
+                    self.n_ref_dirs.setValue(n_dim * 10)  # Approximate
+            elif "n_dim" in ref_dirs:
+                # Fallback: use a reasonable multiple of n_dim
+                self.n_ref_dirs.setValue(ref_dirs["n_dim"] * 15)
+            if "scaling" in ref_dirs:
+                self.ref_dir_scaling.setValue(ref_dirs["scaling"])
                 
         # Set parameters
         if "parameters" in config:

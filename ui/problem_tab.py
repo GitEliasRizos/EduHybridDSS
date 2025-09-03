@@ -7,7 +7,7 @@ to the computer. Just like when you go to a custom cake shop and tell them:
 
 This tab helps you describe your optimization problem by filling out:
 
-🎯 OBJECTIVES: "What do I want to achieve?"
+OBJECTIVES: "What do I want to achieve?"
    - Minimize cost (spend less money)
    - Maximize quality (get the best result)
    - Minimize time (finish faster)

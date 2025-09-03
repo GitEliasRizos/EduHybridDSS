@@ -1,51 +1,75 @@
 """
-ELI5: Optimizer - Like the Racing Team Manager! 🏎️
+Optimizer - Core functionality for running optimizations
 
-Think of optimization like a race to find the best solutions. This file is like
-the race team manager who coordinates everything:
+This module provides the Optimizer class which serves as the central coordinator
+for running multi-objective optimization tasks. It integrates with PyMOO to
+execute optimizations while providing progress monitoring, result processing,
+and state management capabilities.
 
-The race team has:
-🏁 The race car (algorithm) - different cars for different tracks
-🎯 The destination (objective) - where we want to finish
-🗺️ The race track (problem space) - where solutions can be found
-📊 The pit crew (progress monitoring) - tells us how we're doing during the race
-🏆 The winners podium (results) - the best solutions we found
+Key Features:
+- Integration with PyMOO optimization framework
+- Real-time progress monitoring and callback system
+- Optimization state management (running, stopped, completed)
+- Result extraction and formatting for GUI consumption
+- Performance metrics tracking and history
+- Thread-safe operation for GUI integration
+- Comprehensive error handling and recovery
 
-Just like a racing manager:
-1. Prepares the car and driver for the specific track
-2. Starts the race and monitors progress
-3. Makes pit stops if needed
-4. Collects all the performance data
-5. Announces the winners at the end
+The Optimizer acts as a high-level interface that coordinates between the
+problem definition, algorithm configuration, and result visualization
+components. It handles the complexity of PyMOO integration while providing
+a simple interface for the GUI components.
 
-This optimizer does the same thing but for solving math problems instead of racing!
+Core Workflow:
+    1. Setup: Configure problem, algorithm, and termination
+    2. Execute: Run optimization with progress callbacks
+    3. Monitor: Track progress and performance metrics
+    4. Extract: Process results for GUI display
+    5. Cleanup: Manage resources and state
+
+Classes:
+    OptimizationCallback: Progress monitoring and history tracking
+    Optimizer: Main optimization coordinator and executor
+
+Thread Safety:
+    The Optimizer is designed to work safely in multi-threaded environments,
+    particularly with Qt's worker thread pattern used by the GUI.
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-# ELI5: Import our racing equipment (tools for optimization)
-from pymoo.optimize import minimize  # The race track and rules
-from pymoo.core.callback import Callback  # The pit crew communication system
-import numpy as np  # The advanced calculator for race statistics
-import time  # The stopwatch to track how long the race takes
-from threading import Event  # The system to safely stop the race if needed
+from pymoo.optimize import minimize
+from pymoo.core.callback import Callback
+import numpy as np
+import time
+from threading import Event
 
 
 class OptimizationCallback(Callback):
     """
-    ELI5: This is like the pit crew chief! 📻
+    Callback class to monitor optimization progress and collect metrics
     
-    During a race, the pit crew chief watches everything and reports back:
-    - "We're on lap 15 of 100!"
-    - "Current best speed is 180 mph!"
-    - "The car is performing well!"
+    This class integrates with PyMOO's callback system to provide real-time
+    monitoring of optimization progress. It tracks key metrics like generation
+    count, function evaluations, and objective value statistics.
     
-    This callback does the same for optimization:
-    - Watches each generation/iteration
-    - Reports progress to the user interface
-    - Collects statistics about how well we're doing
-    - Can stop the optimization if needed
+    Key Features:
+    - Real-time progress tracking during optimization
+    - History collection for convergence analysis
+    - Objective value statistics (min, max, average)
+    - Integration with GUI progress reporting
+    - Thread-safe operation with stop event handling
+    - Performance metrics for algorithm assessment
+    
+    The callback is called at each generation and collects comprehensive
+    data about the optimization state. This information is used both for
+    progress reporting and post-optimization analysis.
+    
+    Attributes:
+        history (dict): Collection of optimization metrics over time
+        progress_callback (callable): Optional callback for GUI updates
+        stop_event (Event): Threading event for graceful termination
     """
     
     def __init__(self):
@@ -95,36 +119,25 @@ class OptimizationCallback(Callback):
             # Get objective values from all individuals in population
             F = np.array([ind.F for ind in algorithm.pop])
             
-            # Check if F is valid
-            if F is not None and hasattr(F, 'ndim'):
-                if F.ndim == 2 and F.shape[0] > 0:
-                    # Multi-objective case: use first objective for progress tracking
-                    # This provides a consistent progress metric across problem types
-                    f_vals = F[:, 0] if F.shape[1] > 0 else F.flatten()
-                else:
-                    # Single objective or flattened array case
-                    f_vals = F.flatten()
-                    
-                # Calculate and store population statistics if valid data exists
-                if len(f_vals) > 0:
-                    self.history['f_min'].append(np.min(f_vals))
-                    self.history['f_avg'].append(np.mean(f_vals))
-                    self.history['f_max'].append(np.max(f_vals))
-                else:
-                    # Handle empty case
-                    self.history['f_min'].append(float('inf'))
-                    self.history['f_avg'].append(float('inf'))
-                    self.history['f_max'].append(float('inf'))
+            if F.ndim == 2 and F.shape[0] > 0:
+                # Multi-objective case: use first objective for progress tracking
+                # This provides a consistent progress metric across problem types
+                f_vals = F[:, 0] if F.shape[1] > 0 else F.flatten()
             else:
-                # Handle None F case
-                self.history['f_min'].append(float('inf'))
-                self.history['f_avg'].append(float('inf'))
-                self.history['f_max'].append(float('inf'))
+                # Single objective or flattened array case
+                f_vals = F.flatten()
+                
+            # Calculate and store population statistics if valid data exists
+            if len(f_vals) > 0:
+                self.history['f_min'].append(np.min(f_vals))
+                self.history['f_avg'].append(np.mean(f_vals))
+                self.history['f_max'].append(np.max(f_vals))
+            else:
+                # Handle edge case of empty or invalid objective values
+                self.history['f_min'].append(np.inf)
+                self.history['f_avg'].append(np.inf)
+                self.history['f_max'].append(np.inf)
         else:
-            # Handle empty population case
-            self.history['f_min'].append(float('inf'))
-            self.history['f_avg'].append(float('inf'))
-            self.history['f_max'].append(float('inf'))
             self.history['f_min'].append(np.inf)
             self.history['f_avg'].append(np.inf)
             self.history['f_max'].append(np.inf)

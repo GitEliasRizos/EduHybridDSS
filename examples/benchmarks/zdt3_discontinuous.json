@@ -1,44 +1,75 @@
 {
-  "name": "ZDT3 - Discontinuous Pareto Front",
-  "description": "ZDT3 benchmark with disconnected Pareto front regions. Tests algorithm's ability to find multiple disconnected optimal regions. Expected: 50-100 solutions in 5 separate regions.",
-  "variables": [
-    {
-      "name": "x1",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+  "problem": {
+    "name": "ZDT3 - Discontinuous Pareto Front",
+    "description": "ZDT3 benchmark with disconnected Pareto front regions. Tests algorithm's ability to find multiple disconnected optimal regions. Expected: 50-100 solutions in 5 separate regions.",
+    "type": "Test Function",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize", 
+        "weight": 1.0,
+        "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5 - (x1 / (1 + x2 + x3)) * sin(10 * pi * x1))"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 250,
+      "seed": 42
     },
-    {
-      "name": "x2",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
     },
-    {
-      "name": "x3",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 25000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     }
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "x1",
-      "description": "First objective"
-    },
-    {
-      "name": "f2",
-      "direction": "Minimize", 
-      "weight": 1.0,
-      "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5 - (x1 / (1 + x2 + x3)) * sin(10 * 3.14159 * x1))",
-      "description": "Second objective with sine term creating gaps"
-    }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "ZDT3 benchmark - discontinuous Pareto front test"
+  }
 }

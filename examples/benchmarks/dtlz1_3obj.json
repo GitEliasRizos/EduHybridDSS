@@ -1,65 +1,100 @@
 {
-  "name": "DTLZ1 - 3-Objective Linear Front",
-  "description": "3-objective DTLZ1 benchmark with linear Pareto front forming a triangular simplex. Tests many-objective optimization capabilities. Expected: 50-200 solutions on triangular surface.",
-  "variables": [
-    {
-      "name": "x1",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+  "problem": {
+    "name": "DTLZ1 - 3-Objective Linear Front",
+    "description": "3-objective DTLZ1 benchmark with linear Pareto front forming a triangular simplex. Tests many-objective optimization capabilities. Expected: 50-200 solutions on triangular surface.",
+    "type": "Test Function",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x5",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.5 * x1 * x2 * (1 + 100 * (sin(20 * pi * x3) + sin(20 * pi * x4) + sin(20 * pi * x5)))"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.5 * x1 * (1 - x2) * (1 + 100 * (sin(20 * pi * x3) + sin(20 * pi * x4) + sin(20 * pi * x5)))"
+      },
+      {
+        "name": "f3",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.5 * (1 - x1) * (1 + 100 * (sin(20 * pi * x3) + sin(20 * pi * x4) + sin(20 * pi * x5)))"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Reference Point-based",
+    "name": "NSGA-III",
+    "parameters": {
+      "population_size": 91,
+      "n_generations": 400,
+      "seed": 42
     },
-    {
-      "name": "x2",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
     },
-    {
-      "name": "x3",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
     },
-    {
-      "name": "x4",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "termination": {
+      "max_evaluations": 36400,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     },
-    {
-      "name": "x5",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 3,
+      "n_partitions": 12
     }
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "0.5 * x1 * x2 * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
-      "description": "First objective"
-    },
-    {
-      "name": "f2",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "0.5 * x1 * (1 - x2) * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
-      "description": "Second objective"
-    },
-    {
-      "name": "f3",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "0.5 * (1 - x1) * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
-      "description": "Third objective"
-    }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "DTLZ1 benchmark - 3-objective linear front test"
+  }
 }

@@ -1,49 +1,62 @@
 {
   "problem": {
-    "name": "SMS-EMOA Steady-State Test",
-    "description": "Problem optimized for SMS-EMOA: Requires steady-state hypervolume optimization. Tests SMS-EMOA's one-by-one replacement strategy. Expected: Excellent hypervolume performance with small population.",
+    "name": "SMS-EMOA Steady State Test - Hypervolume Optimization",
+    "description": "Bi-objective problem optimized for SMS-EMOA's steady-state evolution and hypervolume-based selection. Tests S-metric selection and convergence behavior.",
+    "type": "Hypervolume Test Problem",
     "variables": [
       {
         "name": "x1",
         "type": "Real",
-        "lower_bound": 0.0,
-        "upper_bound": 1.0,
-        "initial_value": 0.5
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
       },
       {
         "name": "x2",
         "type": "Real",
-        "lower_bound": 0.0,
-        "upper_bound": 1.0,
-        "initial_value": 0.5
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
       }
     ],
     "objectives": [
       {
         "name": "f1_hypervolume",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "x1**2 + 0.1 * x2",
-        "description": "Hypervolume-optimized objective 1"
+        "weight": 0.5,
+        "function": "sum(xi^2 for xi in [x1, x2, x3]) + 0.1 * sin(5 * x1) + 0.1 * sin(5 * x2)"
       },
       {
-        "name": "f2_hypervolume",
+        "name": "f2_s_metric",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "0.1 * x1 + (x2 - 1)**2 + 1",
-        "description": "Hypervolume-optimized objective 2"
+        "weight": 0.5,
+        "function": "sum((xi - 1)^2 for xi in [x1, x2, x3]) + 0.05 * cos(8 * x3)"
       }
     ],
-    "constraints": [],
-    "type": "Custom Problem"
+    "constraints": [
+      {
+        "name": "c1_circular_constraint",
+        "type": "Inequality",
+        "function": "x1^2 + x2^2 - 3.0",
+        "operator": "<="
+      }
+    ]
   },
   "algorithm": {
-    "category": "Indicator-based",
+    "category": "Steady-state",
     "name": "SMS-EMOA",
     "parameters": {
-      "population_size": 20,
-      "n_generations": 500,
-      "seed": 1
+      "population_size": 50,
+      "n_generations": 1000,
+      "seed": 987,
+      "selection": "hypervolume"
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -52,21 +65,19 @@
     },
     "mutation": {
       "operator": "Polynomial Mutation",
-      "probability": 0.1,
+      "probability": 0.333,
       "eta": 20.0
     },
     "termination": {
-      "max_evaluations": 10000,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 50000,
+      "convergence_tolerance": 1e-6,
       "enable_convergence": true,
       "verbose": true
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "SMS-EMOA",
-    "problem_type": "Bi-objective steady-state",
-    "expected_performance": "Excellent - High hypervolume with small population"
+    "description": "SMS-EMOA steady-state hypervolume optimization test benchmark"
   }
 }

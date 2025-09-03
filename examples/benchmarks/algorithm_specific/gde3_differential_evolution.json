@@ -1,71 +1,104 @@
 {
   "problem": {
-    "name": "GDE3 Differential Evolution Test",
-    "description": "Problem designed for GDE3: Requires differential evolution operators for optimal performance. Tests GDE3's mutation and crossover strategies. Expected: Good convergence with DE-style exploration.",
+    "name": "GDE3 Differential Evolution Test - Engineering Problem",
+    "description": "Complex engineering optimization problem designed for GDE3's differential evolution operators. Features mixed variable constraints and non-linear objective landscape.",
+    "type": "Engineering Optimization",
     "variables": [
       {
-        "name": "x1",
+        "name": "thickness",
         "type": "Real",
-        "lower_bound": -5.0,
-        "upper_bound": 5.0,
-        "initial_value": 0.0
+        "lower_bound": 0.1,
+        "upper_bound": 2.0,
+        "initial_value": 0.5
       },
       {
-        "name": "x2",
+        "name": "width",
         "type": "Real",
-        "lower_bound": -5.0,
-        "upper_bound": 5.0,
-        "initial_value": 0.0
+        "lower_bound": 0.1,
+        "upper_bound": 10.0,
+        "initial_value": 2.0
       },
       {
-        "name": "x3",
+        "name": "height",
         "type": "Real",
-        "lower_bound": -5.0,
+        "lower_bound": 0.1,
+        "upper_bound": 10.0,
+        "initial_value": 2.0
+      },
+      {
+        "name": "material_grade",
+        "type": "Real",
+        "lower_bound": 1.0,
         "upper_bound": 5.0,
-        "initial_value": 0.0
+        "initial_value": 3.0
       }
     ],
     "objectives": [
       {
-        "name": "f1_multimodal",
+        "name": "weight_minimization",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "x1**2 + x2**2 + 0.1 * sin(5 * x1) * sin(5 * x2)",
-        "description": "Multi-modal objective suitable for DE"
+        "weight": 0.6,
+        "function": "thickness * width * height * material_grade * 7.85"
       },
       {
-        "name": "f2_rugged",
+        "name": "stress_factor",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "(x1 - 2)**2 + (x2 - 1)**2 + x3**2 + 0.1 * cos(3 * x1) * cos(3 * x2)",
-        "description": "Rugged landscape for DE exploration"
+        "weight": 0.4,
+        "function": "1000 * material_grade / (thickness * width^2 / 6) + 0.1 * height"
       }
     ],
-    "constraints": [],
-    "type": "Custom Problem"
+    "constraints": [
+      {
+        "name": "c1_aspect_ratio",
+        "type": "Inequality",
+        "function": "width / height - 5.0",
+        "operator": "<="
+      },
+      {
+        "name": "c2_minimum_section",
+        "type": "Inequality",
+        "function": "0.05 - thickness * width",
+        "operator": "<="
+      },
+      {
+        "name": "c3_material_compatibility",
+        "type": "Inequality",
+        "function": "thickness + width - material_grade * 2",
+        "operator": "<="
+      }
+    ]
   },
   "algorithm": {
     "category": "Differential Evolution",
     "name": "GDE3",
     "parameters": {
-      "population_size": 50,
-      "F": 0.5,
-      "CR": 0.9,
-      "n_generations": 200,
-      "seed": 1
+      "population_size": 100,
+      "n_generations": 500,
+      "seed": 654,
+      "variant": "DE/rand/1/bin"
+    },
+    "crossover": {
+      "operator": "DE (Differential Evolution)",
+      "probability": 0.8,
+      "CR": 0.3,
+      "F": 0.7
+    },
+    "mutation": {
+      "operator": "DE Mutation",
+      "probability": 1.0,
+      "eta": 20.0,
+      "strategy": "rand1"
     },
     "termination": {
-      "max_evaluations": 10000,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 50000,
+      "convergence_tolerance": 1e-5,
       "enable_convergence": true,
       "verbose": true
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "GDE3",
-    "problem_type": "Bi-objective multi-modal",
-    "expected_performance": "Excellent - Good exploration of rugged landscapes via DE operators"
+    "description": "GDE3 differential evolution operators test with engineering problem"
   }
 }

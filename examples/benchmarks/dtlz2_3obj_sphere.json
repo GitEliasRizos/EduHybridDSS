@@ -1,58 +1,93 @@
 {
-  "name": "DTLZ2 - 3-Objective Spherical Front", 
-  "description": "3-objective DTLZ2 benchmark with spherical Pareto front. Easier than DTLZ1, good for testing 3D visualization. Expected: 50-200 solutions on sphere surface.",
-  "variables": [
-    {
-      "name": "x1",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+  "problem": {
+    "name": "DTLZ2 - 3-Objective Spherical Front", 
+    "description": "3-objective DTLZ2 benchmark with spherical Pareto front. Easier than DTLZ1, good for testing 3D visualization. Expected: 50-200 solutions on sphere surface.",
+    "type": "Test Function",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2", 
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2)"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
+      },
+      {
+        "name": "f3",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * sin(x1 * pi / 2)"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Reference Point-based",
+    "name": "NSGA-III",
+    "parameters": {
+      "population_size": 91,
+      "n_generations": 300,
+      "seed": 42
     },
-    {
-      "name": "x2", 
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
     },
-    {
-      "name": "x3",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
     },
-    {
-      "name": "x4",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "termination": {
+      "max_evaluations": 27300,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 3,
+      "n_partitions": 12
     }
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2)",
-      "description": "First objective"
-    },
-    {
-      "name": "f2",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 2)",
-      "description": "Second objective"
-    },
-    {
-      "name": "f3",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * sin(x1 * 3.14159 / 2)",
-      "description": "Third objective"
-    }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "DTLZ2 benchmark - 3-objective spherical front test"
+  }
 }

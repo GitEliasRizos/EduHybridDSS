@@ -1,66 +1,94 @@
 {
-  "name": "Constrained ZDT1 - Discrete Solutions",
-  "description": "Modified ZDT1 with constraints to create discrete Pareto front. Tests constrained optimization with reduced solution set. Expected: 5-15 solutions only.",
-  "variables": [
-    {
-      "name": "x1",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+  "problem": {
+    "name": "Constrained ZDT1 - Discrete Solutions",
+    "description": "Modified ZDT1 with constraints to create discrete Pareto front. Tests constrained optimization with reduced solution set. Expected: 5-15 solutions only.",
+    "type": "Test Function",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5)"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "discrete_constraint_1",
+        "type": "<=",
+        "function": "x1**2 + x2**2",
+        "value": 0.5
+      },
+      {
+        "name": "discrete_constraint_2", 
+        "type": ">=",
+        "function": "x1 + x2 + x3",
+        "value": 0.8
+      },
+      {
+        "name": "discrete_constraint_3",
+        "type": "<=",
+        "function": "abs(x1 - 0.3) + abs(x2 - 0.3)",
+        "value": 0.4
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 300,
+      "seed": 42
     },
-    {
-      "name": "x2",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
     },
-    {
-      "name": "x3",
-      "type": "Real",
-      "lower_bound": 0.0,
-      "upper_bound": 1.0,
-      "initial_value": 0.5
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 30000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     }
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "x1",
-      "description": "First objective - ZDT1 style"
-    },
-    {
-      "name": "f2",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5)",
-      "description": "Second objective - ZDT1 style"
-    }
-  ],
-  "constraints": [
-    {
-      "name": "discrete_constraint_1",
-      "type": "<=",
-      "function": "x1**2 + x2**2",
-      "value": 0.5,
-      "description": "Circular constraint eliminating many solutions"
-    },
-    {
-      "name": "discrete_constraint_2", 
-      "type": ">=",
-      "function": "x1 + x2 + x3",
-      "value": 0.8,
-      "description": "Sum constraint"
-    },
-    {
-      "name": "discrete_constraint_3",
-      "type": "<=",
-      "function": "abs(x1 - 0.3) + abs(x2 - 0.3)",
-      "value": 0.4,
-      "description": "Manhattan distance constraint"
-    }
-  ]
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Constrained ZDT1 benchmark - discrete Pareto front test"
+  }
 }

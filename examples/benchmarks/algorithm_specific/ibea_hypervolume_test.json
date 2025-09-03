@@ -1,87 +1,97 @@
 {
   "problem": {
-    "name": "IBEA Indicator-Based Test",
-    "description": "Problem designed for IBEA: Emphasizes hypervolume indicator performance. Tests IBEA's indicator-based selection without explicit Pareto ranking. Expected: High-quality hypervolume solutions.",
+    "name": "IBEA Hypervolume Indicator Test - Convergence Challenge",
+    "description": "Multi-objective problem designed to test IBEA's indicator-based selection with hypervolume indicator. Features challenging convergence characteristics and diverse Pareto front shapes.",
+    "type": "Indicator-based Test",
     "variables": [
       {
         "name": "x1",
         "type": "Real",
         "lower_bound": -1.0,
-        "upper_bound": 2.0,
-        "initial_value": 0.5
+        "upper_bound": 1.0,
+        "initial_value": 0.0
       },
       {
         "name": "x2",
         "type": "Real",
         "lower_bound": -1.0,
-        "upper_bound": 2.0,
-        "initial_value": 0.5
+        "upper_bound": 1.0,
+        "initial_value": 0.0
       },
       {
         "name": "x3",
         "type": "Real",
         "lower_bound": -1.0,
-        "upper_bound": 2.0,
-        "initial_value": 0.5
+        "upper_bound": 1.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": -1.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.0
       }
     ],
     "objectives": [
       {
         "name": "f1_indicator",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "(x1 - 0.5)**2 + (x2 - 0.5)**2 + 0.1 * x3**2",
-        "description": "Hypervolume-friendly objective 1"
+        "weight": 0.5,
+        "function": "sum(xi^2 for xi in [x1, x2]) + 0.2 * sum(sin(10 * xi) for xi in [x3, x4])"
       },
       {
-        "name": "f2_indicator",
+        "name": "f2_hypervolume_challenge",
         "direction": "Minimize",
-        "weight": 1.0,
-        "function": "(x1 + 0.5)**2 + (x2 + 0.5)**2 + 0.1 * (x3 - 1)**2",
-        "description": "Hypervolume-friendly objective 2"
+        "weight": 0.5,
+        "function": "sum((xi + 0.5)^2 for xi in [x1, x2]) + 0.1 * sum(cos(12 * xi) for xi in [x3, x4])"
       }
     ],
     "constraints": [
       {
-        "name": "hypervolume_region",
-        "type": "<=",
-        "function": "x1**2 + x2**2",
-        "value": 2.0,
-        "description": "Constrains to good hypervolume region"
+        "name": "c1_sum_constraint",
+        "type": "Inequality",
+        "function": "x1 + x2 + x3 + x4 - 1.5",
+        "operator": "<="
+      },
+      {
+        "name": "c2_difference_constraint",
+        "type": "Inequality",
+        "function": "x1 - x2 + x3 - x4 + 0.8",
+        "operator": ">="
       }
-    ],
-    "type": "Custom Problem"
+    ]
   },
   "algorithm": {
     "category": "Indicator-based",
     "name": "IBEA",
     "parameters": {
-      "population_size": 50,
-      "n_generations": 200,
-      "seed": 1
+      "population_size": 100,
+      "n_generations": 400,
+      "seed": 147,
+      "indicator": "hv",
+      "kappa": 0.05
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
       "probability": 0.9,
-      "eta": 15.0
+      "eta": 20.0
     },
     "mutation": {
       "operator": "Polynomial Mutation",
-      "probability": 0.1,
-      "eta": 20.0
+      "probability": 0.25,
+      "eta": 15.0
     },
     "termination": {
-      "max_evaluations": 10000,
-      "convergence_tolerance": 0.0,
+      "max_evaluations": 40000,
+      "convergence_tolerance": 1e-5,
       "enable_convergence": true,
       "verbose": true
     }
   },
   "metadata": {
-    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "algorithm_optimized": "IBEA",
-    "problem_type": "Bi-objective with constraint (hypervolume focus)",
-    "expected_performance": "Excellent - High hypervolume values, good knee point finding"
+    "description": "IBEA hypervolume indicator-based selection test benchmark"
   }
 }

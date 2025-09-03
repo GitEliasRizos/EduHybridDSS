@@ -1,35 +1,43 @@
 """
-ELI5: Algorithm Manager - Like a Smart Tool Shop for Solving Problems! 🔧
+Algorithm Manager - Core functionality for managing optimization algorithms
 
-Think of this like a magical toolshed that has different power tools for solving
-different types of problems. When you need to optimize something (like finding
-the best design), this manager helps you pick the right tool and configure it properly.
+This module provides the AlgorithmManager class which handles the creation and
+configuration of multi-objective optimization algorithms from PyMOO. It serves
+as the bridge between GUI algorithm configuration and PyMOO algorithm instances.
 
-Just like you wouldn't use a hammer to cut wood, different optimization problems
-need different algorithms (tools):
+Key Features:
+- Support for multiple Multi-Objective Optimization algorithms (NSGA-II, NSGA-III, SPEA2, MOEA/D, RVEA)
+- Crossover operator configuration (SBX, PCX, UX)
+- Mutation operator configuration (Polynomial, Gaussian)
+- Reference direction generation for many-objective problems
+- Population sampling strategies
+- Repair operators for integer/binary variable constraints  | # TODO: Needs work, fixes and testing
+- Termination criteria configuration
 
-🧬 NSGA-II: Like a versatile Swiss Army knife - good for most 2-3 objective problems
-🎯 NSGA-III: Like a precision laser cutter - great for 4+ objectives (many-objective)
-🏗️ SPEA2: Like a specialized construction tool - stores best solutions in archives
-🧩 MOEA/D: Like a puzzle solver - breaks big problems into smaller pieces
-📐 RVEA: Like a compass and map - uses reference directions to navigate solution space
+The AlgorithmManager automatically selects appropriate operators and configurations
+based on the problem characteristics (number of objectives, variable types) and
+user preferences specified through the GUI.
 
-This file is like having an expert shop keeper who:
-1. Asks: "What kind of problem do you have?"
-2. Recommends: "You should use this algorithm"
-3. Sets it up: "Let me configure the right settings for you"
-4. Delivers: "Here's your perfectly tuned optimization tool!"
+Supported Algorithms:
+    - NSGA-II: Fast Non-dominated Sorting Genetic Algorithm II
+    - NSGA-III: NSGA-II extension for many-objective problems
+    - SPEA2: Strength Pareto Evolutionary Algorithm 2
+    - MOEA/D: Multi-Objective Evolutionary Algorithm based on Decomposition
+    - RVEA: Reference Vector guided Evolutionary Algorithm
+
+Classes:
+    AlgorithmManager: Main interface for algorithm creation and management
+    IntegerBinaryRepair: Repair operator for discrete variable constraints | # TODO: Needs work, fixes and testing
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-# ELI5: Import our different optimization tools (algorithms)
-from pymoo.algorithms.moo.nsga2 import NSGA2    # The versatile Swiss Army knife
-from pymoo.algorithms.moo.nsga3 import NSGA3    # The precision laser cutter
-from pymoo.algorithms.moo.spea2 import SPEA2    # The archive construction tool
-from pymoo.algorithms.moo.moead import MOEAD    # The puzzle piece solver
-from pymoo.algorithms.moo.rvea import RVEA      # The compass and map navigator
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.algorithms.moo.nsga3 import NSGA3
+from pymoo.algorithms.moo.spea2 import SPEA2
+from pymoo.algorithms.moo.moead import MOEAD
+from pymoo.algorithms.moo.rvea import RVEA
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.crossover.pcx import PCX
 from pymoo.operators.crossover.ux import UX
@@ -288,6 +296,7 @@ class AlgorithmManager:
     def _create_repair_operator(self, problem_config):
         """Create repair operator for integer/binary variables"""
         from pymoo.core.repair import Repair
+        import numpy as np
         
         if not problem_config or 'variables' not in problem_config:
             return None

@@ -1,54 +1,51 @@
 """
-ELI5: Results Tab - Like the Awards Ceremony for Optimization! 🏆
+Results Tab - Display and analyze optimization results
 
-Think of this like the exciting finale of a competition where we announce the winners!
-After our optimization algorithms have been racing to find the best solutions,
-this is where we:
+This module provides the ResultsTab class which handles optimization execution,
+progress monitoring, and result visualization. It serves as the final stage
+of the optimization workflow where users run their configured problems and
+analyze the obtained results.
 
-🏁 SHOW THE RESULTS:
-   - Display all the winning solutions we found
-   - Create beautiful charts and graphs to see the results
-   - Make tables so you can sort and compare solutions
+Key Features:
+- Multi-threaded optimization execution to prevent GUI freezing  
+- Real-time progress monitoring with detailed status updates
+- Comprehensive result visualization (Pareto front, objective space plots)
+- Solution table with sortable columns and filtering capabilities
+- Export functionality for results and plots
+- Integration with matplotlib for high-quality visualizations
+- Error handling and user feedback mechanisms
 
-📊 MAKE IT PRETTY:
-   - Plot colorful graphs showing the Pareto front (the best solutions)  
-   - Create charts that help you understand the trade-offs
-   - Show progress bars while the optimization is running
+The ResultsTab coordinates with the ProblemManager and AlgorithmManager to
+execute optimizations and processes the returned results for user consumption.
+It uses Qt's signal-slot mechanism to provide responsive user interaction
+during potentially long-running optimizations.
 
-💾 SAVE THE GOODS:
-   - Export results to Excel so you can share them
-   - Save pretty charts as pictures
-   - Keep records of what worked best
+Classes:
+    OptimizationWorker: Background thread for optimization execution
+    ResultsTab: Main UI component for results display and management
 
-🔧 RUN THE SHOW:
-   - Start the optimization race when you click "Run"
-   - Show progress updates so you know it's working
-   - Handle any problems that come up gracefully
-
-It's like having a smart assistant who:
-1. Runs your optimization in the background
-2. Keeps you updated on progress with a progress bar
-3. Shows you beautiful results when done
-4. Helps you understand and export what you found
-
-Think of it as your optimization results dashboard - where science becomes visual!
+Workflow:
+    1. User clicks "Run Optimization"
+    2. OptimizationWorker thread is created and started
+    3. Progress updates are emitted and displayed to user
+    4. Upon completion, results are processed and visualized
+    5. User can explore results, export data, or run new optimizations
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-# ELI5: Import our result-display tools (like getting art supplies for charts)
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
                             QTableWidget, QTableWidgetItem, QHeaderView,
                             QPushButton, QLabel, QProgressBar, QTextEdit,
                             QTabWidget, QSplitter, QComboBox, QCheckBox,
-                            QSpinBox, QMessageBox, QFileDialog)
-from PyQt6.QtCore import Qt, pyqtSignal, QThread  # Threading and communication tools
-from PyQt6.QtGui import QFont  # Text formatting tools
-import matplotlib.pyplot as plt  # Chart making tools (like an art studio)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  # Chart display
-from matplotlib.figure import Figure  # Chart canvas
-import numpy as np  # Advanced math for processing results
+                            QSpinBox)
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QTimer
+from PyQt6.QtGui import QFont
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import numpy as np
 
 
 class OptimizationWorker(QThread):
@@ -323,20 +320,15 @@ class ResultsTab(QWidget):
         """Initialize the user interface"""
         layout = QVBoxLayout(self)
         
-        # Progress section (smaller)
+        # Progress section
         self._init_progress_section(layout)
         
-        # Results section (larger) 
+        # Results section
         self._init_results_section(layout)
-        
-        # Set stretch factors: progress gets 1, results gets 3 (3x taller)
-        layout.setStretchFactor(layout.itemAt(0).widget(), 1)  # Progress section
-        layout.setStretchFactor(layout.itemAt(1).widget(), 3)  # Results section
         
     def _init_progress_section(self, parent_layout):
         """Initialize progress tracking section"""
         progress_group = QGroupBox("Optimization Progress")
-        progress_group.setMaximumHeight(150)  # Limit height to keep compact
         layout = QVBoxLayout(progress_group)
         
         # Progress bar
@@ -350,7 +342,7 @@ class ResultsTab(QWidget):
         
         # Log text area
         self.log_text = QTextEdit()
-        self.log_text.setMaximumHeight(80)  # Reduced from 100 to 80
+        self.log_text.setMaximumHeight(100)
         self.log_text.setFont(QFont("Courier", 9))
         layout.addWidget(self.log_text)
         
@@ -488,17 +480,14 @@ class ResultsTab(QWidget):
         
         self.export_csv_btn = QPushButton("Export to CSV")
         self.export_csv_btn.clicked.connect(lambda: self._export_results("csv"))
-        self.export_csv_btn.setEnabled(False)  # Disabled until results are available
         buttons_layout.addWidget(self.export_csv_btn)
         
         self.export_json_btn = QPushButton("Export to JSON")
         self.export_json_btn.clicked.connect(lambda: self._export_results("json"))
-        self.export_json_btn.setEnabled(False)  # Disabled until results are available
         buttons_layout.addWidget(self.export_json_btn)
         
         self.export_excel_btn = QPushButton("Export to Excel")
         self.export_excel_btn.clicked.connect(lambda: self._export_results("excel"))
-        self.export_excel_btn.setEnabled(False)  # Disabled until results are available
         buttons_layout.addWidget(self.export_excel_btn)
         
         buttons_layout.addStretch()
@@ -557,11 +546,6 @@ class ResultsTab(QWidget):
         self.status_label.setText("Optimization completed successfully")
         self.results_tabs.setEnabled(True)
         
-        # Enable export buttons
-        self.export_csv_btn.setEnabled(True)
-        self.export_json_btn.setEnabled(True)
-        self.export_excel_btn.setEnabled(True)
-        
         # Update all result views
         self._update_summary()
         self._update_plot()
@@ -575,11 +559,6 @@ class ResultsTab(QWidget):
         self.progress_bar.setVisible(False)
         self.status_label.setText(f"Error: {error_message}")
         self.log_text.append(f"[ERROR] {error_message}")
-        
-        # Ensure export buttons are disabled on error
-        self.export_csv_btn.setEnabled(False)
-        self.export_json_btn.setEnabled(False)
-        self.export_excel_btn.setEnabled(False)
         
         # Emit signal to main window that optimization failed
         self.optimization_error.emit(error_message)
@@ -685,61 +664,10 @@ class ResultsTab(QWidget):
     def _export_results(self, format_type):
         """Export results to file"""
         if not self.results:
-            QMessageBox.warning(self, "No Results", "No optimization results available to export.")
             return
-        
-        try:
-            # Import export functions from utils
-            from utils.helpers import export_results_csv, export_results_json, export_results_excel
             
-            # Get filename from user
-            if format_type == "csv":
-                filename, _ = QFileDialog.getSaveFileName(
-                    self, "Export Results to CSV", "results.csv", "CSV files (*.csv)"
-                )
-                if filename:
-                    # Check export options
-                    include_objectives = self.export_objectives.isChecked()
-                    include_variables = self.export_variables.isChecked()
-                    success = export_results_csv(self.results, filename, 
-                                                include_objectives, include_variables)
-                    if success:
-                        self.log_text.append(f"[INFO] Results successfully exported to: {filename}")
-                        QMessageBox.information(self, "Export Successful", f"Results exported to:\n{filename}")
-                    else:
-                        self.log_text.append(f"[ERROR] Failed to export results to CSV")
-                        QMessageBox.critical(self, "Export Failed", "Failed to export results to CSV file.")
-                        
-            elif format_type == "json":
-                filename, _ = QFileDialog.getSaveFileName(
-                    self, "Export Results to JSON", "results.json", "JSON files (*.json)"
-                )
-                if filename:
-                    success = export_results_json(self.results, filename)
-                    if success:
-                        self.log_text.append(f"[INFO] Results successfully exported to: {filename}")
-                        QMessageBox.information(self, "Export Successful", f"Results exported to:\n{filename}")
-                    else:
-                        self.log_text.append(f"[ERROR] Failed to export results to JSON")
-                        QMessageBox.critical(self, "Export Failed", "Failed to export results to JSON file.")
-                        
-            elif format_type == "excel":
-                filename, _ = QFileDialog.getSaveFileName(
-                    self, "Export Results to Excel", "results.xlsx", "Excel files (*.xlsx)"
-                )
-                if filename:
-                    success = export_results_excel(self.results, filename)
-                    if success:
-                        self.log_text.append(f"[INFO] Results successfully exported to: {filename}")
-                        QMessageBox.information(self, "Export Successful", f"Results exported to:\n{filename}")
-                    else:
-                        self.log_text.append(f"[ERROR] Failed to export results to Excel")
-                        QMessageBox.critical(self, "Export Failed", "Failed to export results to Excel file.")
-            
-        except Exception as e:
-            error_msg = f"Error during export: {str(e)}"
-            self.log_text.append(f"[ERROR] {error_msg}")
-            QMessageBox.critical(self, "Export Error", error_msg)
+        # TODO: Implement actual export functionality
+        self.log_text.append(f"[INFO] Exporting results to {format_type.upper()} format...")
         
     def clear(self):
         """Clear all results and reset the UI"""
@@ -751,11 +679,6 @@ class ResultsTab(QWidget):
         self.summary_text.setPlainText("No results available yet. Run an optimization to see the summary.")
         self.results_table.setRowCount(0)
         self.results_tabs.setEnabled(False)
-        
-        # Disable export buttons
-        self.export_csv_btn.setEnabled(False)
-        self.export_json_btn.setEnabled(False)
-        self.export_excel_btn.setEnabled(False)
         
         # Clear plot
         self.plot_canvas.fig.clear()

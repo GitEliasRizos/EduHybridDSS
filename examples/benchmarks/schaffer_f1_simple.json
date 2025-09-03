@@ -1,30 +1,61 @@
 {
-  "name": "Schaffer's F1 - Simple Bi-objective",
-  "description": "Schaffer's first function - simple single-variable bi-objective problem. Good for beginners. Expected: 20-50 solutions on convex front.",
-  "variables": [
-    {
-      "name": "x",
-      "type": "Real",
-      "lower_bound": -10.0,
-      "upper_bound": 10.0,
-      "initial_value": 0.0
-    }
-  ],
-  "objectives": [
-    {
-      "name": "f1",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "x**2",
-      "description": "First objective - quadratic"
+  "problem": {
+    "name": "Schaffer's F1 - Simple Bi-objective",
+    "description": "Schaffer's first function - simple single-variable bi-objective problem. Good for beginners. Expected: 20-50 solutions on convex front.",
+    "type": "Test Function",
+    "variables": [
+      {
+        "name": "x",
+        "type": "Real",
+        "lower_bound": -10.0,
+        "upper_bound": 10.0,
+        "initial_value": 0.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x**2"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(x - 2)**2"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 100,
+      "seed": 42
     },
-    {
-      "name": "f2",
-      "direction": "Minimize",
-      "weight": 1.0,
-      "function": "(x - 2)**2",
-      "description": "Second objective - shifted quadratic"
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 5000,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
     }
-  ],
-  "constraints": []
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "Schaffer F1 benchmark - simple single-variable bi-objective test"
+  }
 }

@@ -1,68 +1,50 @@
 """
-ELI5: Multi-Criteria Decision Analysis (MCDA) - Like a Smart Decision Helper! 🤔
+Multi-Criteria Decision Analysis (MCDA) Module
 
-Think of this like having a really smart friend who helps you make tough decisions
-when you have lots of good options and can't pick just one.
+This module provides AHP (Analytic Hierarchy Process) and TOPSIS (Technique for 
+Order of Preference by Similarity to Ideal Solution) methods to analyze and rank
+PyMOO optimization results based on multiple criteria.
 
-Imagine you're trying to choose the best apartment to rent. You have 10 apartments
-and you care about: price, location, size, and safety. But some are cheap but far,
-others are expensive but perfect location. How do you choose?
+Key Features:
+- AHP implementation with pairwise comparison matrices
+- TOPSIS implementation with ideal and anti-ideal solutions
+- Automatic normalization and weight calculation
+- Comprehensive ranking and scoring
+- Integration with PyMOO results
+- Interactive GUI for method selection and parameter configuration
 
-This is exactly what MCDA does for optimization results! After the optimizer
-finds many good solutions, MCDA helps you pick THE BEST ONE based on what
-you care about most.
-
-Two Smart Decision Methods:
-
-🏆 AHP (Analytic Hierarchy Process):
-   Like asking "How much more important is X than Y?"
-   - You compare things pair by pair: "Is price 3x more important than size?"
-   - The computer figures out the perfect weights for everything
-   - Then ranks all solutions based on your preferences
-
-🎯 TOPSIS (Technique for Order Preference):
-   Like finding what's closest to your "perfect world" solution
-   - Imagines the absolute best possible solution (ideal)
-   - Imagines the absolute worst possible solution (anti-ideal)
-   - Picks solutions closest to perfect and far from terrible
-
-It's like having a wise advisor who listens to what you want and points
-to the best choice: "Based on what you told me matters most, THIS is your answer!"
+Classes:
+    AHPAnalyzer: Implements Analytic Hierarchy Process
+    TOPSISAnalyzer: Implements TOPSIS method
+    MCDAManager: Main interface for MCDA analysis
 
 Author: Elias Rizos [it21490]
 Version: 1.0.0
 """
 
-# ELI5: Import our decision-making tools
-import numpy as np  # Advanced math for calculations (like a smart calculator)
-import pandas as pd  # Data tables for organizing results (like a smart spreadsheet)
-from typing import List, Dict, Tuple, Optional, Union  # Type labels
-import math  # Basic math functions
+import numpy as np
+import pandas as pd
+from typing import List, Dict, Tuple, Optional, Union
+import math
 
 
 class AHPAnalyzer:
     """
-    ELI5: AHP Analyzer - Like a Wise Judge Comparing Things! ⚖️
+    Analytic Hierarchy Process (AHP) Implementation
     
-    This is like having a judge who's really good at comparing different things.
+    AHP is a structured technique for organizing and analyzing complex decisions,
+    based on mathematics and psychology. It helps decision makers find the choice
+    that best suits their goal and understanding of the problem.
     
-    Imagine you're a judge in a cooking contest with 3 categories:
-    - Taste (how delicious?)
-    - Presentation (how pretty?)  
-    - Creativity (how original?)
-    
-    But taste is 5x more important to you than looks, and creativity is 2x more
-    important than looks. AHP helps you:
-    1. Compare everything pair by pair
-    2. Calculate the perfect importance weights
-    3. Score each dish fairly
-    4. Crown the winner!
-    
-    It's math magic that turns your preferences into fair, consistent rankings!
+    Key Steps:
+    1. Create pairwise comparison matrix
+    2. Calculate priority weights
+    3. Check consistency ratio
+    4. Score alternatives based on weights
     """
     
     def __init__(self):
-        """ELI5: Set up our wise judge (initialize the AHP analyzer)"""
+        """Initialize AHP analyzer"""
         self.criteria_weights = None
         self.consistency_ratio = None
         self.pairwise_matrix = None

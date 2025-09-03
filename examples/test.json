@@ -75,12 +75,12 @@
     "reference_directions": {
       "type": "Das-Dennis",
       "n_dim": 3,
-      "n_partitions": 12
+      "n_partitions": 13
     }
   },
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "created_date": "2025-09-01T15:51:59.765518"
+    "created_date": "2025-09-03T22:29:13.909840"
   }
 }

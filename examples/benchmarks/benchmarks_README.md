@@ -33,8 +33,8 @@ Easy problems for beginners and algorithm validation. **Expected: 20-100 solutio
 
 | Problem | Variables | Objectives | Constraints | Pareto Front Type | Difficulty |
 |---------|-----------|------------|-------------|-------------------|------------|
-| ZDT1 | 3 | 2 | 0 | Convex continuous | Easy |
-| ZDT2 | 3 | 2 | 0 | Concave continuous | Easy |
+|   ZDT1  |     3     |     2      |      0      | Convex continuous |    Easy    |
+|   ZDT2  |     3     |     2      | 0 | Concave continuous | Easy |
 | ZDT3 | 3 | 2 | 0 | Discontinuous | Medium |
 | DTLZ1 | 5 | 3 | 0 | Linear continuous | Hard |
 | DTLZ2 | 4 | 3 | 0 | Spherical continuous | Medium |

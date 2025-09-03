@@ -1,0 +1,112 @@
+{
+  "problem": {
+    "name": "NSGA-III Many-Objective DTLZ2",
+    "description": "4-objective DTLZ2 optimized for NSGA-III: Tests reference direction mechanism and many-objective optimization. Use reference directions with H1=6 for 35 directions. Expected: Well-distributed solutions on 4D sphere.",
+    "type": "Custom Problem",
+    "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x4",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x5",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2) * cos(0.3 * 3.14159 / 2)",
+      "description": "First objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2) * sin(0.3 * 3.14159 / 2)",
+      "description": "Second objective"
+    },
+    {
+      "name": "f3",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 2)",
+      "description": "Third objective"
+    },
+    {
+      "name": "f4",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * sin(x1 * 3.14159 / 2)",
+      "description": "Fourth objective"
+    }
+  ],
+  "constraints": []
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms",
+    "name": "NSGA-III",
+    "parameters": {
+      "population_size": 35,
+      "n_generations": 200,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 7000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 4,
+      "n_partitions": 6
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "NSGA-III",
+    "problem_type": "Many-objective (4D)",
+    "expected_performance": "Excellent - Well-distributed solutions on 4D sphere"
+  }
+}

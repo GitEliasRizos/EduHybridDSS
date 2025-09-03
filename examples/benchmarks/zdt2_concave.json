@@ -1,0 +1,44 @@
+{
+  "name": "ZDT2 - Concave Pareto Front",
+  "description": "Classic ZDT2 benchmark with concave Pareto front. Tests algorithm's ability to maintain diversity along non-convex fronts. Expected: 50-100 solutions on continuous front.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2",
+      "type": "Real", 
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "x1",
+      "description": "First objective - simply x1"
+    },
+    {
+      "name": "f2", 
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**2)",
+      "description": "Second objective - creates concave front"
+    }
+  ],
+  "constraints": []
+}

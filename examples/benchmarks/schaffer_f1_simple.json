@@ -1,0 +1,30 @@
+{
+  "name": "Schaffer's F1 - Simple Bi-objective",
+  "description": "Schaffer's first function - simple single-variable bi-objective problem. Good for beginners. Expected: 20-50 solutions on convex front.",
+  "variables": [
+    {
+      "name": "x",
+      "type": "Real",
+      "lower_bound": -10.0,
+      "upper_bound": 10.0,
+      "initial_value": 0.0
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "x**2",
+      "description": "First objective - quadratic"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(x - 2)**2",
+      "description": "Second objective - shifted quadratic"
+    }
+  ],
+  "constraints": []
+}

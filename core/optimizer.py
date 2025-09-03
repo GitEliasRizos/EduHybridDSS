@@ -3,7 +3,24 @@ Optimizer - Core functionality for running optimizations
 
 This module provides the Optimizer class which serves as the central coordinator
 for running multi-objective optimization tasks. It integrates with PyMOO to
-execute optimizations while providing progress monitoring, result processing,
+execute optimizations w        # Get results
+        objectives = self.results.F
+        variables = self.results.X
+        
+        # Check for None results
+        if objectives is None or variables is None:
+            return {
+                'pareto_front': [],
+                'pareto_set': [],
+                'variables': [],
+                'convergence': getattr(self.results, 'history', {}).get('f_min', []),
+            }
+        
+        # Ensure arrays are 2D
+        if objectives.ndim == 1:
+            objectives = objectives.reshape(-1, 1)
+        if variables.ndim == 1:
+            variables = variables.reshape(-1, 1)iding progress monitoring, result processing,
 and state management capabilities.
 
 Key Features:
@@ -119,25 +136,36 @@ class OptimizationCallback(Callback):
             # Get objective values from all individuals in population
             F = np.array([ind.F for ind in algorithm.pop])
             
-            if F.ndim == 2 and F.shape[0] > 0:
-                # Multi-objective case: use first objective for progress tracking
-                # This provides a consistent progress metric across problem types
-                f_vals = F[:, 0] if F.shape[1] > 0 else F.flatten()
+            # Check if F is valid
+            if F is not None and hasattr(F, 'ndim'):
+                if F.ndim == 2 and F.shape[0] > 0:
+                    # Multi-objective case: use first objective for progress tracking
+                    # This provides a consistent progress metric across problem types
+                    f_vals = F[:, 0] if F.shape[1] > 0 else F.flatten()
+                else:
+                    # Single objective or flattened array case
+                    f_vals = F.flatten()
+                    
+                # Calculate and store population statistics if valid data exists
+                if len(f_vals) > 0:
+                    self.history['f_min'].append(np.min(f_vals))
+                    self.history['f_avg'].append(np.mean(f_vals))
+                    self.history['f_max'].append(np.max(f_vals))
+                else:
+                    # Handle empty case
+                    self.history['f_min'].append(float('inf'))
+                    self.history['f_avg'].append(float('inf'))
+                    self.history['f_max'].append(float('inf'))
             else:
-                # Single objective or flattened array case
-                f_vals = F.flatten()
-                
-            # Calculate and store population statistics if valid data exists
-            if len(f_vals) > 0:
-                self.history['f_min'].append(np.min(f_vals))
-                self.history['f_avg'].append(np.mean(f_vals))
-                self.history['f_max'].append(np.max(f_vals))
-            else:
-                # Handle edge case of empty or invalid objective values
-                self.history['f_min'].append(np.inf)
-                self.history['f_avg'].append(np.inf)
-                self.history['f_max'].append(np.inf)
+                # Handle None F case
+                self.history['f_min'].append(float('inf'))
+                self.history['f_avg'].append(float('inf'))
+                self.history['f_max'].append(float('inf'))
         else:
+            # Handle empty population case
+            self.history['f_min'].append(float('inf'))
+            self.history['f_avg'].append(float('inf'))
+            self.history['f_max'].append(float('inf'))
             self.history['f_min'].append(np.inf)
             self.history['f_avg'].append(np.inf)
             self.history['f_max'].append(np.inf)

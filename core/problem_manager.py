@@ -24,10 +24,261 @@ Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
+import ast
+import math
 import numpy as np
+import sys
+import os
+import operator
+from typing import Dict, Any, Union
 from pymoo.core.problem import Problem
 from pymoo.problems.functional import FunctionalProblem
 from pymoo.core.variable import Real, Integer, Binary
+
+
+class SecurityError(Exception):
+    """Custom exception for security-related evaluation errors."""
+    pass
+
+
+class SecureMathEvaluator:
+    """
+    Secure mathematical expression evaluator using AST parsing.
+    Only allows whitelisted mathematical operations and functions.
+    """
+    
+    # Allowed operators
+    SAFE_OPERATORS = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod,
+        ast.Pow: operator.pow,
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }
+    
+    # Allowed mathematical functions
+    SAFE_FUNCTIONS = {
+        # Basic math functions
+        'abs': abs,
+        'round': round,
+        'min': min,
+        'max': max,
+        'sum': sum,
+        
+        # Math module functions
+        'sin': math.sin,
+        'cos': math.cos,
+        'tan': math.tan,
+        'asin': math.asin,
+        'acos': math.acos,
+        'atan': math.atan,
+        'atan2': math.atan2,
+        'sinh': math.sinh,
+        'cosh': math.cosh,
+        'tanh': math.tanh,
+        'exp': math.exp,
+        'log': math.log,
+        'log2': math.log2,
+        'log10': math.log10,
+        'sqrt': math.sqrt,
+        'pow': pow,
+        'ceil': math.ceil,
+        'floor': math.floor,
+        'fabs': math.fabs,
+        
+        # Constants
+        'pi': math.pi,
+        'e': math.e,
+        'tau': math.tau,
+        
+        # Numpy equivalents for compatibility
+        'np': type('np', (), {
+            'sin': np.sin,
+            'cos': np.cos,
+            'tan': np.tan,
+            'arcsin': np.arcsin,
+            'arccos': np.arccos,
+            'arctan': np.arctan,
+            'arctan2': np.arctan2,
+            'sinh': np.sinh,
+            'cosh': np.cosh,
+            'tanh': np.tanh,
+            'exp': np.exp,
+            'exp2': np.exp2,
+            'log': np.log,
+            'log2': np.log2,
+            'log10': np.log10,
+            'sqrt': np.sqrt,
+            'power': np.power,
+            'abs': np.abs,
+            'ceil': np.ceil,
+            'floor': np.floor,
+            'round': np.round,
+            'min': np.min,
+            'max': np.max,
+            'sum': np.sum,
+            'mean': np.mean,
+            'std': np.std,
+            'pi': np.pi,
+            'e': np.e,
+        }),
+    }
+    
+    def __init__(self, max_expression_length: int = 1000, max_recursion_depth: int = 50):
+        self.max_expression_length = max_expression_length
+        self.max_recursion_depth = max_recursion_depth
+        self._recursion_depth = 0
+    
+    def evaluate(self, expression: str, variables: Dict[str, float]) -> float:
+        """Safely evaluate a mathematical expression."""
+        if not isinstance(expression, str):
+            raise TypeError("Expression must be a string")
+            
+        if len(expression) > self.max_expression_length:
+            raise SecurityError(f"Expression too long (max {self.max_expression_length} chars)")
+            
+        if not expression.strip():
+            raise ValueError("Expression cannot be empty")
+        
+        try:
+            tree = ast.parse(expression.strip(), mode='eval')
+        except SyntaxError as e:
+            raise ValueError(f"Invalid mathematical syntax: {e}")
+        
+        self._recursion_depth = 0
+        result = self._eval_node(tree.body, variables)
+        
+        if not isinstance(result, (int, float, np.number)):
+            raise TypeError(f"Expression must evaluate to a number, got {type(result)}")
+            
+        result = float(result)
+        if math.isnan(result) or math.isinf(result):
+            raise ValueError("Expression produced invalid numerical result (NaN or Inf)")
+            
+        return result
+    
+    def _eval_node(self, node: ast.AST, variables: Dict[str, float]) -> Union[float, int]:
+        """Recursively evaluate an AST node safely."""
+        self._recursion_depth += 1
+        if self._recursion_depth > self.max_recursion_depth:
+            raise RecursionError("Expression too complex (recursion limit exceeded)")
+        
+        try:
+            # Numbers
+            if isinstance(node, ast.Constant):
+                if isinstance(node.value, (int, float)):
+                    return node.value
+                else:
+                    raise SecurityError(f"Only numeric constants allowed, found {type(node.value)}")
+            
+            # For Python < 3.8 compatibility 
+            elif isinstance(node, ast.Num):
+                return node.n
+            
+            # Variables
+            elif isinstance(node, ast.Name):
+                if node.id in variables:
+                    return variables[node.id]
+                elif node.id in self.SAFE_FUNCTIONS:
+                    return self.SAFE_FUNCTIONS[node.id]
+                else:
+                    raise SecurityError(f"Unknown variable or function: {node.id}")
+            
+            # Attribute access (np.pi, np.e, etc.)
+            elif isinstance(node, ast.Attribute):
+                if isinstance(node.value, ast.Name) and node.value.id == 'np':
+                    attr_name = node.attr
+                    np_module = self.SAFE_FUNCTIONS.get('np')
+                    
+                    if not hasattr(np_module, attr_name):
+                        raise SecurityError(f"numpy attribute {attr_name} not allowed")
+                    
+                    return getattr(np_module, attr_name)
+                else:
+                    raise SecurityError("Only np.* attribute access allowed")
+            
+            # Binary operations
+            elif isinstance(node, ast.BinOp):
+                if type(node.op) not in self.SAFE_OPERATORS:
+                    raise SecurityError(f"Operator {type(node.op).__name__} not allowed")
+                
+                left = self._eval_node(node.left, variables)
+                right = self._eval_node(node.right, variables) 
+                
+                # Division by zero check
+                if isinstance(node.op, ast.Div) and right == 0:
+                    raise ValueError("Division by zero")
+                
+                return self.SAFE_OPERATORS[type(node.op)](left, right)
+            
+            # Unary operations
+            elif isinstance(node, ast.UnaryOp):
+                if type(node.op) not in self.SAFE_OPERATORS:
+                    raise SecurityError(f"Unary operator {type(node.op).__name__} not allowed")
+                
+                operand = self._eval_node(node.operand, variables)
+                return self.SAFE_OPERATORS[type(node.op)](operand)
+            
+            # Function calls
+            elif isinstance(node, ast.Call):
+                # Handle simple function calls (sin, cos, etc.)
+                if isinstance(node.func, ast.Name):
+                    func_name = node.func.id
+                    if func_name not in self.SAFE_FUNCTIONS:
+                        raise SecurityError(f"Function {func_name} not allowed")
+                    
+                    # Evaluate arguments
+                    args = [self._eval_node(arg, variables) for arg in node.args]
+                    
+                    # Check for keyword arguments (not allowed for security)
+                    if node.keywords:
+                        raise SecurityError("Keyword arguments not allowed in functions")
+                    
+                    try:
+                        return self.SAFE_FUNCTIONS[func_name](*args)
+                    except Exception as e:
+                        raise ValueError(f"Error calling {func_name}: {e}")
+                
+                # Handle attribute access (np.log2, np.sin, etc.)
+                elif isinstance(node.func, ast.Attribute):
+                    if isinstance(node.func.value, ast.Name) and node.func.value.id == 'np':
+                        attr_name = node.func.attr
+                        np_module = self.SAFE_FUNCTIONS.get('np')
+                        
+                        if not hasattr(np_module, attr_name):
+                            raise SecurityError(f"numpy function {attr_name} not allowed")
+                        
+                        func = getattr(np_module, attr_name)
+                        
+                        # Evaluate arguments
+                        args = [self._eval_node(arg, variables) for arg in node.args]
+                        
+                        # Check for keyword arguments (not allowed for security)
+                        if node.keywords:
+                            raise SecurityError("Keyword arguments not allowed in functions")
+                        
+                        try:
+                            return func(*args)
+                        except Exception as e:
+                            raise ValueError(f"Error calling np.{attr_name}: {e}")
+                    else:
+                        raise SecurityError("Only np.* attribute access allowed")
+                else:
+                    raise SecurityError("Only simple function calls and np.* calls allowed")
+            
+            # Lists/tuples for multi-argument functions
+            elif isinstance(node, (ast.List, ast.Tuple)):
+                return [self._eval_node(item, variables) for item in node.elts]
+                
+            else:
+                raise SecurityError(f"AST node type {type(node).__name__} not allowed")
+                
+        finally:
+            self._recursion_depth -= 1
 
 
 class ProblemManager:
@@ -56,11 +307,17 @@ class ProblemManager:
         """
         Initialize the ProblemManager
         
-        Sets up empty problem state. Problems are created dynamically
-        when create_problem_from_config is called.
+        Sets up empty problem state and secure evaluator for mathematical expressions.
+        Problems are created dynamically when create_problem_from_config is called.
         """
         self.current_problem = None  # Active PyMOO problem instance
         self.problem_config = None   # Current problem configuration dict
+        
+        # Initialize secure mathematical expression evaluator
+        self.secure_evaluator = SecureMathEvaluator(
+            max_expression_length=2000,  # Allow complex optimization expressions
+            max_recursion_depth=100      # Support nested mathematical operations
+        )
         
     def create_problem_from_config(self, config):
         """
@@ -192,7 +449,20 @@ class ProblemManager:
         return self.current_problem
         
     def _evaluate_objectives(self, X, objective_configs):
-        """Evaluate objective functions"""
+        """
+        Evaluate objective functions using secure AST-based evaluation
+        
+        This method safely evaluates user-defined objective functions without
+        executing potentially dangerous code. All expressions are parsed and
+        evaluated using SecureMathEvaluator which only allows mathematical operations.
+        
+        Args:
+            X: Decision variable matrix (n_solutions x n_variables)
+            objective_configs: List of objective function configurations
+            
+        Returns:
+            F: Objective function values (n_solutions x n_objectives)
+        """
         if X.ndim == 1:
             X = X.reshape(1, -1)
             
@@ -208,28 +478,20 @@ class ProblemManager:
             # Evaluate the function for each solution
             for j in range(n_solutions):
                 try:
-                    # Create variable context for evaluation
+                    # Create variable context for secure evaluation
                     var_context = {}
+                    
+                    # Add named variables
                     for k, var_config in enumerate(self.problem_config['variables']):
                         var_name = var_config['name']
-                        var_context[var_name] = X[j, k]
+                        var_context[var_name] = float(X[j, k])
                         
-                    # Also add x1, x2, etc. for convenience
+                    # Add x1, x2, etc. convenience variables
                     for k in range(X.shape[1]):
-                        var_context[f'x{k+1}'] = X[j, k]
-                        
-                    # Add mathematical functions
-                    var_context.update({
-                        'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
-                        'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
-                        'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                        'e': np.e, 'log2': np.log2, 'log10': np.log10,
-                        # Full numpy module access for advanced functions
-                        'np': np, 'numpy': np
-                    })
+                        var_context[f'x{k+1}'] = float(X[j, k])
                     
-                    # Evaluate the function
-                    result = eval(function_str, {"__builtins__": {}}, var_context)
+                    # SECURE EVALUATION - No eval() or dangerous code execution
+                    result = self.secure_evaluator.evaluate(function_str, var_context)
                     
                     # Apply direction (maximize -> minimize by negation)
                     if direction == "Maximize":
@@ -240,14 +502,34 @@ class ProblemManager:
                     
                     F[j, i] = result
                     
+                except (SecurityError, ValueError, TypeError) as e:
+                    print(f"🔒 Secure evaluation failed for objective {i+1}, solution {j+1}: {e}")
+                    # Assign penalty value for failed evaluation
+                    F[j, i] = 1e6
+                    
                 except Exception as e:
+                    print(f"❌ Unexpected error in objective evaluation: {e}")
                     # If evaluation fails, assign a large penalty value
                     F[j, i] = 1e6
                     
         return F if F.shape[0] > 1 else F[0]
         
     def _evaluate_constraints(self, X, constraint_configs):
-        """Evaluate constraint functions"""
+        """
+        Evaluate constraint functions using secure AST-based evaluation
+        
+        This method safely evaluates user-defined constraint functions without
+        executing potentially dangerous code. All expressions are parsed and
+        evaluated using SecureMathEvaluator which only allows mathematical operations.
+        
+        Args:
+            X: Decision variable matrix (n_solutions x n_variables)
+            constraint_configs: List of constraint function configurations
+            
+        Returns:
+            G: Constraint violation values (n_solutions x n_constraints)
+               G[i] <= 0 means constraint i is satisfied
+        """
         if X.ndim == 1:
             X = X.reshape(1, -1)
             
@@ -263,34 +545,26 @@ class ProblemManager:
             # Evaluate the constraint for each solution
             for j in range(n_solutions):
                 try:
-                    # Create variable context for evaluation
+                    # Create variable context for secure evaluation
                     var_context = {}
+                    
+                    # Add named variables
                     for k, var_config in enumerate(self.problem_config['variables']):
                         var_name = var_config['name']
-                        var_context[var_name] = X[j, k]
+                        var_context[var_name] = float(X[j, k])
                         
-                    # Also add x1, x2, etc. for convenience
+                    # Add x1, x2, etc. convenience variables
                     for k in range(X.shape[1]):
-                        var_context[f'x{k+1}'] = X[j, k]
-                        
-                    # Add mathematical functions
-                    var_context.update({
-                        'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
-                        'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
-                        'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                        'e': np.e, 'log2': np.log2, 'log10': np.log10,
-                        # Full numpy module access for advanced functions
-                        'np': np, 'numpy': np
-                    })
+                        var_context[f'x{k+1}'] = float(X[j, k])
                     
-                    # Evaluate the function
-                    result = eval(function_str, {"__builtins__": {}}, var_context)
+                    # SECURE EVALUATION - No eval() or dangerous code execution
+                    result = self.secure_evaluator.evaluate(function_str, var_context)
                     
                     # Convert to inequality constraint (g(x) <= 0)
-                    if "≤" in constraint_type or "Less than" in constraint_type:
+                    if "≤" in constraint_type or "Less than" in constraint_type or "<=" in constraint_type:
                         # g(x) <= value -> g(x) - value <= 0
                         G[j, i] = result - constraint_value
-                    elif "≥" in constraint_type or "Greater than" in constraint_type:
+                    elif "≥" in constraint_type or "Greater than" in constraint_type or ">=" in constraint_type:
                         # g(x) >= value -> -(g(x) - value) <= 0
                         G[j, i] = constraint_value - result
                     else:  # Equality constraint
@@ -298,7 +572,13 @@ class ProblemManager:
                         # For simplicity, convert to inequality with small tolerance
                         G[j, i] = abs(result - constraint_value) - 1e-6
                         
+                except (SecurityError, ValueError, TypeError) as e:
+                    print(f"🔒 Secure evaluation failed for constraint {i+1}, solution {j+1}: {e}")
+                    # Assign constraint violation for failed evaluation
+                    G[j, i] = 1e6
+                    
                 except Exception as e:
+                    print(f"❌ Unexpected error in constraint evaluation: {e}")
                     # If evaluation fails, assign constraint violation
                     G[j, i] = 1e6
                     
@@ -343,32 +623,39 @@ class ProblemManager:
         return errors
         
     def _validate_function_syntax(self, function_str, variables):
-        """Validate function syntax"""
+        """
+        Validate function syntax using secure AST-based evaluation
+        
+        This method safely validates mathematical expressions without executing
+        potentially dangerous code. It uses SecureMathEvaluator to parse and
+        validate expressions using Abstract Syntax Trees.
+        
+        Args:
+            function_str: Mathematical expression to validate
+            variables: List of variable definitions
+            
+        Returns:
+            bool: True if expression is valid and safe, False otherwise
+        """
         try:
-            # Create a test context
+            # Create test context with safe values
             var_context = {}
             for var in variables:
                 var_context[var['name']] = 1.0
                 
-            # Add x1, x2, etc.
+            # Add x1, x2, etc. convenience variables
             for i in range(len(variables)):
                 var_context[f'x{i+1}'] = 1.0
-                
-            # Add mathematical functions
-            var_context.update({
-                'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
-                'exp': np.exp, 'log': np.log, 'sqrt': np.sqrt,
-                'abs': np.abs, 'pow': np.power, 'pi': np.pi,
-                'e': np.e, 'log2': np.log2, 'log10': np.log10,
-                # Full numpy module access for advanced functions
-                'np': np, 'numpy': np
-            })
             
-            # Try to evaluate
-            eval(function_str, {"__builtins__": {}}, var_context)
+            # Test with secure evaluator (no actual execution of user code)
+            self.secure_evaluator.evaluate(function_str, var_context)
             return True
             
-        except Exception:
+        except (SecurityError, ValueError, TypeError) as e:
+            print(f"🔒 Expression validation failed: {e}")
+            return False
+        except Exception as e:
+            print(f"❌ Unexpected validation error: {e}")
             return False
             
     def get_problem_summary(self):

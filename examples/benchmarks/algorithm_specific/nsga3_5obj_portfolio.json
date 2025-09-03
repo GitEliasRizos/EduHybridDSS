@@ -1,0 +1,141 @@
+{
+  "problem": {
+    "name": "NSGA-III 5-Objective Engineering Portfolio",
+    "description": "Complex 5-objective portfolio optimization for NSGA-III: Tests reference-based selection with realistic trade-offs. Use reference directions H1=4 for 70 directions. Expected: Well-distributed solutions across 5D space.",
+    "type": "Custom Problem",
+    "variables": [
+    {
+      "name": "innovation_budget",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0,
+      "initial_value": 50.0
+    },
+    {
+      "name": "marketing_budget",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0,
+      "initial_value": 50.0
+    },
+    {
+      "name": "production_budget",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0,
+      "initial_value": 50.0
+    },
+    {
+      "name": "quality_budget",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0,
+      "initial_value": 50.0
+    },
+    {
+      "name": "sustainability_budget",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 100.0,
+      "initial_value": 50.0
+    }
+  ],
+  "objectives": [
+    {
+      "name": "total_cost",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "innovation_budget + marketing_budget + production_budget + quality_budget + sustainability_budget",
+      "description": "Total budget allocation cost"
+    },
+    {
+      "name": "innovation_score",
+      "direction": "Maximize",
+      "weight": 1.0,
+      "function": "innovation_budget * 0.8 + marketing_budget * 0.2",
+      "description": "Innovation performance score"
+    },
+    {
+      "name": "market_penetration",
+      "direction": "Maximize",
+      "weight": 1.0,
+      "function": "marketing_budget * 0.9 + innovation_budget * 0.1",
+      "description": "Market penetration score"
+    },
+    {
+      "name": "production_efficiency",
+      "direction": "Maximize",
+      "weight": 1.0,
+      "function": "production_budget * 0.7 + quality_budget * 0.3",
+      "description": "Production efficiency score"
+    },
+    {
+      "name": "sustainability_index",
+      "direction": "Maximize",
+      "weight": 1.0,
+      "function": "sustainability_budget * 0.6 + quality_budget * 0.4",
+      "description": "Sustainability performance index"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "budget_limit",
+      "type": "<=",
+      "function": "innovation_budget + marketing_budget + production_budget + quality_budget + sustainability_budget",
+      "value": 300.0,
+      "description": "Total budget constraint"
+    },
+    {
+      "name": "minimum_innovation",
+      "type": ">=",
+      "function": "innovation_budget",
+      "value": 10.0,
+      "description": "Minimum innovation investment"
+    },
+    {
+      "name": "minimum_sustainability",
+      "type": ">=",
+      "function": "sustainability_budget",
+      "value": 5.0,
+      "description": "Minimum sustainability investment"
+    }
+  ]
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms", 
+    "name": "NSGA-III",
+    "parameters": {
+      "population_size": 70,
+      "n_generations": 300,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 21000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 5,
+      "n_partitions": 4
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0", 
+    "algorithm_optimized": "NSGA-III",
+    "problem_type": "Many-objective (5D) with constraints",
+    "expected_performance": "Excellent - Well-distributed solutions across 5D constrained space"
+  }
+}

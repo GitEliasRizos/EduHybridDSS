@@ -1,0 +1,92 @@
+{
+  "problem": {
+    "name": "MOEA/D Decomposition Test",
+    "description": "Problem designed for MOEA/D: Well-suited for decomposition approach with uniform weight vectors. Tests MOEA/D's scalar optimization subproblems. Expected: Uniform distribution along Pareto front.",
+    "type": "Custom Problem",
+    "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x4",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1_linear",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "x1 + 0.1 * (x2 + x3 + x4)",
+      "description": "Linear combination objective 1"
+    },
+    {
+      "name": "f2_linear",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 - x1) + 0.1 * (x2**2 + x3**2 + x4**2)",
+      "description": "Linear combination objective 2"
+    }
+  ],
+  "constraints": []
+  },
+  "algorithm": {
+    "category": "Decomposition-based",
+    "name": "MOEA/D",
+    "parameters": {
+      "n_neighbors": 15,
+      "prob_neighbor_mating": 0.9,
+      "n_generations": 200,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 10000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 2,
+      "n_partitions": 49
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "MOEA/D",
+    "problem_type": "Bi-objective decomposable",
+    "expected_performance": "Excellent - Uniform distribution along Pareto front via weight vectors"
+  }
+}

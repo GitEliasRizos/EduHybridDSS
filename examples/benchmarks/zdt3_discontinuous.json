@@ -1,0 +1,44 @@
+{
+  "name": "ZDT3 - Discontinuous Pareto Front",
+  "description": "ZDT3 benchmark with disconnected Pareto front regions. Tests algorithm's ability to find multiple disconnected optimal regions. Expected: 50-100 solutions in 5 separate regions.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "x1",
+      "description": "First objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize", 
+      "weight": 1.0,
+      "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5 - (x1 / (1 + x2 + x3)) * sin(10 * 3.14159 * x1))",
+      "description": "Second objective with sine term creating gaps"
+    }
+  ],
+  "constraints": []
+}

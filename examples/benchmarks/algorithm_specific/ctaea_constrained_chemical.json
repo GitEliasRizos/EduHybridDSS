@@ -1,0 +1,127 @@
+{
+  "problem": {
+    "name": "CTAEA Constraint Handling Test",
+    "description": "Heavily constrained problem designed for CTAEA: Tests two-archive approach for constraint handling. CTAEA maintains feasible and infeasible populations. Expected: Excellent constraint satisfaction.",
+    "variables": [
+      {
+        "name": "pressure",
+        "type": "Real",
+        "lower_bound": 1.0,
+        "upper_bound": 10.0,
+        "initial_value": 5.0
+      },
+      {
+        "name": "temperature",
+        "type": "Real",
+        "lower_bound": 100.0,
+        "upper_bound": 500.0,
+        "initial_value": 300.0
+      },
+      {
+        "name": "flow_rate",
+        "type": "Real",
+        "lower_bound": 0.1,
+        "upper_bound": 2.0,
+        "initial_value": 1.0
+      },
+      {
+        "name": "catalyst_concentration",
+        "type": "Real",
+        "lower_bound": 0.01,
+        "upper_bound": 0.5,
+        "initial_value": 0.25
+      }
+    ],
+    "objectives": [
+      {
+        "name": "production_rate",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "pressure * flow_rate * catalyst_concentration * (1 - exp(-temperature / 200))",
+        "description": "Chemical production rate"
+      },
+      {
+        "name": "energy_efficiency",
+        "direction": "Maximize",
+        "weight": 1.0,
+        "function": "(pressure * flow_rate * catalyst_concentration * (1 - exp(-temperature / 200))) / (pressure * temperature * 0.01)",
+        "description": "Energy efficiency ratio"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "safety_pressure",
+        "type": "<=",
+        "function": "pressure * temperature",
+        "value": 2000,
+        "description": "Safety pressure-temperature limit"
+      },
+      {
+        "name": "reaction_feasibility",
+        "type": ">=",
+        "function": "temperature - 100 * pressure",
+        "value": 0,
+        "description": "Minimum reaction temperature"
+      },
+      {
+        "name": "catalyst_efficiency",
+        "type": "<=",
+        "function": "catalyst_concentration * flow_rate",
+        "value": 0.8,
+        "description": "Catalyst utilization limit"
+      },
+      {
+        "name": "flow_pressure_balance",
+        "type": ">=",
+        "function": "pressure * flow_rate",
+        "value": 2.0,
+        "description": "Minimum flow-pressure product"
+      },
+      {
+        "name": "operating_window",
+        "type": "<=",
+        "function": "abs(pressure - 5) + abs(temperature - 300) + abs(flow_rate - 1)",
+        "value": 8.0,
+        "description": "Operating window constraint"
+      }
+    ],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Constrained Optimization",
+    "name": "CTAEA",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 400,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 20000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 2,
+      "n_partitions": 49
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "CTAEA",
+    "problem_type": "Bi-objective heavily constrained",
+    "expected_performance": "Excellent - 100% feasible solutions via two-archive approach"
+  }
+}

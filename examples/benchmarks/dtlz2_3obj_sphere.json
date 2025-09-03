@@ -1,0 +1,58 @@
+{
+  "name": "DTLZ2 - 3-Objective Spherical Front", 
+  "description": "3-objective DTLZ2 benchmark with spherical Pareto front. Easier than DTLZ1, good for testing 3D visualization. Expected: 50-200 solutions on sphere surface.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2", 
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x4",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2)",
+      "description": "First objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * cos(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 2)",
+      "description": "Second objective"
+    },
+    {
+      "name": "f3",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2)) * sin(x1 * 3.14159 / 2)",
+      "description": "Third objective"
+    }
+  ],
+  "constraints": []
+}

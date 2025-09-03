@@ -1,0 +1,72 @@
+{
+  "problem": {
+    "name": "SMS-EMOA Steady-State Test",
+    "description": "Problem optimized for SMS-EMOA: Requires steady-state hypervolume optimization. Tests SMS-EMOA's one-by-one replacement strategy. Expected: Excellent hypervolume performance with small population.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_hypervolume",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1**2 + 0.1 * x2",
+        "description": "Hypervolume-optimized objective 1"
+      },
+      {
+        "name": "f2_hypervolume",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "0.1 * x1 + (x2 - 1)**2 + 1",
+        "description": "Hypervolume-optimized objective 2"
+      }
+    ],
+    "constraints": [],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Indicator-based",
+    "name": "SMS-EMOA",
+    "parameters": {
+      "population_size": 20,
+      "n_generations": 500,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 10000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "SMS-EMOA",
+    "problem_type": "Bi-objective steady-state",
+    "expected_performance": "Excellent - High hypervolume with small population"
+  }
+}

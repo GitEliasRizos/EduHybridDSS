@@ -1,6 +1,6 @@
 .github/
-tests/
-pycache/
+# tests/
+# *test*
+pycache/*
 *pycache*
-*test*
 .venv

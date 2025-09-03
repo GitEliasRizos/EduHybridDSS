@@ -1,0 +1,84 @@
+{
+  "name": "Welded Beam Design - Classic Engineering",
+  "description": "Classic welded beam design problem with discrete manufacturing constraints. Tests real-world engineering optimization with material and geometric constraints. Expected: 3-10 optimal designs.",
+  "variables": [
+    {
+      "name": "h",
+      "type": "Real",
+      "lower_bound": 0.1,
+      "upper_bound": 2.0,
+      "initial_value": 0.5,
+      "description": "Weld thickness"
+    },
+    {
+      "name": "l",
+      "type": "Real",
+      "lower_bound": 0.1,
+      "upper_bound": 10.0,
+      "initial_value": 2.0,
+      "description": "Attached length"
+    },
+    {
+      "name": "t",
+      "type": "Real",
+      "lower_bound": 0.1,
+      "upper_bound": 10.0,
+      "initial_value": 0.5,
+      "description": "Beam thickness"
+    },
+    {
+      "name": "b",
+      "type": "Real",
+      "lower_bound": 0.1,
+      "upper_bound": 5.0,
+      "initial_value": 0.5,
+      "description": "Beam width"
+    }
+  ],
+  "objectives": [
+    {
+      "name": "cost",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "1.10471 * h**2 * l + 0.04811 * t * b * (14.0 + l)",
+      "description": "Manufacturing cost ($)"
+    },
+    {
+      "name": "deflection",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "65856000 / (30000000 * t**3 * b)",
+      "description": "End deflection (inches)"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "shear_stress",
+      "type": "<=",
+      "function": "(6000 * (14 + 0.5 * l) * sqrt(0.25 * (l**2 + (h + t)**2))) / (sqrt(3) * h * l * (l**2 / 12 + 0.25 * (h + t)**2))",
+      "value": 13600,
+      "description": "Shear stress constraint"
+    },
+    {
+      "name": "normal_stress", 
+      "type": "<=",
+      "function": "504000 / (t**2 * b)",
+      "value": 30000,
+      "description": "Normal stress constraint"
+    },
+    {
+      "name": "buckling",
+      "type": "<=",
+      "function": "64746.022 * (1 - 0.0282346 * t) * t * b**3",
+      "value": 6000,
+      "description": "Buckling constraint"
+    },
+    {
+      "name": "aspect_ratio",
+      "type": "<=",
+      "function": "h - b",
+      "value": 0,
+      "description": "Manufacturing constraint: h <= b"
+    }
+  ]
+}

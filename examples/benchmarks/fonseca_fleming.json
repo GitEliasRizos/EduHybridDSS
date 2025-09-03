@@ -1,0 +1,52 @@
+{
+  "name": "Fonseca-Fleming - Concave with Constraints",
+  "description": "Fonseca-Fleming function with additional constraints. Classic concave bi-objective problem. Expected: 30-80 solutions on concave curve.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": -4.0,
+      "upper_bound": 4.0,
+      "initial_value": 0.0
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": -4.0,
+      "upper_bound": 4.0,
+      "initial_value": 0.0
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": -4.0,
+      "upper_bound": 4.0,
+      "initial_value": 0.0
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "1 - exp(-((x1 - 1/sqrt(3))**2 + (x2 - 1/sqrt(3))**2 + (x3 - 1/sqrt(3))**2))",
+      "description": "First Fonseca-Fleming objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize", 
+      "weight": 1.0,
+      "function": "1 - exp(-((x1 + 1/sqrt(3))**2 + (x2 + 1/sqrt(3))**2 + (x3 + 1/sqrt(3))**2))",
+      "description": "Second Fonseca-Fleming objective"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "sphere_constraint",
+      "type": "<=",
+      "function": "x1**2 + x2**2 + x3**2",
+      "value": 9.0,
+      "description": "Spherical boundary constraint"
+    }
+  ]
+}

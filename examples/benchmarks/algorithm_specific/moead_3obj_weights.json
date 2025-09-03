@@ -1,0 +1,106 @@
+{
+  "problem": {
+    "name": "MOEA/D Weight Vector Challenge",
+    "description": "3-objective problem optimized for MOEA/D: Requires careful weight vector distribution. Tests MOEA/D's neighborhood relationships and resource allocation. Expected: Well-distributed 3D Pareto front.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x5",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_weighted",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1 * (1 + 0.1 * (x3**2 + x4**2 + x5**2))",
+        "description": "Weighted objective 1"
+      },
+      {
+        "name": "f2_weighted",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x2 * (1 + 0.1 * (x3**2 + x4**2 + x5**2))",
+        "description": "Weighted objective 2"
+      },
+      {
+        "name": "f3_weighted",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(2 - x1 - x2) * (1 + 0.1 * (x3**2 + x4**2 + x5**2))",
+        "description": "Weighted objective 3"
+      }
+    ],
+    "constraints": [],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Decomposition-based",
+    "name": "MOEA/D",
+    "parameters": {
+      "n_neighbors": 10,
+      "prob_neighbor_mating": 0.9,
+      "n_generations": 300,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 15000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 3,
+      "n_partitions": 12
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "MOEA/D",
+    "problem_type": "Tri-objective decomposable",
+    "expected_performance": "Excellent - Uniform coverage via weight vector decomposition"
+  }
+}

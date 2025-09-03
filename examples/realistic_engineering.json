@@ -1,0 +1,101 @@
+{
+  "name": "Realistic Engineering Design",
+  "description": "Pressure vessel design with discrete manufacturing constraints that create a small Pareto front",
+  "variables": [
+    {
+      "name": "thickness",
+      "type": "continuous",
+      "lower_bound": 0.5,
+      "upper_bound": 5.0,
+      "description": "Wall thickness (mm)"
+    },
+    {
+      "name": "diameter", 
+      "type": "continuous",
+      "lower_bound": 50.0,
+      "upper_bound": 200.0,
+      "description": "Inner diameter (mm)"
+    },
+    {
+      "name": "length",
+      "type": "continuous", 
+      "lower_bound": 100.0,
+      "upper_bound": 500.0,
+      "description": "Cylinder length (mm)"
+    },
+    {
+      "name": "material_grade",
+      "type": "integer",
+      "lower_bound": 1,
+      "upper_bound": 5,
+      "description": "Material grade (1=cheap, 5=premium)"
+    }
+  ],
+  "objectives": [
+    {
+      "name": "cost",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "material_grade * 10 + thickness * diameter * length * 0.001 + (diameter**2 + length**2) * 0.01",
+      "description": "Total manufacturing cost ($)"
+    },
+    {
+      "name": "weight",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "thickness * (3.14159 * diameter * length + 3.14159 * (diameter/2)**2 * 2) * 0.00785",
+      "description": "Total weight (kg)"
+    },
+    {
+      "name": "safety_margin",
+      "direction": "Maximize",
+      "weight": 1.0,
+      "function": "thickness * material_grade * 100 / (diameter * 0.1 + length * 0.05)",
+      "description": "Safety factor"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "min_wall_ratio",
+      "type": ">=",
+      "function": "thickness / diameter",
+      "value": 0.02,
+      "description": "Minimum wall thickness to diameter ratio"
+    },
+    {
+      "name": "max_wall_ratio", 
+      "type": "<=",
+      "function": "thickness / diameter",
+      "value": 0.15,
+      "description": "Maximum manufacturable wall ratio"
+    },
+    {
+      "name": "aspect_ratio",
+      "type": ">=",
+      "function": "length / diameter",
+      "value": 1.0,
+      "description": "Minimum length to diameter ratio"
+    },
+    {
+      "name": "max_aspect_ratio",
+      "type": "<=",
+      "function": "length / diameter",
+      "value": 8.0,
+      "description": "Maximum practical aspect ratio"
+    },
+    {
+      "name": "manufacturing_limit",
+      "type": "<=",
+      "function": "diameter * length",
+      "value": 80000,
+      "description": "Manufacturing equipment size limit"
+    },
+    {
+      "name": "pressure_rating",
+      "type": ">=",
+      "function": "thickness * material_grade * 50 / diameter",
+      "value": 2.0,
+      "description": "Minimum pressure rating requirement"
+    }
+  ]
+}

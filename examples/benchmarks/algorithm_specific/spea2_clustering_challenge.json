@@ -1,0 +1,80 @@
+{
+  "problem": {
+    "name": "SPEA2 Clustering Challenge",
+    "description": "Multi-modal problem designed for SPEA2: Multiple local fronts requiring good clustering. Tests SPEA2's density estimation and archive management. Expected: Diverse solutions across multiple fronts.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_multimodal",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1**2 + x2**2 + sin(4 * 3.14159 * x1) * cos(4 * 3.14159 * x2)",
+        "description": "Multi-modal objective 1"
+      },
+      {
+        "name": "f2_multimodal",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(x1 - 1)**2 + (x2 - 1)**2 + x3**2 + sin(4 * 3.14159 * (x1-1)) * cos(4 * 3.14159 * (x2-1))",
+        "description": "Multi-modal objective 2"
+      }
+    ],
+    "constraints": [],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms",
+    "name": "SPEA2",
+    "parameters": {
+      "population_size": 50,
+      "archive_size": 50,
+      "n_generations": 250,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 12500,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "SPEA2",
+    "problem_type": "Bi-objective multi-modal",
+    "expected_performance": "Excellent - Good clustering of multiple optimal regions"
+  }
+}

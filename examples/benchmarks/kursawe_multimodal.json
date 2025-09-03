@@ -1,0 +1,44 @@
+{
+  "name": "Kursawe Function - Multi-modal",
+  "description": "Kursawe function with multiple local fronts. Tests algorithm's ability to maintain diversity across multiple optimal regions. Expected: 15-40 solutions in disconnected regions.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": -5.0,
+      "upper_bound": 5.0,
+      "initial_value": 0.0
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": -5.0,
+      "upper_bound": 5.0,
+      "initial_value": 0.0
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": -5.0,
+      "upper_bound": 5.0,
+      "initial_value": 0.0
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "-10 * exp(-0.2 * sqrt(x1**2 + x2**2)) - 10 * exp(-0.2 * sqrt(x2**2 + x3**2))",
+      "description": "First Kursawe objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "abs(x1)**0.8 + 5 * sin(x1**3) + abs(x2)**0.8 + 5 * sin(x2**3) + abs(x3)**0.8 + 5 * sin(x3**3)",
+      "description": "Second Kursawe objective with multimodal structure"
+    }
+  ],
+  "constraints": []
+}

@@ -1,0 +1,65 @@
+{
+  "name": "DTLZ1 - 3-Objective Linear Front",
+  "description": "3-objective DTLZ1 benchmark with linear Pareto front forming a triangular simplex. Tests many-objective optimization capabilities. Expected: 50-200 solutions on triangular surface.",
+  "variables": [
+    {
+      "name": "x1",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x2",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x3",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x4",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    },
+    {
+      "name": "x5",
+      "type": "Real",
+      "lower_bound": 0.0,
+      "upper_bound": 1.0,
+      "initial_value": 0.5
+    }
+  ],
+  "objectives": [
+    {
+      "name": "f1",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "0.5 * x1 * x2 * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
+      "description": "First objective"
+    },
+    {
+      "name": "f2",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "0.5 * x1 * (1 - x2) * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
+      "description": "Second objective"
+    },
+    {
+      "name": "f3",
+      "direction": "Minimize",
+      "weight": 1.0,
+      "function": "0.5 * (1 - x1) * (1 + 100 * (sin(20 * 3.14159 * x3) + sin(20 * 3.14159 * x4) + sin(20 * 3.14159 * x5)))",
+      "description": "Third objective"
+    }
+  ],
+  "constraints": []
+}

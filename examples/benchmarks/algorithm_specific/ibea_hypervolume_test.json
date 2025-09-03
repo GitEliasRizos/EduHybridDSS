@@ -1,0 +1,87 @@
+{
+  "problem": {
+    "name": "IBEA Indicator-Based Test",
+    "description": "Problem designed for IBEA: Emphasizes hypervolume indicator performance. Tests IBEA's indicator-based selection without explicit Pareto ranking. Expected: High-quality hypervolume solutions.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": -1.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": -1.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": -1.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_indicator",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(x1 - 0.5)**2 + (x2 - 0.5)**2 + 0.1 * x3**2",
+        "description": "Hypervolume-friendly objective 1"
+      },
+      {
+        "name": "f2_indicator",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(x1 + 0.5)**2 + (x2 + 0.5)**2 + 0.1 * (x3 - 1)**2",
+        "description": "Hypervolume-friendly objective 2"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "hypervolume_region",
+        "type": "<=",
+        "function": "x1**2 + x2**2",
+        "value": 2.0,
+        "description": "Constrains to good hypervolume region"
+      }
+    ],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Indicator-based",
+    "name": "IBEA",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 200,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 10000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "IBEA",
+    "problem_type": "Bi-objective with constraint (hypervolume focus)",
+    "expected_performance": "Excellent - High hypervolume values, good knee point finding"
+  }
+}

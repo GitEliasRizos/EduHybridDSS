@@ -1,0 +1,79 @@
+{
+  "problem": {
+    "name": "NSGA-II Bi-Objective Test - ZDT1 Modified",
+    "description": "NSGA-II Bi-Objective Test - ZDT1 Modified problem optimized for NSGA-II: 2-objective problem with balanced convergence and diversity challenges. Tests NSGA-II crowding distance mechanism. Expected: Excellent performance with uniform spread.",
+    "type": "Custom Problem",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2", 
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real", 
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_convergence",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1 + 0.1 * (x2**2 + x3**2)",
+        "description": "Convergence objective - tests NSGA-II speed"
+      },
+      {
+        "name": "f2_diversity",
+        "direction": "Minimize", 
+        "weight": 1.0,
+        "function": "(1 + x2 + x3) * (1 - sqrt(x1 / (1 + x2 + x3)))",
+        "description": "Diversity objective - tests crowding distance"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 50,
+      "n_generations": 150,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 7500,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "NSGA-II",
+    "problem_type": "Bi-objective unconstrained",
+    "expected_performance": "Excellent - Fast convergence with uniform spread via crowding distance"
+  }
+}

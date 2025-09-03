@@ -1,0 +1,71 @@
+{
+  "problem": {
+    "name": "GDE3 Differential Evolution Test",
+    "description": "Problem designed for GDE3: Requires differential evolution operators for optimal performance. Tests GDE3's mutation and crossover strategies. Expected: Good convergence with DE-style exploration.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_multimodal",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "x1**2 + x2**2 + 0.1 * sin(5 * x1) * sin(5 * x2)",
+        "description": "Multi-modal objective suitable for DE"
+      },
+      {
+        "name": "f2_rugged",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(x1 - 2)**2 + (x2 - 1)**2 + x3**2 + 0.1 * cos(3 * x1) * cos(3 * x2)",
+        "description": "Rugged landscape for DE exploration"
+      }
+    ],
+    "constraints": [],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Differential Evolution",
+    "name": "GDE3",
+    "parameters": {
+      "population_size": 50,
+      "F": 0.5,
+      "CR": 0.9,
+      "n_generations": 200,
+      "seed": 1
+    },
+    "termination": {
+      "max_evaluations": 10000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "GDE3",
+    "problem_type": "Bi-objective multi-modal",
+    "expected_performance": "Excellent - Good exploration of rugged landscapes via DE operators"
+  }
+}

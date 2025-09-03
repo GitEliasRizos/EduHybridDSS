@@ -1,0 +1,119 @@
+{
+  "problem": {
+    "name": "RVEA Reference Vector Test",
+    "description": "4-objective problem designed for RVEA: Tests reference vector guided evolution and adaptive penalty. Use structured reference vectors. Expected: Solutions aligned with reference directions.",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x5",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x6",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_convergence",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "cos(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 2) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
+        "description": "Convergence-focused objective 1"
+      },
+      {
+        "name": "f2_convergence",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "cos(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 2) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
+        "description": "Convergence-focused objective 2"
+      },
+      {
+        "name": "f3_diversity",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "sin(x1 * 3.14159 / 2) * cos(x2 * 3.14159 / 4) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
+        "description": "Diversity-focused objective 3"
+      },
+      {
+        "name": "f4_balance",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "sin(x1 * 3.14159 / 2) * sin(x2 * 3.14159 / 4) * (1 + 0.1 * ((x3-0.5)**2 + (x4-0.5)**2 + (x5-0.5)**2 + (x6-0.5)**2))",
+        "description": "Balance objective 4"
+      }
+    ],
+    "constraints": [],
+    "type": "Custom Problem"
+  },
+  "algorithm": {
+    "category": "Evolutionary Algorithms",
+    "name": "RVEA",
+    "parameters": {
+      "population_size": 35,
+      "n_generations": 400,
+      "seed": 1
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 14000,
+      "convergence_tolerance": 0.0,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 4,
+      "n_partitions": 6
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI Algorithm-Specific Benchmark",
+    "version": "1.0.0",
+    "algorithm_optimized": "RVEA",
+    "problem_type": "Many-objective (4D) with reference vectors",
+    "expected_performance": "Excellent - Solutions aligned with reference directions"
+  }
+}

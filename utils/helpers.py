@@ -1,41 +1,82 @@
 """
-Helper functions and utilities for the PyMOO GUI application
+ELI5: Helper Functions - Like a Toolbox of Handy Utilities! 🧰
+
+Think of this file like a Swiss Army knife or a well-organized toolbox.
+It contains lots of small, useful tools that other parts of the app need:
+
+🗂️ File Tools: Save and load configuration files (like a filing cabinet)
+📊 Data Tools: Convert and format data (like a translator between languages)
+🎨 Chart Tools: Create pretty colors and formatting for graphs
+📐 Math Tools: Do common calculations and conversions
+🔧 General Tools: Fix common problems and make things work smoothly
+
+It's like having a helpful assistant who knows how to do all the small tasks
+that need to be done over and over again, so the main parts of the app
+can focus on the big important jobs!
+
+Just like how you might have a junk drawer with batteries, tape, rubber bands,
+and other useful things, this file has all the small utility functions
+that make the app work smoothly.
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
-import json
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Union
-from pathlib import Path
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+# ELI5: Import our toolbox supplies
+import json         # For reading/writing configuration files (like a document translator)
+import numpy as np  # Advanced math tools (like a scientific calculator)
+import pandas as pd # Data table tools (like a smart spreadsheet)
+from typing import Dict, List, Any, Optional, Union  # Type labels for organization
+from pathlib import Path  # File and folder path tools (like a GPS for files)
+import matplotlib.pyplot as plt  # Chart making tools (like an art kit)
+from matplotlib.colors import LinearSegmentedColormap  # Color mixing tools
 
 
 def save_problem_config(config: Dict[str, Any], filepath: Union[str, Path]) -> bool:
-    """Save problem configuration to JSON file"""
+    """
+    ELI5: This is like saving your homework to a file! 💾
+    
+    When you finish setting up an optimization problem, you want to save it
+    so you can use it again later (like saving a Word document).
+    
+    This function takes your problem settings and writes them to a file
+    in a format (JSON) that the computer can easily read later.
+    """
     try:
         filepath = Path(filepath)
         
-        # Create a serializable copy of the config
+        # ELI5: Convert the problem to a format that can be saved to file
+        # (like translating from computer language to file language)
         serializable_config = make_serializable(config)
         
+        # ELI5: Open a file and write our problem configuration to it
+        # (like opening a notebook and writing down the recipe)
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(serializable_config, f, indent=2, ensure_ascii=False)
             
-        return True
+        return True  # Success! File was saved
     except Exception as e:
         print(f"Error saving problem config: {e}")
-        return False
+        return False  # Something went wrong
 
 
 def load_problem_config(filepath: Union[str, Path]) -> Optional[Dict[str, Any]]:
-    """Load problem configuration from JSON file"""
+    """
+    ELI5: This is like opening your saved homework file! 📂
+    
+    When you want to work on an optimization problem you saved before,
+    this function opens the file and reads all your settings back
+    into the app (like opening a saved Word document).
+    """
     try:
         filepath = Path(filepath)
         
+        # ELI5: Check if the file actually exists (like checking if a book is on the shelf)
         if not filepath.exists():
             return None
             
+        # ELI5: Open the file and read the problem configuration
+        # (like opening a cookbook and reading a recipe)
         with open(filepath, 'r', encoding='utf-8') as f:
             config = json.load(f)
             

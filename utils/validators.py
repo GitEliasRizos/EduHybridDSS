@@ -1,52 +1,40 @@
 """
-Validators - Input validation utilities
+ELI5: Validators - Like Having a Smart Quality Inspector! 🔍
 
-This module provides comprehensive validation utilities for the PyMOO GUI
-application. It includes validators for problem configurations, algorithm
-settings, and mathematical expressions to ensure data integrity and provide
-helpful error messages to users.
+Think of this like having a very careful quality inspector at a factory.
+Before anything gets used in our optimization app, this inspector checks:
+"Is this safe? Is this correct? Will this work properly?"
 
-Key Features:
-- Problem configuration validation (variables, objectives, constraints)
-- Algorithm parameter validation and range checking
-- Mathematical expression syntax validation with security checks
-- Variable name and identifier validation
-- Bounds checking and consistency validation
-- Detailed error reporting with specific issue descriptions
-- Safe evaluation of mathematical expressions
-- Integration with GUI for real-time validation feedback
+Just like how a food inspector checks:
+🥗 "Is this food safe to eat?"
+📏 "Are the measurements correct?"
+🧪 "Do the ingredients make sense together?"
 
-The validation system is designed to catch errors early and provide clear,
-actionable feedback to help users create valid optimization configurations.
-It includes both structural validation (required fields, data types) and
-semantic validation (logical consistency, mathematical validity).
+Our validator checks:
+🔢 "Are the numbers in a reasonable range?"
+📝 "Is the math expression written correctly?"
+🔒 "Is this expression safe (no dangerous commands)?"
+⚙️ "Do the algorithm settings make sense?"
+📐 "Are the problem definitions logically consistent?"
 
-Validation Categories:
-    - Structural: Required fields, data types, array dimensions
-    - Semantic: Logical consistency, mathematical validity
-    - Security: Safe expression evaluation, injection prevention
-    - Range: Parameter bounds, reasonable value checking
-    - Syntax: Mathematical expression parsing and validation
+It's like having a super smart assistant who catches mistakes BEFORE they
+cause problems, and gives you helpful suggestions on how to fix them!
 
-Classes:
-    ValidationError: Custom exception for validation errors
-    ProblemValidator: Validates problem configurations
-    AlgorithmValidator: Validates algorithm configurations  
-    ExpressionValidator: Validates mathematical expressions
-    
-Design Philosophy:
-    - Fail fast with clear error messages
-    - Provide suggestions for fixing common issues
-    - Security-first approach for user expressions
-    - Comprehensive coverage of edge cases
-    
+Categories of things we check:
+- Structure: "Do you have all the required pieces?"
+- Logic: "Do these pieces fit together sensibly?"
+- Security: "Is this safe to run?"
+- Math: "Is this mathematical expression valid?"
+- Ranges: "Are these numbers reasonable?"
+
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-import re
-import numpy as np
-from typing import List, Dict, Any, Tuple, Optional
+# ELI5: Import our inspection tools
+import re        # Text pattern matching (like a spelling checker)
+import numpy as np    # Advanced math validation tools
+from typing import List, Dict, Any, Tuple, Optional  # Type checking labels
 
 
 class ValidationError(Exception):

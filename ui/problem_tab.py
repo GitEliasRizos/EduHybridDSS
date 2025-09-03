@@ -1,51 +1,47 @@
 """
-Problem Definition Tab - Define optimization problems
+ELI5: Problem Definition Tab - Like a Problem Blueprint Maker! 📐
 
-This module provides the ProblemTab class which serves as the primary interface
-for users to define their optimization problems. It handles the specification
-of decision variables, objective functions, and constraints through an intuitive
-graphical interface.
+Think of this like a smart form that helps you describe an optimization problem
+to the computer. Just like when you go to a custom cake shop and tell them:
+"I want a cake that's not too sweet, not too expensive, but really tasty!"
 
-Key Features:
-- Variable definition with type selection (Real, Integer, Binary)
-- Objective function specification with mathematical expressions
-- Constraint definition with inequality/equality operators
-- Problem information and metadata management
-- Import/export functionality for problem configurations
-- Real-time validation and error checking
-- Expression syntax highlighting and validation
-- Example problem templates and presets
+This tab helps you describe your optimization problem by filling out:
 
-The ProblemTab uses a table-based interface for variables, objectives, and
-constraints, allowing users to add, remove, and modify problem components
-dynamically. It supports mathematical expressions with numpy functions
-and provides immediate feedback on syntax errors.
+🎯 OBJECTIVES: "What do I want to achieve?"
+   - Minimize cost (spend less money)
+   - Maximize quality (get the best result)
+   - Minimize time (finish faster)
 
-Supported Features:
-    - Mixed variable types (Real, Integer, Binary) with bounds
-    - Multiple objectives (minimize/maximize) with weights  
-    - Linear and nonlinear constraints
-    - Mathematical expressions with numpy support
-    - Problem validation and error reporting
-    - JSON-based problem save/load functionality
+📊 VARIABLES: "What can I change to achieve my goals?"
+   - Real numbers (like temperature: 20.5°C)
+   - Whole numbers (like number of workers: 5 people)
+   - Yes/No choices (like "use premium materials?")
 
-Classes:
-    ProblemTab: Main widget for problem definition interface
+🚫 CONSTRAINTS: "What rules must I follow?"
+   - Budget limit (can't spend more than $1000)
+   - Time limit (must finish in 2 weeks)
+   - Physical limits (temperature can't exceed 100°C)
 
-Signal Communication:
-    problem_changed: Emitted whenever problem configuration is modified
-    
+It's like having a smart assistant who asks you all the right questions
+to understand exactly what problem you're trying to solve!
+
+The form has tables where you can:
+- Add/remove variables (things you can change)
+- Write math formulas for what you want to optimize
+- Set rules and limits that must be followed
+
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
+# ELI5: Import our form-building tools (like getting supplies to build a form)
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
                             QGroupBox, QLineEdit, QTextEdit, QSpinBox,
                             QDoubleSpinBox, QComboBox, QPushButton, QTableWidget,
                             QTableWidgetItem, QHeaderView, QMessageBox, QSplitter,
                             QTabWidget, QScrollArea, QLabel)
-from PyQt6.QtCore import Qt, pyqtSignal
-import json
+from PyQt6.QtCore import Qt, pyqtSignal  # Communication system
+import json  # For saving/loading problem descriptions
 
 
 class ProblemTab(QWidget):

@@ -1,98 +1,109 @@
 """
-Problem Manager - Core functionality for managing optimization problems
+ELI5: Problem Manager - Like a Recipe Book for Math Problems! 📖
 
-This module provides the ProblemManager class which serves as the bridge between
-the GUI's problem configuration and PyMOO's problem representation. It handles
-the conversion of user-defined problems into proper PyMOO problem instances.
+Think of this like a smart recipe book that helps turn your optimization ideas
+into something the computer can understand and solve.
 
-Key Features:
-- Support for mixed variable types (Real, Integer, Binary)
-- Custom objective function evaluation with numpy support
-- Constraint handling and evaluation
-- Variable bounds and type enforcement
-- Repair mechanisms for integer/binary constraints
-- Expression parsing with security considerations
+Just like a recipe has ingredients (variables), cooking steps (objectives), 
+and rules (constraints), optimization problems have:
+- Variables: The things you can change (like temperature, time, amounts)
+- Objectives: What you want to achieve (minimize cost, maximize quality)
+- Constraints: Rules you must follow (budget limits, safety requirements)
 
-The ProblemManager creates either FunctionalProblem instances for simple cases
-or CustomProblem instances for complex mixed-variable optimization problems.
-
-Classes:
-    ProblemManager: Main interface for problem creation and management
-    CustomProblem: PyMOO Problem subclass for mixed-variable problems
+This file is like having a smart assistant that:
+1. Takes your problem written in English/math
+2. Translates it into computer language
+3. Makes sure it's safe to run (no dangerous commands)
+4. Gives it to the optimization engine to solve
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-import ast
-import math
-import numpy as np
-import sys
-import os
-import operator
-from typing import Dict, Any, Union
-from pymoo.core.problem import Problem
-from pymoo.problems.functional import FunctionalProblem
-from pymoo.core.variable import Real, Integer, Binary
+# ELI5: Import statements - getting tools from different toolboxes
+import ast        # For safely reading math expressions (like a careful translator)
+import math       # Basic math functions (sin, cos, sqrt, etc.)
+import numpy as np    # Advanced math and arrays (like a super calculator)
+import sys        # System information
+import os         # Operating system tools
+import operator   # Mathematical operators (+, -, *, /, etc.)
+from typing import Dict, Any, Union    # Type hints (like labeling boxes)
+from pymoo.core.problem import Problem    # The base problem template
+from pymoo.problems.functional import FunctionalProblem  # Simple problem type
+from pymoo.core.variable import Real, Integer, Binary    # Different variable types
 
 
 class SecurityError(Exception):
-    """Custom exception for security-related evaluation errors."""
+    """
+    ELI5: This is like a security guard for dangerous code!
+    If someone tries to run unsafe commands, this error stops them.
+    """
     pass
 
 
 class SecureMathEvaluator:
     """
-    Secure mathematical expression evaluator using AST parsing.
-    Only allows whitelisted mathematical operations and functions.
+    ELI5: This is like a very careful math teacher! 🧮
+    
+    Instead of just calculating any math problem you give it (which could be dangerous),
+    it first checks: "Is this safe math?" Only then does it solve it.
+    
+    Think of it like having a playground supervisor who only lets you use
+    safe playground equipment, not dangerous tools.
     """
     
-    # Allowed operators
+    # ELI5: These are like the "safe math tools" we allow kids to use
+    # Think of it as: you can use +, -, *, / but not dangerous computer commands
     SAFE_OPERATORS = {
-        ast.Add: operator.add,
-        ast.Sub: operator.sub,
-        ast.Mult: operator.mul,
-        ast.Div: operator.truediv,
-        ast.FloorDiv: operator.floordiv,
-        ast.Mod: operator.mod,
-        ast.Pow: operator.pow,
-        ast.USub: operator.neg,
-        ast.UAdd: operator.pos,
+        ast.Add: operator.add,        # + (addition)
+        ast.Sub: operator.sub,        # - (subtraction) 
+        ast.Mult: operator.mul,       # * (multiplication)
+        ast.Div: operator.truediv,    # / (division)
+        ast.FloorDiv: operator.floordiv,  # // (integer division)
+        ast.Mod: operator.mod,        # % (remainder)
+        ast.Pow: operator.pow,        # ** (power)
+        ast.USub: operator.neg,       # -x (negative)
+        ast.UAdd: operator.pos,       # +x (positive)
     }
     
-    # Allowed mathematical functions
+    # ELI5: These are like a scientific calculator's buttons - all safe math functions!
+    # We allow things like sin, cos, sqrt but NOT dangerous system commands
     SAFE_FUNCTIONS = {
-        # Basic math functions
-        'abs': abs,
-        'round': round,
-        'min': min,
-        'max': max,
-        'sum': sum,
+        # Basic math functions (like a simple calculator)
+        'abs': abs,      # Get absolute value: abs(-5) = 5
+        'round': round,  # Round numbers: round(3.7) = 4
+        'min': min,      # Find smallest: min(1,2,3) = 1
+        'max': max,      # Find largest: max(1,2,3) = 3
+        'sum': sum,      # Add up a list: sum([1,2,3]) = 6
         
-        # Math module functions
-        'sin': math.sin,
-        'cos': math.cos,
-        'tan': math.tan,
-        'asin': math.asin,
-        'acos': math.acos,
-        'atan': math.atan,
-        'atan2': math.atan2,
-        'sinh': math.sinh,
-        'cosh': math.cosh,
-        'tanh': math.tanh,
-        'exp': math.exp,
-        'log': math.log,
-        'log2': math.log2,
-        'log10': math.log10,
-        'sqrt': math.sqrt,
-        'pow': pow,
-        'ceil': math.ceil,
-        'floor': math.floor,
-        'fabs': math.fabs,
+        # Trigonometry (like measuring triangles and circles)
+        'sin': math.sin,     # Sine function
+        'cos': math.cos,     # Cosine function  
+        'tan': math.tan,     # Tangent function
+        'asin': math.asin,   # Inverse sine
+        'acos': math.acos,   # Inverse cosine
+        'atan': math.atan,   # Inverse tangent
+        'atan2': math.atan2, # Two-argument arctangent
+        'sinh': math.sinh,   # Hyperbolic sine
+        'cosh': math.cosh,   # Hyperbolic cosine
+        'tanh': math.tanh,   # Hyperbolic tangent
         
-        # Constants
-        'pi': math.pi,
-        'e': math.e,
+        # Exponential and logarithms (growth and scaling functions)
+        'exp': math.exp,     # e^x (exponential function)
+        'log': math.log,     # Natural logarithm
+        'log2': math.log2,   # Base-2 logarithm
+        'log10': math.log10, # Base-10 logarithm
+        'sqrt': math.sqrt,   # Square root
+        'pow': pow,          # Power function (same as **)
+        
+        # Rounding and absolute values
+        'ceil': math.ceil,   # Round up: ceil(3.1) = 4
+        'floor': math.floor, # Round down: floor(3.9) = 3
+        'fabs': math.fabs,   # Floating-point absolute value
+        
+        # Important mathematical constants (like famous numbers)
+        'pi': math.pi,       # π ≈ 3.14159... (circle constant)
+        'e': math.e,         # e ≈ 2.71828... (natural number)
         'tau': math.tau,
         
         # Numpy equivalents for compatibility
@@ -134,27 +145,45 @@ class SecureMathEvaluator:
         self._recursion_depth = 0
     
     def evaluate(self, expression: str, variables: Dict[str, float]) -> float:
-        """Safely evaluate a mathematical expression."""
+        """
+        ELI5: This is like a very careful math teacher solving a problem! 📝
+        
+        When you write "x + 2*y", this method:
+        1. First checks: "Is this safe math?" (like checking for dangerous words)
+        2. Then translates it: "Oh, you want x plus (2 times y)"
+        3. Finally calculates: If x=3 and y=4, then 3 + 2*4 = 11
+        
+        But if you tried to write something dangerous like "delete my files",
+        it would say "NO! That's not math!" and stop you.
+        """
+        
+        # ELI5: Check if the input looks right (like checking homework format)
         if not isinstance(expression, str):
             raise TypeError("Expression must be a string")
             
+        # ELI5: Don't allow super long expressions (like a reasonable essay length)
         if len(expression) > self.max_expression_length:
             raise SecurityError(f"Expression too long (max {self.max_expression_length} chars)")
             
+        # ELI5: Don't allow empty expressions (you need to write something!)
         if not expression.strip():
             raise ValueError("Expression cannot be empty")
         
+        # ELI5: Try to understand the math expression (like reading a sentence)
         try:
             tree = ast.parse(expression.strip(), mode='eval')
         except SyntaxError as e:
             raise ValueError(f"Invalid mathematical syntax: {e}")
         
+        # ELI5: Reset our counting and solve the math problem step by step
         self._recursion_depth = 0
         result = self._eval_node(tree.body, variables)
         
+        # ELI5: Make sure we got a real number (not text or weird stuff)
         if not isinstance(result, (int, float, np.number)):
             raise TypeError(f"Expression must evaluate to a number, got {type(result)}")
             
+        # ELI5: Convert to regular number and check it's not broken
         result = float(result)
         if math.isnan(result) or math.isinf(result):
             raise ValueError("Expression produced invalid numerical result (NaN or Inf)")

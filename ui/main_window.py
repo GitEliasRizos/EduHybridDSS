@@ -1,56 +1,57 @@
 """
-Main Window for PyMOO GUI Application
+ELI5: Main Window - Like the Control Center of Our Optimization App! 🏢
 
-This module contains the MainWindow class which serves as the primary interface
-for the multi-objective optimization GUI. It coordinates between different tabs
-(Problem Definition, Algorithm Configuration, and Results Visualization) and 
-manages the overall application workflow.
+Think of this as the "mission control" for solving optimization problems.
+Just like NASA has a big control room with different stations for different jobs,
+our app has different tabs for different parts of solving math problems:
 
-Key Features:
-- Tab-based interface for different optimization phases
-- Menu system for file operations and settings
-- Toolbar for quick actions
-- Status bar for user feedback
-- Signal-slot architecture for component communication
-- Automatic optimization workflow management
+🔧 Problem Tab: Where you describe what you want to optimize (like "minimize cost")
+⚙️ Algorithm Tab: Where you pick how to solve it (like choosing which tool to use)  
+📊 Results Tab: Where you see the answers and pretty charts
+🎯 MCDA Tab: Where you pick the best solution from many good ones
+
+This file is like the building manager - it sets up all the rooms (tabs),
+connects the communication system (signals), and makes sure everything works together!
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
+# ELI5: Getting our building supplies (importing tools we need)
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QTabWidget, QMenuBar, QStatusBar, QToolBar,
                             QMessageBox, QFileDialog, QSplitter)
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal  # Communication system between parts
 
-from PyQt6.QtGui import QAction, QKeySequence
+from PyQt6.QtGui import QAction, QKeySequence  # Menu items and keyboard shortcuts
 
-from .problem_tab import ProblemTab
-from .algorithm_tab import AlgorithmTab
-from .results_tab import ResultsTab
-from .mcda_tab import MCDATab
+# Import our different "departments" (tabs)
+from .problem_tab import ProblemTab        # Problem definition department
+from .algorithm_tab import AlgorithmTab    # Algorithm selection department  
+from .results_tab import ResultsTab        # Results visualization department
+from .mcda_tab import MCDATab              # Decision analysis department
 
 
 class MainWindow(QMainWindow):
     """
-    Main application window for the PyMOO GUI
+    ELI5: This is like the main office building for our optimization company! 🏢
     
-    This class creates and manages the primary user interface, including:
-    - Tab widget with Problem, Algorithm, and Results tabs
-    - Menu bar with File, Edit, View, and Help menus
-    - Toolbar with common actions
-    - Status bar for displaying application state
+    Imagine you're running a company that solves math problems for people:
+    - The lobby (main window) welcomes visitors
+    - Different floors/departments (tabs) handle different parts of the job
+    - The receptionist (status bar) tells you what's happening
+    - The filing system (menus) helps you save and load your work
     
-    The MainWindow coordinates optimization workflow by:
-    1. Collecting problem definition from ProblemTab
-    2. Getting algorithm configuration from AlgorithmTab
-    3. Running optimization in ResultsTab
-    4. Managing UI state during optimization process
+    When someone brings a problem to solve:
+    1. First floor (Problem Tab): "What exactly do you want to optimize?"
+    2. Second floor (Algorithm Tab): "How should we solve this?"
+    3. Third floor (Results Tab): "Here are all the solutions we found!"
+    4. Fourth floor (MCDA Tab): "Which solution is best for you?"
     
-    Signals:
-        optimization_started: Emitted when optimization begins
-        optimization_finished: Emitted when optimization completes with results
+    Signals (like the company's communication system):
+    - optimization_started: "We started working on your problem!"
+    - optimization_finished: "We found solutions! Come see!"
     """
     
     # Custom signals for coordinating optimization workflow

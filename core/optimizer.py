@@ -1,92 +1,51 @@
 """
-Optimizer - Core functionality for running optimizations
+ELI5: Optimizer - Like the Racing Team Manager! 🏎️
 
-This module provides the Optimizer class which serves as the central coordinator
-for running multi-objective optimization tasks. It integrates with PyMOO to
-execute optimizations w        # Get results
-        objectives = self.results.F
-        variables = self.results.X
-        
-        # Check for None results
-        if objectives is None or variables is None:
-            return {
-                'pareto_front': [],
-                'pareto_set': [],
-                'variables': [],
-                'convergence': getattr(self.results, 'history', {}).get('f_min', []),
-            }
-        
-        # Ensure arrays are 2D
-        if objectives.ndim == 1:
-            objectives = objectives.reshape(-1, 1)
-        if variables.ndim == 1:
-            variables = variables.reshape(-1, 1)iding progress monitoring, result processing,
-and state management capabilities.
+Think of optimization like a race to find the best solutions. This file is like
+the race team manager who coordinates everything:
 
-Key Features:
-- Integration with PyMOO optimization framework
-- Real-time progress monitoring and callback system
-- Optimization state management (running, stopped, completed)
-- Result extraction and formatting for GUI consumption
-- Performance metrics tracking and history
-- Thread-safe operation for GUI integration
-- Comprehensive error handling and recovery
+The race team has:
+🏁 The race car (algorithm) - different cars for different tracks
+🎯 The destination (objective) - where we want to finish
+🗺️ The race track (problem space) - where solutions can be found
+📊 The pit crew (progress monitoring) - tells us how we're doing during the race
+🏆 The winners podium (results) - the best solutions we found
 
-The Optimizer acts as a high-level interface that coordinates between the
-problem definition, algorithm configuration, and result visualization
-components. It handles the complexity of PyMOO integration while providing
-a simple interface for the GUI components.
+Just like a racing manager:
+1. Prepares the car and driver for the specific track
+2. Starts the race and monitors progress
+3. Makes pit stops if needed
+4. Collects all the performance data
+5. Announces the winners at the end
 
-Core Workflow:
-    1. Setup: Configure problem, algorithm, and termination
-    2. Execute: Run optimization with progress callbacks
-    3. Monitor: Track progress and performance metrics
-    4. Extract: Process results for GUI display
-    5. Cleanup: Manage resources and state
-
-Classes:
-    OptimizationCallback: Progress monitoring and history tracking
-    Optimizer: Main optimization coordinator and executor
-
-Thread Safety:
-    The Optimizer is designed to work safely in multi-threaded environments,
-    particularly with Qt's worker thread pattern used by the GUI.
+This optimizer does the same thing but for solving math problems instead of racing!
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-from pymoo.optimize import minimize
-from pymoo.core.callback import Callback
-import numpy as np
-import time
-from threading import Event
+# ELI5: Import our racing equipment (tools for optimization)
+from pymoo.optimize import minimize  # The race track and rules
+from pymoo.core.callback import Callback  # The pit crew communication system
+import numpy as np  # The advanced calculator for race statistics
+import time  # The stopwatch to track how long the race takes
+from threading import Event  # The system to safely stop the race if needed
 
 
 class OptimizationCallback(Callback):
     """
-    Callback class to monitor optimization progress and collect metrics
+    ELI5: This is like the pit crew chief! 📻
     
-    This class integrates with PyMOO's callback system to provide real-time
-    monitoring of optimization progress. It tracks key metrics like generation
-    count, function evaluations, and objective value statistics.
+    During a race, the pit crew chief watches everything and reports back:
+    - "We're on lap 15 of 100!"
+    - "Current best speed is 180 mph!"
+    - "The car is performing well!"
     
-    Key Features:
-    - Real-time progress tracking during optimization
-    - History collection for convergence analysis
-    - Objective value statistics (min, max, average)
-    - Integration with GUI progress reporting
-    - Thread-safe operation with stop event handling
-    - Performance metrics for algorithm assessment
-    
-    The callback is called at each generation and collects comprehensive
-    data about the optimization state. This information is used both for
-    progress reporting and post-optimization analysis.
-    
-    Attributes:
-        history (dict): Collection of optimization metrics over time
-        progress_callback (callable): Optional callback for GUI updates
-        stop_event (Event): Threading event for graceful termination
+    This callback does the same for optimization:
+    - Watches each generation/iteration
+    - Reports progress to the user interface
+    - Collects statistics about how well we're doing
+    - Can stop the optimization if needed
     """
     
     def __init__(self):

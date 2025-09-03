@@ -1,51 +1,54 @@
 """
-Results Tab - Display and analyze optimization results
+ELI5: Results Tab - Like the Awards Ceremony for Optimization! 🏆
 
-This module provides the ResultsTab class which handles optimization execution,
-progress monitoring, and result visualization. It serves as the final stage
-of the optimization workflow where users run their configured problems and
-analyze the obtained results.
+Think of this like the exciting finale of a competition where we announce the winners!
+After our optimization algorithms have been racing to find the best solutions,
+this is where we:
 
-Key Features:
-- Multi-threaded optimization execution to prevent GUI freezing  
-- Real-time progress monitoring with detailed status updates
-- Comprehensive result visualization (Pareto front, objective space plots)
-- Solution table with sortable columns and filtering capabilities
-- Export functionality for results and plots
-- Integration with matplotlib for high-quality visualizations
-- Error handling and user feedback mechanisms
+🏁 SHOW THE RESULTS:
+   - Display all the winning solutions we found
+   - Create beautiful charts and graphs to see the results
+   - Make tables so you can sort and compare solutions
 
-The ResultsTab coordinates with the ProblemManager and AlgorithmManager to
-execute optimizations and processes the returned results for user consumption.
-It uses Qt's signal-slot mechanism to provide responsive user interaction
-during potentially long-running optimizations.
+📊 MAKE IT PRETTY:
+   - Plot colorful graphs showing the Pareto front (the best solutions)  
+   - Create charts that help you understand the trade-offs
+   - Show progress bars while the optimization is running
 
-Classes:
-    OptimizationWorker: Background thread for optimization execution
-    ResultsTab: Main UI component for results display and management
+💾 SAVE THE GOODS:
+   - Export results to Excel so you can share them
+   - Save pretty charts as pictures
+   - Keep records of what worked best
 
-Workflow:
-    1. User clicks "Run Optimization"
-    2. OptimizationWorker thread is created and started
-    3. Progress updates are emitted and displayed to user
-    4. Upon completion, results are processed and visualized
-    5. User can explore results, export data, or run new optimizations
+🔧 RUN THE SHOW:
+   - Start the optimization race when you click "Run"
+   - Show progress updates so you know it's working
+   - Handle any problems that come up gracefully
+
+It's like having a smart assistant who:
+1. Runs your optimization in the background
+2. Keeps you updated on progress with a progress bar
+3. Shows you beautiful results when done
+4. Helps you understand and export what you found
+
+Think of it as your optimization results dashboard - where science becomes visual!
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
+# ELI5: Import our result-display tools (like getting art supplies for charts)
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
                             QTableWidget, QTableWidgetItem, QHeaderView,
                             QPushButton, QLabel, QProgressBar, QTextEdit,
                             QTabWidget, QSplitter, QComboBox, QCheckBox,
                             QSpinBox, QMessageBox, QFileDialog)
-from PyQt6.QtCore import Qt, pyqtSignal, QThread
-from PyQt6.QtGui import QFont
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import numpy as np
+from PyQt6.QtCore import Qt, pyqtSignal, QThread  # Threading and communication tools
+from PyQt6.QtGui import QFont  # Text formatting tools
+import matplotlib.pyplot as plt  # Chart making tools (like an art studio)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  # Chart display
+from matplotlib.figure import Figure  # Chart canvas
+import numpy as np  # Advanced math for processing results
 
 
 class OptimizationWorker(QThread):

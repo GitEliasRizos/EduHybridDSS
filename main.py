@@ -1,39 +1,58 @@
 #!/usr/bin/env python3
 
-# ELI5: This is like the "power button" for our optimization app!
-# When you run this file, it starts the whole application.
+"""
+Main Application Entry Point
 
-# Import statements - like getting tools from different toolboxes
-import sys  # System tools (like getting command line arguments)
-from PyQt6.QtWidgets import QApplication  # The main app container
-from PyQt6.QtCore import Qt  # Qt framework basics
-from ui.main_window import MainWindow  # Our app's main window
+This module serves as the primary entry point for the PyMOO GUI application.
+It initializes the Qt application framework, configures application-level
+settings, and launches the main user interface.
+
+Application Configuration:
+- Sets application metadata (name, version, organization)
+- Configures the visual style theme (Fusion for modern appearance)
+- Initializes the main window and event loop
+
+Dependencies:
+- PyQt6: GUI framework for cross-platform desktop applications
+- Custom UI modules: Main window and associated components
+"""
+
+import sys
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import Qt
+from ui.main_window import MainWindow
 
 def main():
     """
-    ELI5: This is like setting up a lemonade stand!
-    We prepare everything we need, then open for business.
+    Initialize and launch the PyMOO GUI application.
+    
+    This function performs the complete application startup sequence:
+    1. Creates the Qt application instance
+    2. Sets application metadata and styling preferences
+    3. Instantiates and displays the main window
+    4. Enters the Qt event loop for user interaction
+    
+    The application will continue running until the user closes the main window
+    or terminates the process through the operating system.
     """
-    # Create the application - like setting up the lemonade stand structure
+    # Initialize Qt application framework
     app = QApplication(sys.argv)
     
-    # Give our app a name and version - like putting up a sign
-    app.setApplicationName("PyMOO GUI")  # What people see in their taskbar
-    app.setApplicationVersion("1.3.2")   # Which version this is
-    app.setOrganizationName("Elias Rizos [it21490]")  # Who made this
+    # Configure application metadata for system integration
+    app.setApplicationName("PyMOO GUI")
+    app.setApplicationVersion("1.3.2")
+    app.setOrganizationName("Elias Rizos [it21490]")
     
-    # Make it look nice - like choosing a good tablecloth
-    app.setStyle('Fusion')  # Makes buttons and windows look modern
+    # Set visual style theme for consistent modern appearance
+    app.setStyle('Fusion')
     
-    # Create our main window - like setting up the actual lemonade counter
+    # Create and display main application window
     window = MainWindow()
-    window.show()  # Open the stand for customers!
+    window.show()
     
-    # Keep the app running until someone closes it
-    # Like staying at the lemonade stand until closing time
+    # Enter Qt event loop and handle application exit
     sys.exit(app.exec())
 
-# ELI5: This checks "am I the main file being run?"
-# If yes, start the app! If no (someone imported this), don't start yet.
+# Execute main function when script is run directly
 if __name__ == "__main__":
     main()

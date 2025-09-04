@@ -7,7 +7,7 @@ algorithms, configure parameters, and customize genetic operators for their
 specific optimization problems.
 
 Key Features:
-- Algorithm selection (NSGA-II, NSGA-III, SPEA2, MOEA/D, RVEA)
+- Algorithm selection (NSGA-II, NSGA-III, MOEA/D)
 - Population and generation parameter configuration
 - Genetic operator customization (crossover, mutation)
 - Reference direction setup for many-objective algorithms
@@ -23,9 +23,7 @@ defaults while allowing advanced users to fine-tune all parameters.
 Supported Algorithms:
     - NSGA-II: Best for 2-3 objectives, fast convergence
     - NSGA-III: Excellent for many objectives (4+), reference-based
-    - SPEA2: Alternative multi-objective approach with archive
     - MOEA/D: Decomposition-based, good for complex Pareto fronts
-    - RVEA: Reference vector guided, efficient for many objectives
 
 Algorithm Components:
     - Population sampling strategies
@@ -69,7 +67,7 @@ class AlgorithmTab(QWidget):
     
     The interface is organized into logical groups that appear/disappear based
     on algorithm requirements. For example, reference directions are only shown
-    for algorithms that use them (NSGA-III, RVEA, etc.).
+    for algorithms that use them (NSGA-III, etc.).
     
     UI Organization:
     - Algorithm Selection: Choose primary algorithm
@@ -113,7 +111,7 @@ class AlgorithmTab(QWidget):
         1. Algorithm Selection - choose the optimization algorithm
         2. Algorithm Parameters - population size, generations, random seed
         3. Genetic Operators - crossover and mutation operator configuration
-        4. Reference Directions - for many-objective algorithms (NSGA-III, RVEA)
+        4. Reference Directions - for many-objective algorithms (NSGA-III)
         5. Termination Criteria - stopping conditions and limits
         
         Uses QScrollArea to accommodate all configuration options comfortably.
@@ -372,13 +370,11 @@ class AlgorithmTab(QWidget):
             "Evolutionary Algorithms": [
                 ("NSGA-II", "Non-dominated Sorting Genetic Algorithm II"),
                 ("NSGA-III", "Non-dominated Sorting Genetic Algorithm III"),
-                ("SPEA2", "Strength Pareto Evolutionary Algorithm 2"),
                 ("MOEA/D", "Multi-Objective Evolutionary Algorithm based on Decomposition")
             ],
             "Decomposition-based": [
                 ("MOEA/D", "Multi-Objective Evolutionary Algorithm based on Decomposition"),
-                ("MOEA/D-DE", "MOEA/D with Differential Evolution"),
-                ("RVEA", "Reference Vector Guided Evolutionary Algorithm")
+                ("MOEA/D-DE", "MOEA/D with Differential Evolution")
             ],
             "Indicator-based": [
                 ("IBEA", "Indicator-Based Evolutionary Algorithm"),
@@ -387,7 +383,6 @@ class AlgorithmTab(QWidget):
             ],
             "Reference Point-based": [
                 ("NSGA-III", "Non-dominated Sorting Genetic Algorithm III"),
-                ("RVEA", "Reference Vector Guided Evolutionary Algorithm"),
                 ("A-NSGA-III", "Adaptive NSGA-III")
             ],
             "Other Algorithms": [
@@ -411,10 +406,8 @@ class AlgorithmTab(QWidget):
         descriptions = {
             "NSGA-II": "Fast and elitist multi-objective genetic algorithm with non-dominated sorting and crowding distance.",
             "NSGA-III": "Extension of NSGA-II for many-objective optimization using reference directions.",
-            "SPEA2": "Strength Pareto Evolutionary Algorithm with improved fitness assignment and density estimation.",
             "MOEA/D": "Decomposes multi-objective problem into scalar subproblems using weight vectors.",
             "MOEA/D-DE": "MOEA/D variant using Differential Evolution operators.",
-            "RVEA": "Uses reference vectors to guide the search in many-objective optimization.",
             "IBEA": "Uses indicator functions to compare solutions directly.",
             "SMS-EMOA": "Steady-state algorithm using hypervolume indicator for selection.",
             "HypE": "Hypervolume-based algorithm with Monte Carlo sampling for high dimensions.",
@@ -428,7 +421,7 @@ class AlgorithmTab(QWidget):
         self.algorithm_description.setPlainText(description)
         
         # Show/hide reference directions group based on algorithm
-        ref_dir_algorithms = ["NSGA-III", "RVEA", "A-NSGA-III", "MOEA/D", "MOEA/D-DE"]
+        ref_dir_algorithms = ["NSGA-III", "A-NSGA-III", "MOEA/D", "MOEA/D-DE"]
         self.reference_directions_group.setVisible(algorithm in ref_dir_algorithms)
         
     def _update_specific_parameters(self):
@@ -442,9 +435,7 @@ class AlgorithmTab(QWidget):
         algorithm = self.algorithm_name.currentText()
         
         # Add algorithm-specific parameters
-        if algorithm == "SPEA2":
-            self._add_specific_param("Archive Size", QSpinBox, 10, 1000, 100)
-        elif algorithm == "SMS-EMOA":
+        if algorithm == "SMS-EMOA":
             self._add_specific_param("Offspring Size", QSpinBox, 1, 100, 1)
         elif algorithm == "IBEA":
             kappa_spinbox = QDoubleSpinBox()

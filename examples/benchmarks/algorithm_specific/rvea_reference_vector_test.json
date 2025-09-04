@@ -1,7 +1,7 @@
 {
   "problem": {
-    "name": "RVEA Reference Vector Test - 4-Objective DTLZ3",
-    "description": "4-objective DTLZ3-based problem with multimodal landscape. Tests RVEA's reference vector guided search and angle-penalized distance. Features multiple local Pareto fronts.",
+    "name": "RVEA Reference Vector Test - DTLZ1 Style",
+    "description": "Standard DTLZ1-based 4-objective problem for testing RVEA's reference vector guided search. Uses simple, well-behaved objective functions.",
     "type": "Reference Vector Test",
     "variables": [
       {
@@ -30,54 +30,40 @@
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.25
+        "initial_value": 0.5
       },
       {
         "name": "x5",
         "type": "Real",
         "lower_bound": 0.0,
         "upper_bound": 1.0,
-        "initial_value": 0.25
-      },
-      {
-        "name": "x6",
-        "type": "Real",
-        "lower_bound": 0.0,
-        "upper_bound": 1.0,
-        "initial_value": 0.25
-      },
-      {
-        "name": "x7",
-        "type": "Real",
-        "lower_bound": 0.0,
-        "upper_bound": 1.0,
-        "initial_value": 0.25
+        "initial_value": 0.5
       }
     ],
     "objectives": [
       {
-        "name": "f1_rvea",
+        "name": "f1_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2) * cos(x3 * pi / 2)"
+        "function": "0.5 * x1 * x2 * x3 * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
       },
       {
-        "name": "f2_rvea",
+        "name": "f2_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2) * sin(x3 * pi / 2)"
+        "function": "0.5 * x1 * x2 * (1 - x3) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
       },
       {
-        "name": "f3_rvea",
+        "name": "f3_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
+        "function": "0.5 * x1 * (1 - x2) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
       },
       {
-        "name": "f4_rvea",
+        "name": "f4_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "(1 + ((x4 - 0.5)^2 + (x5 - 0.5)^2 + (x6 - 0.5)^2 + (x7 - 0.5)^2)) * sin(x1 * pi / 2)"
+        "function": "0.5 * (1 - x1) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
       }
     ],
     "constraints": []
@@ -86,11 +72,11 @@
     "category": "Reference Point-based",
     "name": "RVEA",
     "parameters": {
-      "population_size": 330,
-      "n_generations": 300,
+      "population_size": 4,
+      "n_generations": 100,
       "seed": 321,
       "alpha": 2.0,
-      "adaptation_frequency": 0.2
+      "adaptation_frequency": 0.1
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -103,7 +89,7 @@
       "eta": 20.0
     },
     "termination": {
-      "max_evaluations": 99000,
+      "max_evaluations": 400,
       "convergence_tolerance": 1e-4,
       "enable_convergence": true,
       "verbose": true
@@ -111,7 +97,7 @@
     "reference_directions": {
       "type": "Das-Dennis",
       "n_dim": 4,
-      "n_partitions": 8
+      "n_partitions": 1
     }
   },
   "metadata": {

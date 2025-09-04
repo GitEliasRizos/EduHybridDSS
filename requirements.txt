@@ -1,12 +1,12 @@
-# ELI5: Requirements - Like a Shopping List for Our App! 🛒
+# PyMOO GUI Application Dependencies
 #
-# Think of this like a shopping list for all the "ingredients" our optimization app needs.
-# Just like baking a cake requires flour, eggs, sugar, etc., our app needs these packages:
+# This file specifies the required Python packages and their minimum versions
+# for the PyMOO GUI application. Install using: pip install -r requirements.txt
 
-# Core optimization framework (the main engine that solves problems)
+# Multi-objective optimization framework - core computational engine
 pymoo>=0.6.0
 
-# GUI Framework (makes the windows, buttons, and visual interface)
+# Cross-platform GUI framework for desktop application interface
 PyQt6>=6.5.0
 
 # Scientific computing (advanced math tools)

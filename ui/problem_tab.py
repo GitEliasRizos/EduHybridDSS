@@ -1,40 +1,50 @@
 """
-ELI5: Problem Definition Tab - Like a Problem Blueprint Maker! 📐
+Problem Definition Tab - Multi-Objective Optimization Problem Configuration
 
-Think of this like a smart form that helps you describe an optimization problem
-to the computer. Just like when you go to a custom cake shop and tell them:
-"I want a cake that's not too sweet, not too expensive, but really tasty!"
+This module provides a comprehensive user interface for defining multi-objective 
+optimization problems. It enables users to specify decision variables, objective 
+functions, and constraints through an intuitive tabular interface with integrated 
+validation and export capabilities.
 
-This tab helps you describe your optimization problem by filling out:
+Core Functionality:
+- Variable Definition: Configure decision variables with bounds, types, and constraints
+- Objective Function Specification: Define mathematical expressions for optimization targets
+- Constraint Management: Set equality and inequality constraints with validation
+- Problem Validation: Real-time validation of mathematical expressions and configurations
+- Configuration Export: Save/load problem definitions in standardized JSON format
 
-OBJECTIVES: "What do I want to achieve?"
-   - Minimize cost (spend less money)
-   - Maximize quality (get the best result)
-   - Minimize time (finish faster)
+Architecture:
+The interface is organized into logical groups with tables for efficient
+data entry and management:
 
-📊 VARIABLES: "What can I change to achieve my goals?"
-   - Real numbers (like temperature: 20.5°C)
-   - Whole numbers (like number of workers: 5 people)
-   - Yes/No choices (like "use premium materials?")
+Components:
+- Problem Information: Metadata, description, and documentation
+- Decision Variables: Variable definitions with type, bounds, and properties
+- Objective Functions: Mathematical expressions with optimization direction
+- Constraint Definitions: Equality and inequality constraint specifications
+- Problem Validation: Real-time syntax and mathematical validation
+- Export Controls: Configuration save/load and problem serialization
 
-🚫 CONSTRAINTS: "What rules must I follow?"
-   - Budget limit (can't spend more than $1000)
-   - Time limit (must finish in 2 weeks)
-   - Physical limits (temperature can't exceed 100°C)
+Supported Variable Types:
+- Continuous: Real-valued variables with floating-point precision
+- Integer: Discrete integer variables with specified ranges
+- Binary: Boolean decision variables (0/1 or True/False)
+- Categorical: Discrete choice variables from predefined sets
 
-It's like having a smart assistant who asks you all the right questions
-to understand exactly what problem you're trying to solve!
+Mathematical Expression Support:
+- Standard mathematical operators and functions
+- NumPy function compatibility for advanced mathematical operations
+- Variable referencing with automatic dependency resolution
+- Real-time syntax validation and error reporting
 
-The form has tables where you can:
-- Add/remove variables (things you can change)
-- Write math formulas for what you want to optimize
-- Set rules and limits that must be followed
+Integration:
+The tab interfaces with the core problem management system to generate
+PyMOO-compatible problem instances for optimization execution.
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-# ELI5: Import our form-building tools (like getting supplies to build a form)
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
                             QGroupBox, QLineEdit, QTextEdit, QSpinBox,
                             QDoubleSpinBox, QComboBox, QPushButton, QTableWidget,
@@ -477,79 +487,115 @@ class ProblemTab(QWidget):
         return True
         
     def get_configuration(self):
-        """Get the current problem configuration"""
+        """
+        Extract the complete problem configuration from all UI components
+        
+        Traverses all tables and input fields to build a comprehensive
+        problem configuration dictionary. This configuration can be saved
+        to file, passed to the optimization engine, or used for validation.
+        
+        Returns:
+            dict: Complete problem configuration with structure:
+                - name: Problem title/identifier
+                - description: Detailed problem description  
+                - type: Problem category/classification
+                - variables: List of decision variable definitions
+                - objectives: List of objective function definitions
+                - constraints: List of constraint definitions
+                
+        Note:
+            Each variable/objective/constraint includes all necessary parameters
+            for optimization engine consumption (bounds, types, expressions, etc.)
+        """
+        # Build base configuration structure
         config = {
-            "name": self.problem_name.text(),
-            "description": self.problem_description.toPlainText(),
-            "type": self.problem_type.currentText(),
-            "variables": [],
-            "objectives": [],
-            "constraints": []
+            "name": self.problem_name.text().strip(),                      # Problem identifier
+            "description": self.problem_description.toPlainText().strip(), # Detailed description
+            "type": self.problem_type.currentText(),                       # Problem category
+            "variables": [],                                               # Decision variables
+            "objectives": [],                                              # Objective functions
+            "constraints": []                                              # Problem constraints
         }
         
-        # Get variables
+        # Extract variable definitions from table (each row = one variable)
         for row in range(self.variables_table.rowCount()):
             var_config = {
-                "name": self.variables_table.item(row, 0).text(),
-                "type": self.variables_table.cellWidget(row, 1).currentText(),
-                "lower_bound": self.variables_table.cellWidget(row, 2).value(),
-                "upper_bound": self.variables_table.cellWidget(row, 3).value(),
-                "initial_value": self.variables_table.cellWidget(row, 4).value()
+                "name": self.variables_table.item(row, 0).text(),              # Variable name/ID
+                "type": self.variables_table.cellWidget(row, 1).currentText(), # Real/Integer/Binary
+                "lower_bound": self.variables_table.cellWidget(row, 2).value(),# Minimum value
+                "upper_bound": self.variables_table.cellWidget(row, 3).value(),# Maximum value
+                "initial_value": self.variables_table.cellWidget(row, 4).value() # Starting guess
             }
             config["variables"].append(var_config)
             
-        # Get objectives
+        # Extract objective function definitions from table (each row = one objective)
         for row in range(self.objectives_table.rowCount()):
             obj_config = {
-                "name": self.objectives_table.item(row, 0).text(),
-                "direction": self.objectives_table.cellWidget(row, 1).currentText(),
-                "weight": self.objectives_table.cellWidget(row, 2).value(),
-                "function": self.objectives_table.item(row, 3).text()
+                "name": self.objectives_table.item(row, 0).text(),              # Objective name
+                "direction": self.objectives_table.cellWidget(row, 1).currentText(), # Min/Max
+                "weight": self.objectives_table.cellWidget(row, 2).value(),     # Importance weight
+                "function": self.objectives_table.item(row, 3).text()           # Math expression
             }
             config["objectives"].append(obj_config)
             
-        # Get constraints
+        # Extract constraint definitions from table (each row = one constraint)
         for row in range(self.constraints_table.rowCount()):
             const_config = {
-                "name": self.constraints_table.item(row, 0).text(),
-                "type": self.constraints_table.cellWidget(row, 1).currentText(),
-                "function": self.constraints_table.item(row, 2).text(),
-                "value": self.constraints_table.cellWidget(row, 3).value()
+                "name": self.constraints_table.item(row, 0).text(),             # Constraint name
+                "type": self.constraints_table.cellWidget(row, 1).currentText(),# <=, >=, = type
+                "function": self.constraints_table.item(row, 2).text(),         # Math expression
+                "value": self.constraints_table.cellWidget(row, 3).value()      # Constraint bound
             }
             config["constraints"].append(const_config)
             
         return config
         
     def set_configuration(self, config):
-        """Set the problem configuration"""
+        """
+        Populate the UI with a problem configuration (typically from file load)
+        
+        Takes a configuration dictionary and populates all UI components
+        including tables, text fields, and combo boxes. Uses delayed execution
+        to ensure proper table initialization before setting values.
+        
+        Args:
+            config: Problem configuration dict with same structure as get_configuration()
+            
+        Note:
+            Uses QTimer.singleShot for delayed execution to handle Qt table
+            initialization timing issues. This ensures tables are properly
+            sized before attempting to populate them.
+        """
+        # Set basic problem information fields
         if "name" in config:
             self.problem_name.setText(config["name"])
         if "description" in config:
             self.problem_description.setPlainText(config["description"])
         if "type" in config:
+            # Find and select the problem type in combo box
             index = self.problem_type.findText(config["type"])
             if index >= 0:
                 self.problem_type.setCurrentIndex(index)
                 
-        # Set variables
+        # Set variables (trigger table resize, then populate with delay)
         if "variables" in config:
             variables = config["variables"]
-            self.n_variables.setValue(len(variables))
+            self.n_variables.setValue(len(variables))  # This triggers table resize
             
-            # Wait for table to be updated, then set values
+            # Use delayed execution to ensure table is ready before setting values
             from PyQt6.QtCore import QTimer
             QTimer.singleShot(100, lambda: self._set_variable_values(variables))
             
-        # Set objectives
+        # Set objectives (similar delayed approach)
         if "objectives" in config:
             objectives = config["objectives"]
-            self.n_objectives.setValue(len(objectives))
+            self.n_objectives.setValue(len(objectives))  # Triggers table resize
             
-            # Wait for table to be updated, then set values
+            # Delayed execution with slightly more time to avoid race conditions
             from PyQt6.QtCore import QTimer
             QTimer.singleShot(150, lambda: self._set_objective_values(objectives))
             
-        # Set constraints
+        # Set constraints (final step with most delay)
         if "constraints" in config:
             constraints = config["constraints"]
             QTimer.singleShot(200, lambda: self._set_constraint_values(constraints))

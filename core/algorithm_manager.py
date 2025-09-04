@@ -6,7 +6,11 @@ configuration of multi-objective optimization algorithms from PyMOO. It serves
 as the bridge between GUI algorithm configuration and PyMOO algorithm instances.
 
 Key Features:
-- Support for multiple Multi-Objective Optimization algorithms (NSGA-II, NSGA-III, SPEA2, MOEA/D, RVEA)
+- Support for multiple Multi-Objective Optimization algorithms (NSGA-II, NS        if n_objectives == 2:
+            recommendations = [
+                ("NSGA-II", "Excellent for bi-objective problems"),
+                ("MOEA/D", "Effective for regular Pareto fronts")
+            ], MOEA/D)
 - Crossover operator configuration (SBX, PCX, UX)
 - Mutation operator configuration (Polynomial, Gaussian)
 - Reference direction generation for many-objective problems
@@ -21,9 +25,7 @@ user preferences specified through the GUI.
 Supported Algorithms:
     - NSGA-II: Fast Non-dominated Sorting Genetic Algorithm II
     - NSGA-III: NSGA-II extension for many-objective problems
-    - SPEA2: Strength Pareto Evolutionary Algorithm 2
     - MOEA/D: Multi-Objective Evolutionary Algorithm based on Decomposition
-    - RVEA: Reference Vector guided Evolutionary Algorithm
 
 Classes:
     AlgorithmManager: Main interface for algorithm creation and management
@@ -35,9 +37,7 @@ Version: 1.3.2
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3
-from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.algorithms.moo.moead import MOEAD
-from pymoo.algorithms.moo.rvea import RVEA
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.crossover.pcx import PCX
 from pymoo.operators.crossover.ux import UX
@@ -149,124 +149,154 @@ class AlgorithmManager:
             )
             
         elif algorithm_name == "NSGA-III":
-            # Create reference directions
+            # NSGA-III: Extension of NSGA-II for many-objective optimization
+            # Uses reference directions to maintain diversity in high-dimensional objective space
             ref_dirs = self._create_reference_directions(config, n_objectives)
             self.current_algorithm = NSGA3(
-                ref_dirs=ref_dirs,
-                pop_size=pop_size,
-                crossover=crossover,
-                mutation=mutation,
-                sampling=sampling,
-                repair=repair,
-                eliminate_duplicates=True
-            )
-            
-        elif algorithm_name == "SPEA2":
-            archive_size = pop_size  # Default archive size
-            self.current_algorithm = SPEA2(
-                pop_size=pop_size,
-                archive_size=archive_size,
-                crossover=crossover,
-                mutation=mutation,
-                sampling=sampling,
-                eliminate_duplicates=True
+                ref_dirs=ref_dirs,          # Reference directions for objective space partitioning
+                pop_size=pop_size,          # Population size (should be close to # ref directions)
+                crossover=crossover,        # Crossover operator for creating offspring
+                mutation=mutation,          # Mutation operator for introducing variation
+                sampling=sampling,          # Initial population sampling strategy
+                repair=repair,              # Repair operator for constraint handling
+                eliminate_duplicates=True   # Remove duplicate solutions to maintain diversity
             )
             
         elif algorithm_name == "MOEA/D":
-            # Create reference directions for decomposition
+            # MOEA/D: Decomposes multi-objective problem into scalar subproblems
+            # Each subproblem optimizes a weighted combination of objectives
             ref_dirs = self._create_reference_directions(config, n_objectives)
-            n_neighbors = 20  # Default neighborhood size
-            prob_neighbor = 0.9  # Default neighbor probability
+            n_neighbors = 20      # Number of neighboring subproblems for mating
+            prob_neighbor = 0.9   # Probability of selecting parents from neighborhood
             
             self.current_algorithm = MOEAD(
-                ref_dirs=ref_dirs,
-                n_neighbors=n_neighbors,
-                prob_neighbor_mating=prob_neighbor,
-                crossover=crossover,
-                mutation=mutation,
-                sampling=sampling
-            )
-            
-        elif algorithm_name == "RVEA":
-            # Create reference directions
-            ref_dirs = self._create_reference_directions(config, n_objectives)
-            self.current_algorithm = RVEA(
-                ref_dirs=ref_dirs,
-                pop_size=pop_size,
-                crossover=crossover,
-                mutation=mutation,
-                sampling=sampling,
-                eliminate_duplicates=True
+                ref_dirs=ref_dirs,                    # Weight vectors for decomposition
+                n_neighbors=n_neighbors,              # Neighborhood size for each subproblem
+                prob_neighbor_mating=prob_neighbor,   # Probability of local vs global mating
+                crossover=crossover,                  # Crossover operator
+                mutation=mutation,                    # Mutation operator
+                sampling=sampling                     # Initial population sampling
             )
             
         else:
-            # Default to NSGA-II
+            # Default fallback to NSGA-II (most robust and widely applicable)
+            # NSGA-II: Non-dominated sorting + crowding distance for diversity
             self.current_algorithm = NSGA2(
-                pop_size=pop_size,
-                crossover=crossover,
-                mutation=mutation,
-                sampling=sampling,
-                eliminate_duplicates=True
+                pop_size=pop_size,          # Size of population maintained each generation
+                crossover=crossover,        # Crossover operator for recombination
+                mutation=mutation,          # Mutation operator for exploration
+                sampling=sampling,          # Strategy for generating initial population
+                eliminate_duplicates=True   # Remove duplicate solutions automatically
             )
             
         return self.current_algorithm
         
     def _create_crossover_operator(self, crossover_config, repair=None):
-        """Create crossover operator from configuration"""
-        operator_name = crossover_config.get('operator', 'SBX (Simulated Binary Crossover)')
-        prob = crossover_config.get('probability', 0.9)
-        eta = crossover_config.get('eta', 15.0)
+        """
+        Create a crossover operator from GUI configuration
         
+        Crossover operators combine parent solutions to create offspring.
+        This method handles the different crossover types supported by PyMOO
+        and applies repair operators when needed for discrete variables.
+        
+        Args:
+            crossover_config: Dict with operator type, probability, and parameters
+            repair: Optional repair operator for integer/binary constraints
+            
+        Returns:
+            PyMOO crossover operator instance configured with user parameters
+        """
+        operator_name = crossover_config.get('operator', 'SBX (Simulated Binary Crossover)')
+        prob = crossover_config.get('probability', 0.9)  # Probability of applying crossover
+        eta = crossover_config.get('eta', 15.0)  # Distribution index (controls spread)
+        
+        # SBX: Good for real-valued variables, creates offspring near parents
         if 'SBX' in operator_name:
             return SBX(prob=prob, eta=eta, repair=repair)
+        # PCX: Parent-centric crossover, good for exploration
         elif 'PCX' in operator_name:
             return PCX(prob=prob, eta=eta, zeta=0.1)
+        # UX: Uniform crossover, each gene has equal chance from either parent
         elif 'UX' in operator_name or 'Uniform' in operator_name:
             return UX(prob=prob)
         else:
-            # Default to SBX
+            # Default fallback to SBX if unknown operator specified
             return SBX(prob=prob, eta=eta, repair=repair)
             
     def _create_mutation_operator(self, mutation_config, repair=None):
-        """Create mutation operator from configuration"""
-        operator_name = mutation_config.get('operator', 'Polynomial Mutation')
-        prob = mutation_config.get('probability', 0.1)
-        eta = mutation_config.get('eta', 20.0)
+        """
+        Create a mutation operator from GUI configuration
         
+        Mutation operators introduce variation in offspring solutions.
+        Different mutation types are appropriate for different variable types
+        (real, integer, binary).
+        
+        Args:
+            mutation_config: Dict with operator type, probability, and parameters
+            repair: Optional repair operator for integer/binary constraints
+            
+        Returns:
+            PyMOO mutation operator instance configured with user parameters
+        """
+        operator_name = mutation_config.get('operator', 'Polynomial Mutation')
+        prob = mutation_config.get('probability', 0.1)  # Per-variable mutation probability
+        eta = mutation_config.get('eta', 20.0)  # Distribution index (higher = less spread)
+        
+        # Select appropriate mutation operator based on variable types
         if 'Bitflip' in operator_name:
-            # For binary optimization problems
+            # For binary optimization problems - flips bits randomly
             return BitflipMutation(prob=prob, repair=repair)
         elif 'Polynomial' in operator_name:
+            # For real-valued problems - polynomial distribution mutation
             return PM(prob=prob, eta=eta, repair=repair)
         elif 'Gaussian' in operator_name and GM is not None:
+            # Gaussian mutation - adds normal distributed noise
             return GM(prob=prob, sigma=0.1)
         else:
-            # Default to Polynomial Mutation
+            # Default fallback to Polynomial Mutation for real variables
             return PM(prob=prob, eta=eta, repair=repair)
             
     def _create_reference_directions(self, config, n_objectives):
-        """Create reference directions for many-objective algorithms"""
-        ref_dirs_config = config.get('reference_directions', {})
-        method = ref_dirs_config.get('method', 'Das-Dennis')
-        n_partitions = ref_dirs_config.get('n_partitions', 12)
-        scaling = ref_dirs_config.get('scaling', 1.0)
+        """
+        Create reference directions for many-objective optimization algorithms
         
+        Reference directions guide the search in many-objective problems by
+        providing preferred regions in the objective space. They're essential
+        for algorithms like NSGA-III and MOEA/D.
+        
+        Args:
+            config: Algorithm configuration dict with reference_directions settings
+            n_objectives: Number of objectives in the optimization problem
+            
+        Returns:
+            numpy.ndarray: Reference direction vectors normalized to unit simplex
+        """
+        ref_dirs_config = config.get('reference_directions', {})
+        # Support both 'type' (from JSON) and 'method' (legacy compatibility)
+        method = ref_dirs_config.get('type', ref_dirs_config.get('method', 'Das-Dennis'))
+        n_partitions = ref_dirs_config.get('n_partitions', 12)  # Discretization level
+        scaling = ref_dirs_config.get('scaling', 1.0)  # Optional scaling factor
+        
+        # Das-Dennis: Creates evenly distributed directions on unit simplex
         if method == 'Das-Dennis':
             ref_dirs = get_reference_directions("das-dennis", n_objectives, n_partitions=n_partitions)
+        # Multi-layer: Combines different discretization levels for better coverage
         elif method == 'Multi-layer Das-Dennis':
             if n_objectives <= 3:
+                # For low dimensions, single-layer is sufficient
                 ref_dirs = get_reference_directions("das-dennis", n_objectives, n_partitions=n_partitions)
             else:
-                # Use multi-layer approach for high dimensions
+                # For high dimensions, use multi-layer approach for better distribution
                 ref_dirs = get_reference_directions(
                     "multi-layer",
                     get_reference_directions("das-dennis", n_objectives, n_partitions=n_partitions//2),
                     get_reference_directions("das-dennis", n_objectives, n_partitions=n_partitions)
                 )
+        # Uniform Random: Randomly distributed directions (less structured)
         elif method == 'Uniform Random':
-            n_dirs = ref_dirs_config.get('n_directions', 91)
+            n_dirs = ref_dirs_config.get('n_directions', 91)  # Number of random directions
             ref_dirs = np.random.random((n_dirs, n_objectives))
-            # Normalize to unit simplex
+            # Normalize to unit simplex (sum of components = 1)
             ref_dirs = ref_dirs / ref_dirs.sum(axis=1, keepdims=True)
         else:
             # Default to Das-Dennis
@@ -275,6 +305,15 @@ class AlgorithmManager:
         # Apply scaling if specified
         if scaling != 1.0:
             ref_dirs *= scaling
+            
+        # Ensure no reference directions have zero norm (causes division warnings)
+        norms = np.linalg.norm(ref_dirs, axis=1)
+        zero_norm_mask = norms < 1e-10
+        if np.any(zero_norm_mask):
+            # Add small positive values to zero-norm directions
+            ref_dirs[zero_norm_mask] += 1e-8
+            # Renormalize
+            ref_dirs = ref_dirs / np.linalg.norm(ref_dirs, axis=1, keepdims=True)
             
         return ref_dirs
         
@@ -382,7 +421,7 @@ class AlgorithmManager:
         # Algorithm-specific validations
         algorithm_name = config.get('name', '')
         
-        if algorithm_name in ['NSGA-III', 'RVEA', 'MOEA/D']:
+        if algorithm_name in ['NSGA-III', 'MOEA/D']:
             ref_dirs = config.get('reference_directions', {})
             if n_objectives > 3:
                 n_partitions = ref_dirs.get('n_partitions', 12)
@@ -410,14 +449,6 @@ class AlgorithmManager:
                 "requires_ref_dirs": True,
                 "paper": "Deb & Jain (2014)"
             },
-            "SPEA2": {
-                "name": "SPEA2",
-                "full_name": "Strength Pareto Evolutionary Algorithm 2",
-                "description": "Archive-based algorithm with fine-grained fitness",
-                "suitable_for": "2-3 objectives",
-                "requires_ref_dirs": False,
-                "paper": "Zitzler et al. (2001)"
-            },
             "MOEA/D": {
                 "name": "MOEA/D",
                 "full_name": "Multi-Objective Evolutionary Algorithm based on Decomposition",
@@ -425,14 +456,6 @@ class AlgorithmManager:
                 "suitable_for": "2+ objectives",
                 "requires_ref_dirs": True,
                 "paper": "Zhang & Li (2007)"
-            },
-            "RVEA": {
-                "name": "RVEA",
-                "full_name": "Reference Vector Guided Evolutionary Algorithm",
-                "description": "Uses reference vectors to guide search",
-                "suitable_for": "3+ objectives",
-                "requires_ref_dirs": True,
-                "paper": "Cheng et al. (2016)"
             }
         }
         
@@ -459,12 +482,11 @@ class AlgorithmManager:
             recommendations = [
                 ("NSGA-II", "Still effective for 3 objectives"),
                 ("NSGA-III", "Designed for many-objective optimization"),
-                ("RVEA", "Good performance on irregular fronts")
+                ("MOEA/D", "Good for decomposable problems")
             ]
         else:  # n_objectives > 3
             recommendations = [
                 ("NSGA-III", "Best for many-objective problems"),
-                ("RVEA", "Excellent for many objectives"),
                 ("MOEA/D", "Good for decomposable problems")
             ]
             

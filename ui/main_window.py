@@ -1,33 +1,39 @@
 """
-ELI5: Main Window - Like the Control Center of Our Optimization App! 🏢
+Main Window - Primary Application Interface Controller
 
-Think of this as the "mission control" for solving optimization problems.
-Just like NASA has a big control room with different stations for different jobs,
-our app has different tabs for different parts of solving math problems:
+This module implements the central user interface controller for the PyMOO GUI 
+application. It provides a tabbed interface architecture that coordinates between 
+different functional components for multi-objective optimization workflow management.
 
-🔧 Problem Tab: Where you describe what you want to optimize (like "minimize cost")
-⚙️ Algorithm Tab: Where you pick how to solve it (like choosing which tool to use)  
-📊 Results Tab: Where you see the answers and pretty charts
-🎯 MCDA Tab: Where you pick the best solution from many good ones
+Core Architecture:
+The main window serves as the primary container and coordinator for all application
+functionality, organizing the user interface into specialized tabs:
 
-This file is like the building manager - it sets up all the rooms (tabs),
-connects the communication system (signals), and makes sure everything works together!
+Interface Components:
+- Problem Definition Tab: Multi-objective problem specification and configuration
+- Algorithm Configuration Tab: Optimization algorithm selection and parameter tuning  
+- Results Visualization Tab: Solution analysis, plotting, and export capabilities
+- MCDA Integration Tab: Multi-criteria decision analysis for solution ranking
+
+System Architecture:
+This module serves as the central interface controller, managing tab coordination,
+inter-component communication through signals, and overall application workflow.
 
 Author: Elias Rizos [it21490]
 Version: 1.3.2
 """
 
-# ELI5: Getting our building supplies (importing tools we need)
+# Import PyQt6 framework components for GUI construction
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QTabWidget, QMenuBar, QStatusBar, QToolBar,
                             QMessageBox, QFileDialog, QSplitter)
 
-from PyQt6.QtCore import Qt, pyqtSignal  # Communication system between parts
+from PyQt6.QtCore import Qt, pyqtSignal
 
-from PyQt6.QtGui import QAction, QKeySequence  # Menu items and keyboard shortcuts
+from PyQt6.QtGui import QAction, QKeySequence
 
-# Import our different "departments" (tabs)
-from .problem_tab import ProblemTab        # Problem definition department
+# Import application-specific tab components
+from .problem_tab import ProblemTab
 from .algorithm_tab import AlgorithmTab    # Algorithm selection department  
 from .results_tab import ResultsTab        # Results visualization department
 from .mcda_tab import MCDATab              # Decision analysis department
@@ -35,26 +41,33 @@ from .mcda_tab import MCDATab              # Decision analysis department
 
 class MainWindow(QMainWindow):
     """
-    ELI5: This is like the main office building for our optimization company! 🏢
+    Main Application Window - Central Interface Controller
     
-    Imagine you're running a company that solves math problems for people:
-    - The lobby (main window) welcomes visitors
-    - Different floors/departments (tabs) handle different parts of the job
-    - The receptionist (status bar) tells you what's happening
-    - The filing system (menus) helps you save and load your work
+    This class implements the primary application window that serves as the central
+    hub for multi-objective optimization workflow management. It coordinates between
+    different functional components through a tabbed interface architecture.
     
-    When someone brings a problem to solve:
-    1. First floor (Problem Tab): "What exactly do you want to optimize?"
-    2. Second floor (Algorithm Tab): "How should we solve this?"
-    3. Third floor (Results Tab): "Here are all the solutions we found!"
-    4. Fourth floor (MCDA Tab): "Which solution is best for you?"
+    Interface Organization:
+    The main window organizes functionality into specialized tabs:
+    - Problem Definition Tab: Problem specification and configuration management
+    - Algorithm Configuration Tab: Optimization algorithm selection and tuning
+    - Results Analysis Tab: Solution visualization, analysis, and export
+    - MCDA Integration Tab: Multi-criteria decision analysis and ranking
     
-    Signals (like the company's communication system):
-    - optimization_started: "We started working on your problem!"
-    - optimization_finished: "We found solutions! Come see!"
+    Workflow Coordination:
+    The window manages the complete optimization workflow:
+    1. Problem Definition: Specify variables, objectives, and constraints
+    2. Algorithm Configuration: Select and configure optimization algorithms
+    3. Execution Management: Monitor and control optimization processes
+    4. Results Processing: Analyze, visualize, and export optimization results
+    
+    Inter-Component Communication:
+    Custom signals coordinate workflow between components:
+    - optimization_started: Signals the beginning of optimization execution
+    - optimization_finished: Signals completion with results for analysis
     """
     
-    # Custom signals for coordinating optimization workflow
+    # Custom signals for optimization workflow coordination
     optimization_started = pyqtSignal()
     optimization_finished = pyqtSignal(object)  # object = optimization results
     

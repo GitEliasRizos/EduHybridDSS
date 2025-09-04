@@ -117,27 +117,38 @@ class ProblemManager:
                 
         xl = np.array(xl)
         xu = np.array(xu)
-        
-        # Check if we have mixed variable types or can use FunctionalProblem
+        # Determine if we can use PyMOO's simple FunctionalProblem or need custom Problem
+        # FunctionalProblem: Fast, for real variables without constraints
+        # CustomProblem: Flexible, for mixed variables and/or constraints
         all_real = all(t == 'real' for t in vtype)
         
         if all_real and n_constr == 0:
             # Use FunctionalProblem for simple continuous problems without constraints
+            # This is more efficient and easier to debug than custom Problem class
             objective_functions = []
             for i, obj_config in enumerate(config['objectives']):
                 def make_obj_func(obj_idx):
                     def objective_func(x):
-                        """Evaluate single objective for decision vector x"""
+                        """
+                        Evaluate single objective for decision vector x
+                        
+                        Args:
+                            x: Decision variable vector (numpy array)
+                            
+                        Returns:
+                            float: Objective function value
+                        """
                         result = self._evaluate_objectives(x, [config['objectives'][obj_idx]])
                         return result[0]  # Return single objective value
                     return objective_func
                 objective_functions.append(make_obj_func(i))
                 
+            # Create PyMOO FunctionalProblem with our objective functions
             self.current_problem = FunctionalProblem(
-                n_var=n_var,
-                objs=objective_functions,
-                xl=xl,
-                xu=xu
+                n_var=n_var,      # Number of decision variables
+                objs=objective_functions,  # List of objective functions
+                xl=xl,            # Lower bounds for variables
+                xu=xu             # Upper bounds for variables
             )
         else:
             # Use custom Problem class for mixed variables or constraints

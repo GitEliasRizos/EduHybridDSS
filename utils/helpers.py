@@ -1,5 +1,27 @@
 """
-Helper functions and utilities for the PyMOO GUI application
+Helper Functions and Utilities for PyMOO GUI Application
+
+This module provides utility functions for common operations throughout the
+PyMOO GUI application, including file I/O, data processing, visualization
+helpers, and configuration management.
+
+Key Features:
+- Configuration save/load for problems and algorithms
+- Data serialization and validation utilities  
+- Visualization helpers for plots and charts
+- File format validation and error handling
+- Cross-platform path handling
+- Performance measurement utilities
+
+Functions are organized by category:
+- Configuration Management: save/load problem and algorithm configs
+- Data Processing: format conversion, validation, cleaning
+- Visualization: plot styling, color schemes, layout helpers
+- File Operations: safe I/O with error handling
+- Validation: input checking and constraint verification
+
+Author: Elias Rizos [it21490]
+Version: 1.3.2
 """
 
 import json
@@ -12,9 +34,29 @@ from matplotlib.colors import LinearSegmentedColormap
 
 
 def save_problem_config(config: Dict[str, Any], filepath: Union[str, Path]) -> bool:
-    """Save problem configuration to JSON file"""
+    """
+    Save problem configuration to JSON file with error handling
+    
+    Safely serializes and saves a problem configuration dictionary to a JSON file.
+    Handles numpy arrays, complex nested structures, and provides robust error
+    recovery. Creates parent directories if they don't exist.
+    
+    Args:
+        config: Problem configuration dictionary from ProblemTab
+        filepath: Target file path (string or Path object)
+        
+    Returns:
+        bool: True if saved successfully, False if error occurred
+        
+    Example:
+        config = {"variables": [...], "objectives": [...]}
+        success = save_problem_config(config, "my_problem.json")
+    """
     try:
         filepath = Path(filepath)
+        
+        # Ensure parent directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         
         # Create a serializable copy of the config
         serializable_config = make_serializable(config)
@@ -29,15 +71,38 @@ def save_problem_config(config: Dict[str, Any], filepath: Union[str, Path]) -> b
 
 
 def load_problem_config(filepath: Union[str, Path]) -> Optional[Dict[str, Any]]:
-    """Load problem configuration from JSON file"""
+    """
+    Load problem configuration from JSON file with validation
+    
+    Safely loads and validates a problem configuration from a JSON file.
+    Performs basic structure validation and handles missing files gracefully.
+    
+    Args:
+        filepath: Path to JSON configuration file
+        
+    Returns:
+        Dict containing configuration if successful, None if error occurred
+        
+    Example:
+        config = load_problem_config("saved_problem.json")
+        if config:
+            print(f"Loaded problem: {config['name']}")
+    """
     try:
         filepath = Path(filepath)
         
         if not filepath.exists():
+            print(f"Configuration file not found: {filepath}")
             return None
             
         with open(filepath, 'r', encoding='utf-8') as f:
             config = json.load(f)
+            
+        # Basic validation - ensure required keys exist
+        required_keys = ['variables', 'objectives']
+        if not all(key in config for key in required_keys):
+            print(f"Invalid configuration format - missing required keys")
+            return None
             
         return config
     except Exception as e:
@@ -46,7 +111,19 @@ def load_problem_config(filepath: Union[str, Path]) -> Optional[Dict[str, Any]]:
 
 
 def save_algorithm_config(config: Dict[str, Any], filepath: Union[str, Path]) -> bool:
-    """Save algorithm configuration to JSON file"""
+    """
+    Save algorithm configuration to JSON file with error handling
+    
+    Safely serializes and saves an algorithm configuration dictionary to a JSON file.
+    Handles algorithm-specific parameters and provides robust error recovery.
+    
+    Args:
+        config: Algorithm configuration dictionary from AlgorithmTab
+        filepath: Target file path (string or Path object)
+        
+    Returns:
+        bool: True if saved successfully, False if error occurred
+    """
     try:
         filepath = Path(filepath)
         
@@ -271,19 +348,49 @@ def export_results_excel(results: Dict[str, Any], filepath: Union[str, Path]) ->
 
 
 def make_serializable(obj: Any) -> Any:
-    """Convert numpy arrays and other non-serializable objects to serializable format"""
+    """
+    Convert numpy arrays and other non-serializable objects to JSON-serializable format
+    
+    Recursively processes complex data structures to convert numpy types and arrays
+    into standard Python types that can be serialized to JSON. Essential for
+    saving configurations and results that contain numpy data.
+    
+    Args:
+        obj: Any object that may contain non-serializable types
+        
+    Returns:
+        Same object structure with all non-serializable types converted
+        
+    Supported Conversions:
+        - numpy.ndarray -> list
+        - numpy.integer -> int  
+        - numpy.floating -> float
+        - Recursively processes dict, list, tuple containers
+        
+    Example:
+        config = {"results": np.array([1.2, 3.4]), "count": np.int64(5)}
+        serializable = make_serializable(config)
+        # Result: {"results": [1.2, 3.4], "count": 5}
+    """
+    # Handle numpy arrays - convert to standard Python lists
     if isinstance(obj, np.ndarray):
         return obj.tolist()
+    # Handle numpy integer types - convert to standard Python int
     elif isinstance(obj, np.integer):
         return int(obj)
+    # Handle numpy floating point types - convert to standard Python float
     elif isinstance(obj, np.floating):
         return float(obj)
+    # Recursively process dictionary values
     elif isinstance(obj, dict):
         return {key: make_serializable(value) for key, value in obj.items()}
+    # Recursively process list elements
     elif isinstance(obj, list):
         return [make_serializable(item) for item in obj]
+    # Recursively process tuple elements (keeping tuple structure)
     elif isinstance(obj, tuple):
         return tuple(make_serializable(item) for item in obj)
+    # Return unchanged if already serializable (str, int, float, bool, None)
     else:
         return obj
 

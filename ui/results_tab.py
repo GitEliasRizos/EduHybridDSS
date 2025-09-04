@@ -498,45 +498,89 @@ class ResultsTab(QWidget):
         return tab
         
     def start_optimization(self, problem_config, algorithm_config):
-        """Start the optimization process"""
-        if self.worker and self.worker.isRunning():
-            self.worker.stop()
-            self.worker.wait()
-            
-        # Reset UI
-        self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(True)
-        self.log_text.clear()
-        self.results_tabs.setEnabled(False)
+        """
+        Start the optimization process in a background thread
         
-        # Create and start worker
+        Initializes and starts the optimization worker thread with the provided
+        problem and algorithm configurations. Handles cleanup of any previous
+        optimization and sets up the UI for progress monitoring.
+        
+        Args:
+            problem_config: Dict containing problem definition (variables, objectives, constraints)
+            algorithm_config: Dict containing algorithm settings and parameters
+            
+        Note:
+            This method is thread-safe and can be called multiple times.
+            Any running optimization will be stopped before starting a new one.
+        """
+        # Stop any currently running optimization gracefully
+        if self.worker and self.worker.isRunning():
+            self.worker.stop()           # Signal worker to stop
+            self.worker.wait()           # Wait for clean shutdown
+            
+        # Reset UI to initial state for new optimization
+        self.progress_bar.setValue(0)               # Reset progress to 0%
+        self.progress_bar.setVisible(True)          # Show progress bar
+        self.log_text.clear()                       # Clear previous log messages
+        self.results_tabs.setEnabled(False)         # Disable results until completion
+        
+        # Create new worker thread with current configurations
         self.worker = OptimizationWorker(problem_config, algorithm_config)
-        self.worker.progress_update.connect(self._on_progress_update)
-        self.worker.results_ready.connect(self._on_results_ready)
-        self.worker.error_occurred.connect(self._on_error_occurred)
+        
+        # Connect worker signals to UI update methods for real-time feedback
+        self.worker.progress_update.connect(self._on_progress_update)  # Progress updates
+        self.worker.results_ready.connect(self._on_results_ready)      # Completion notification
+        self.worker.error_occurred.connect(self._on_error_occurred)    # Error handling
+        
+        # Start the optimization in background thread (non-blocking)
         self.worker.start()
         
     def stop_optimization(self):
-        """Stop the optimization process"""
+        """
+        Stop the currently running optimization process
+        
+        Gracefully terminates the optimization worker thread and updates
+        the UI to reflect the stopped state. Safe to call even if no
+        optimization is running.
+        """
         if self.worker and self.worker.isRunning():
-            self.worker.stop()
-            self.worker.wait()
-            self.progress_bar.setVisible(False)
-            self.status_label.setText("Optimization stopped by user")
+            self.worker.stop()                              # Request graceful shutdown
+            self.worker.wait()                              # Wait for thread to finish
+            self.progress_bar.setVisible(False)             # Hide progress bar
+            self.status_label.setText("Optimization stopped by user")  # Update status
             
     def is_running(self):
-        """Check if optimization is running"""
+        """
+        Check if an optimization is currently running
+        
+        Returns:
+            bool: True if optimization worker is active, False otherwise
+        """
         return self.worker and self.worker.isRunning()
         
     def has_results(self):
-        """Check if results are available"""
+        """
+        Check if optimization results are available for display
+        
+        Returns:
+            bool: True if results are loaded and ready for visualization, False otherwise
+        """
         return self.results is not None
         
     def _on_progress_update(self, progress, message):
-        """Handle progress updates"""
-        self.progress_bar.setValue(progress)
-        self.status_label.setText(message)
-        self.log_text.append(f"[{progress:3d}%] {message}")
+        """
+        Handle progress updates from the optimization worker thread
+        
+        Updates the progress bar and status displays with real-time information
+        about the optimization progress. Thread-safe slot for worker signals.
+        
+        Args:
+            progress: Integer progress percentage (0-100)
+            message: String describing current optimization status
+        """
+        self.progress_bar.setValue(progress)                    # Update progress bar
+        self.status_label.setText(message)                      # Update status text
+        self.log_text.append(f"[{progress:3d}%] {message}")     # Add to progress log
         
     def _on_results_ready(self, results):
         """Handle optimization results"""

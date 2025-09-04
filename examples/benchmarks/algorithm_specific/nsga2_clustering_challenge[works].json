@@ -1,7 +1,7 @@
 {
   "problem": {
-    "name": "SPEA2 Clustering Challenge - Deceptive Multimodal",
-    "description": "Complex multimodal problem with multiple local Pareto fronts and clustering challenges. Tests SPEA2's fitness assignment and environmental selection. Features deceptive objective space.",
+    "name": "NSGA-II Clustering Challenge - Deceptive Multimodal",
+    "description": "Complex multimodal problem with multiple local Pareto fronts and clustering challenges. Tests NSGA-II's non-dominated sorting and crowding distance. Features deceptive objective space.",
     "type": "Multimodal Test Problem",
     "variables": [
       {
@@ -38,36 +38,35 @@
         "name": "f1_multimodal",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "sum(i * xi^4 - 16 * xi^2 + 5 * xi for i, xi in enumerate([x1, x2, x3, x4], 1)) + 100"
+        "function": "1 * x1**4 - 16 * x1**2 + 5 * x1 + 2 * x2**4 - 16 * x2**2 + 5 * x2 + 3 * x3**4 - 16 * x3**2 + 5 * x3 + 4 * x4**4 - 16 * x4**2 + 5 * x4 + 100"
       },
       {
         "name": "f2_clustering",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "sum(xi^2 + sin(5 * pi * xi) for xi in [x1, x2, x3, x4]) + 50"
+        "function": "x1**2 + sin(5 * 3.14159 * x1) + x2**2 + sin(5 * 3.14159 * x2) + x3**2 + sin(5 * 3.14159 * x3) + x4**2 + sin(5 * 3.14159 * x4) + 50"
       }
     ],
     "constraints": [
       {
         "name": "c1_boundary",
         "type": "Inequality",
-        "function": "x1^2 + x2^2 - 16",
+        "function": "x1**2 + x2**2 - 16",
         "operator": "<="
       },
       {
         "name": "c2_nonlinear",
         "type": "Inequality",
-        "function": "x3^2 + x4^2 - 9",
+        "function": "x3**2 + x4**2 - 9",
         "operator": "<="
       }
     ]
   },
   "algorithm": {
-    "category": "Archive-based",
-    "name": "SPEA2",
+    "category": "Pareto-based",
+    "name": "NSGA-II",
     "parameters": {
       "population_size": 120,
-      "archive_size": 80,
       "n_generations": 500,
       "seed": 123
     },
@@ -91,6 +90,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "SPEA2 clustering and fitness assignment challenge benchmark"
+    "description": "NSGA-II clustering and fitness assignment challenge benchmark"
   }
 }

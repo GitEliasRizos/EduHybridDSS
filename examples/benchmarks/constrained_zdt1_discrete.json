@@ -37,27 +37,15 @@
         "name": "f2",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "(1 + x2 + x3) * (1 - (x1 / (1 + x2 + x3))**0.5)"
+        "function": "1 + x2 + x3 - x1"
       }
     ],
     "constraints": [
       {
-        "name": "discrete_constraint_1",
+        "name": "sum_constraint", 
         "type": "<=",
-        "function": "x1**2 + x2**2",
-        "value": 0.5
-      },
-      {
-        "name": "discrete_constraint_2", 
-        "type": ">=",
-        "function": "x1 + x2 + x3",
-        "value": 0.8
-      },
-      {
-        "name": "discrete_constraint_3",
-        "type": "<=",
-        "function": "abs(x1 - 0.3) + abs(x2 - 0.3)",
-        "value": 0.4
+        "function": "x1 + x2 + 2*x3",
+        "value": 1.3
       }
     ]
   },
@@ -65,8 +53,8 @@
     "category": "Pareto-based",
     "name": "NSGA-II",
     "parameters": {
-      "population_size": 100,
-      "n_generations": 300,
+      "population_size": 50,
+      "n_generations": 200,
       "seed": 42
     },
     "crossover": {

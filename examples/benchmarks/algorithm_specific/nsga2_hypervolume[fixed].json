@@ -1,0 +1,68 @@
+{
+  "problem": {
+    "name": "NSGA-II Hypervolume Test - Convergence Challenge",
+    "description": "Multi-objective problem designed to test NSGA-II's non-dominated sorting with challenging convergence characteristics and diverse Pareto front shapes.",
+    "type": "Indicator-based Test",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": -2.0,
+        "upper_bound": 2.0,
+        "initial_value": 0.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_indicator",
+        "direction": "Minimize",
+        "weight": 0.5,
+        "function": "x1**2 + x2**2"
+      },
+      {
+        "name": "f2_hypervolume_challenge",
+        "direction": "Minimize",
+        "weight": 0.5,
+        "function": "(x1 - 1)**2 + (x2 - 1)**2"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 400,
+      "seed": 147
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 20.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 15.0
+    },
+    "termination": {
+      "max_evaluations": 40000,
+      "convergence_tolerance": 1e-5,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "NSGA-II convergence and diversity test benchmark"
+  }
+}

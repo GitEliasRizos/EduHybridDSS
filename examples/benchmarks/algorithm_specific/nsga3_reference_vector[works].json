@@ -1,7 +1,7 @@
 {
   "problem": {
-    "name": "RVEA Reference Vector Test - DTLZ1 Style",
-    "description": "Standard DTLZ1-based 4-objective problem for testing RVEA's reference vector guided search. Uses simple, well-behaved objective functions.",
+    "name": "NSGA-III Reference Vector Test - DTLZ1 Style",
+    "description": "Standard DTLZ1-based 4-objective problem for testing NSGA-III's reference point guided search. Uses simple, well-behaved objective functions.",
     "type": "Reference Vector Test",
     "variables": [
       {
@@ -45,38 +45,41 @@
         "name": "f1_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "0.5 * x1 * x2 * x3 * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
+        "function": "0.5 * x1 * x2 * x3 * (1 + (x4 - 0.5)**2 + (x5 - 0.5)**2)"
       },
       {
         "name": "f2_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "0.5 * x1 * x2 * (1 - x3) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
+        "function": "0.5 * x1 * x2 * (1 - x3) * (1 + (x4 - 0.5)**2 + (x5 - 0.5)**2)"
       },
       {
         "name": "f3_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "0.5 * x1 * (1 - x2) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
+        "function": "0.5 * x1 * (1 - x2) * (1 + (x4 - 0.5)**2 + (x5 - 0.5)**2)"
       },
       {
         "name": "f4_dtlz",
         "direction": "Minimize",
         "weight": 0.25,
-        "function": "0.5 * (1 - x1) * (1 + (x4 - 0.5)^2 + (x5 - 0.5)^2)"
+        "function": "0.5 * (1 - x1) * (1 + (x4 - 0.5)**2 + (x5 - 0.5)**2)"
       }
     ],
     "constraints": []
   },
   "algorithm": {
     "category": "Reference Point-based",
-    "name": "RVEA",
+    "name": "NSGA-III",
     "parameters": {
-      "population_size": 4,
+      "population_size": 100,
       "n_generations": 100,
       "seed": 321,
-      "alpha": 2.0,
-      "adaptation_frequency": 0.1
+      "reference_directions": {
+        "type": "das-dennis",
+        "n_partitions": 12,
+        "n_objectives": 4
+      }
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -103,6 +106,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "RVEA reference vector guided search test with 4-objective multimodal problem"
+    "description": "NSGA-III reference point guided search test with 4-objective multimodal problem"
   }
 }

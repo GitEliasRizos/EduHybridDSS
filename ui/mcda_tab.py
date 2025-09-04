@@ -786,12 +786,20 @@ class MCDATab(QWidget):
         criteria_names = [obj.get('name', f'Objective_{i+1}') for i, obj in enumerate(objectives_info)]
         
         # AHP configuration
+        # Clear existing layout if it exists
+        if self.ahp_config_widget.layout():
+            QWidget().setLayout(self.ahp_config_widget.layout())
+        
         ahp_layout = QVBoxLayout()
         self.ahp_comparisons_widget = PairwiseComparisonWidget(criteria_names)
         ahp_layout.addWidget(self.ahp_comparisons_widget)
         self.ahp_config_widget.setLayout(ahp_layout)
         
         # TOPSIS configuration
+        # Clear existing layout if it exists
+        if self.topsis_config_widget.layout():
+            QWidget().setLayout(self.topsis_config_widget.layout())
+        
         topsis_layout = QVBoxLayout()
         self.topsis_weights_widget = WeightConfigurationWidget(criteria_names)
         topsis_layout.addWidget(self.topsis_weights_widget)

@@ -298,10 +298,10 @@ class ProblemManager:
                     result = eval(function_str, {"__builtins__": {}}, var_context)
                     
                     # Convert to inequality constraint (g(x) <= 0)
-                    if "≤" in constraint_type or "Less than" in constraint_type:
+                    if constraint_type in ["<=", "≤", "Less than", "less", "Less"]:
                         # g(x) <= value -> g(x) - value <= 0
                         G[j, i] = result - constraint_value
-                    elif "≥" in constraint_type or "Greater than" in constraint_type:
+                    elif constraint_type in [">=", "≥", "Greater than", "greater", "Greater"]:
                         # g(x) >= value -> -(g(x) - value) <= 0
                         G[j, i] = constraint_value - result
                     else:  # Equality constraint

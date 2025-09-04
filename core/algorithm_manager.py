@@ -166,8 +166,12 @@ class AlgorithmManager:
             # MOEA/D: Decomposes multi-objective problem into scalar subproblems
             # Each subproblem optimizes a weighted combination of objectives
             ref_dirs = self._create_reference_directions(config, n_objectives)
-            n_neighbors = 20      # Number of neighboring subproblems for mating
+            
+            # Extract MOEA/D specific parameters from configuration
+            algorithm_params = config.get('parameters', {})
+            n_neighbors = algorithm_params.get('n_neighbors', 20)      # Number of neighboring subproblems for mating
             prob_neighbor = 0.9   # Probability of selecting parents from neighborhood
+            decomposition = algorithm_params.get('decomposition', 'Tchebycheff')  # Decomposition method
             
             self.current_algorithm = MOEAD(
                 ref_dirs=ref_dirs,                    # Weight vectors for decomposition

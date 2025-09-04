@@ -1,8 +1,8 @@
 {
   "problem": {
-    "name": "SPEA2 Archive Test - ZDT6 Style",
-    "description": "ZDT6-based problem optimized for SPEA2: Non-uniform search space with sparse Pareto optimal region. Tests SPEA2's archive mechanism and clustering. Expected: Good performance in difficult regions.",
-    "type": "Custom Problem",
+    "name": "Constrained ZDT1 Discrete - Working",
+    "description": "Modified ZDT1 with working constraints to create discrete Pareto front. Expected: 10-30 solutions only.",
+    "type": "Test Function",
     "variables": [
       {
         "name": "x1",
@@ -17,38 +17,37 @@
         "lower_bound": 0.0,
         "upper_bound": 1.0,
         "initial_value": 0.5
-      },
-      {
-        "name": "x3",
-        "type": "Real",
-        "lower_bound": 0.0,
-        "upper_bound": 1.0,
-        "initial_value": 0.5
       }
     ],
     "objectives": [
       {
-        "name": "f1_nonuniform",
+        "name": "f1",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "1 - exp(-4 * x1) * sin(6 * pi * x1)**6"
+        "function": "x1"
       },
       {
-        "name": "f2_sparse",
+        "name": "f2",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "(1 + x2 + x3) * (1 - (1 - exp(-4 * x1) * sin(6 * pi * x1)**6) / (1 + x2 + x3))**2"
+        "function": "(1 - x1)**2 + x2**2"
       }
     ],
-    "constraints": []
+    "constraints": [
+      {
+        "name": "discrete_constraint",
+        "type": "<=",
+        "function": "x1 + x2",
+        "value": 0.8
+      }
+    ]
   },
   "algorithm": {
-    "category": "Archive-based",
-    "name": "SPEA2",
+    "category": "Pareto-based",
+    "name": "NSGA-II",
     "parameters": {
-      "population_size": 100,
-      "archive_size": 100,
-      "n_generations": 300,
+      "population_size": 50,
+      "n_generations": 100,
       "seed": 42
     },
     "crossover": {
@@ -62,7 +61,7 @@
       "eta": 20.0
     },
     "termination": {
-      "max_evaluations": 30000,
+      "max_evaluations": 5000,
       "convergence_tolerance": 1e-6,
       "enable_convergence": true,
       "verbose": true
@@ -71,6 +70,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "SPEA2 archive mechanism test benchmark"
+    "description": "Working constrained ZDT1 discrete Pareto front test"
   }
 }

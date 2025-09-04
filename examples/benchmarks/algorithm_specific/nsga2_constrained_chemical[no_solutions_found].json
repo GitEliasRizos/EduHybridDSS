@@ -1,32 +1,32 @@
 {
   "problem": {
-    "name": "C-TAEA Constrained Chemical Process",
-    "description": "Constrained chemical process optimization designed for C-TAEA's two-archive approach. Tests convergence and diversity archives with complex constraint handling in chemical reactor design.",
+    "name": "NSGA-II Constrained Chemical Process",
+    "description": "Constrained chemical process optimization designed for NSGA-II's constraint handling approach. Tests non-dominated sorting with constraint violations in chemical reactor design.",
     "type": "Constrained Chemical Engineering",
     "variables": [
       {
-        "name": "temperature",
+        "name": "x1",
         "type": "Real",
         "lower_bound": 300.0,
         "upper_bound": 800.0,
         "initial_value": 500.0
       },
       {
-        "name": "pressure",
+        "name": "x2",
         "type": "Real",
         "lower_bound": 1.0,
         "upper_bound": 10.0,
         "initial_value": 5.0
       },
       {
-        "name": "flow_rate",
+        "name": "x3",
         "type": "Real",
         "lower_bound": 0.1,
         "upper_bound": 5.0,
         "initial_value": 1.0
       },
       {
-        "name": "catalyst_loading",
+        "name": "x4",
         "type": "Real",
         "lower_bound": 0.01,
         "upper_bound": 0.5,
@@ -38,56 +38,43 @@
         "name": "conversion_efficiency",
         "direction": "Maximize",
         "weight": 0.4,
-        "function": "100 * (1 - exp(-catalyst_loading * temperature / 500)) * pressure / (1 + flow_rate)"
+        "function": "100 * (1 - exp(-x4 * x1 / 500)) * x2 / (1 + x3)"
       },
       {
         "name": "energy_consumption",
         "direction": "Minimize",
         "weight": 0.3,
-        "function": "0.001 * temperature^2 + 0.1 * pressure^2 + 10 * flow_rate^2"
+        "function": "0.001 * x1**2 + 0.1 * x2**2 + 10 * x3**2"
       },
       {
         "name": "operating_cost",
         "direction": "Minimize",
         "weight": 0.3,
-        "function": "temperature * 0.1 + pressure * 5 + catalyst_loading * 1000 + flow_rate * 50"
+        "function": "x1 * 0.1 + x2 * 5 + x4 * 1000 + x3 * 50"
       }
     ],
     "constraints": [
       {
         "name": "c1_temperature_pressure",
         "type": "Inequality",
-        "function": "temperature + 100 * pressure - 1200",
+        "function": "x1 + 100 * x2 - 1500",
         "operator": "<="
       },
       {
         "name": "c2_catalyst_efficiency",
         "type": "Inequality",
-        "function": "0.05 - catalyst_loading * pressure / temperature",
-        "operator": "<="
-      },
-      {
-        "name": "c3_flow_stability",
-        "type": "Inequality",
-        "function": "flow_rate * pressure - 20",
-        "operator": "<="
-      },
-      {
-        "name": "c4_reactor_limit",
-        "type": "Inequality",
-        "function": "temperature * flow_rate - 2000",
+        "function": "0.02 - x4 * x2 / x1",
         "operator": "<="
       }
     ]
   },
   "algorithm": {
-    "category": "Constrained",
-    "name": "C-TAEA",
+    "category": "Pareto-based",
+    "name": "NSGA-II",
     "parameters": {
       "population_size": 100,
       "n_generations": 500,
-      "seed": 258,
-      "archive_size": 100
+      "seed": 258
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -96,7 +83,7 @@
     },
     "mutation": {
       "operator": "Polynomial Mutation",
-      "probability": 0.25,
+      "probability": 0.1,
       "eta": 20.0
     },
     "termination": {
@@ -109,6 +96,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "C-TAEA two-archive constrained chemical process optimization benchmark"
+    "description": "NSGA-II constrained chemical process optimization benchmark"
   }
 }

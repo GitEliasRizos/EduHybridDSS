@@ -1,43 +1,43 @@
 {
   "problem": {
-    "name": "Kursawe Function - Multi-modal",
-    "description": "Kursawe function with multiple local fronts. Tests algorithm's ability to maintain diversity across multiple optimal regions. Expected: 15-40 solutions in disconnected regions.",
-    "type": "Test Function",
+    "name": "NSGA-II Archive Test - ZDT6 Style",
+    "description": "ZDT6-based problem optimized for NSGA-II: Non-uniform search space with sparse Pareto optimal region. Tests NSGA-II's non-dominated sorting and crowding distance. Expected: Good performance in difficult regions.",
+    "type": "Custom Problem",
     "variables": [
       {
         "name": "x1",
         "type": "Real",
-        "lower_bound": -5.0,
-        "upper_bound": 5.0,
-        "initial_value": 0.0
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
       },
       {
         "name": "x2",
         "type": "Real",
-        "lower_bound": -5.0,
-        "upper_bound": 5.0,
-        "initial_value": 0.0
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
       },
       {
         "name": "x3",
         "type": "Real",
-        "lower_bound": -5.0,
-        "upper_bound": 5.0,
-        "initial_value": 0.0
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
       }
     ],
     "objectives": [
       {
-        "name": "f1",
+        "name": "f1_nonuniform",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "-10 * exp(-0.2 * sqrt(x1**2 + x2**2)) - 10 * exp(-0.2 * sqrt(x2**2 + x3**2))"
+        "function": "1 - exp(-4 * x1) * sin(6 * pi * x1)**6"
       },
       {
-        "name": "f2",
+        "name": "f2_sparse",
         "direction": "Minimize",
         "weight": 1.0,
-        "function": "abs(x1)**0.8 + 5 * sin(x1**3) + abs(x2)**0.8 + 5 * sin(x2**3) + abs(x3)**0.8 + 5 * sin(x3**3)"
+        "function": "(1 + x2 + x3) * (1 - (1 - exp(-4 * x1) * sin(6 * pi * x1)**6) / (1 + x2 + x3))**2"
       }
     ],
     "constraints": []
@@ -70,6 +70,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "Kursawe benchmark - multi-modal disconnected fronts test"
+    "description": "NSGA-II non-dominated sorting test benchmark"
   }
 }

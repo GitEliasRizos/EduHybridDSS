@@ -2,7 +2,7 @@
   "problem": {
     "name": "MOEA/D 3-Objective Weight Vector Test",
     "description": "Classical DTLZ2-style 3-objective problem optimized for MOEA/D weight vector distribution testing. Tests uniform weight generation and neighbor-based mating strategy.",
-    "type": "Weight Distribution Test",
+    "type": "Custom Problem",
     "variables": [
       {
         "name": "x1",
@@ -51,38 +51,33 @@
       {
         "name": "f1_dtlz_style",
         "direction": "Minimize",
-        "weight": 0.333,
-        "function": "(1 + g) * cos(x1 * pi / 2) * cos(x2 * pi / 2)"
+        "weight": 0.33,
+        "function": "(1 + (x3**2 + x4**2 + x5**2 + x6**2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2)"
       },
       {
-        "name": "f2_dtlz_style",
+        "name": "f2_dtlz_style", 
         "direction": "Minimize",
-        "weight": 0.333,
-        "function": "(1 + g) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
+        "weight": 0.33,
+        "function": "(1 + (x3**2 + x4**2 + x5**2 + x6**2)) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
       },
       {
         "name": "f3_dtlz_style",
-        "direction": "Minimize",
-        "weight": 0.334,
-        "function": "(1 + g) * sin(x1 * pi / 2)"
+        "direction": "Minimize", 
+        "weight": 0.33,
+        "function": "(1 + (x3**2 + x4**2 + x5**2 + x6**2)) * sin(x1 * pi / 2)"
       }
     ],
-    "constraints": [],
-    "auxiliary_functions": {
-      "g": "sum((xi - 0.5)^2 for xi in [x3, x4, x5, x6])"
-    }
+    "constraints": []
   },
   "algorithm": {
     "category": "Decomposition-based",
     "name": "MOEA/D",
     "parameters": {
       "population_size": 91,
-      "n_neighbors": 15,
-      "prob_neighbor_mating": 0.8,
       "n_generations": 350,
       "seed": 789,
       "decomposition": "Tchebycheff",
-      "weight_generation": "uniform"
+      "n_neighbors": 20
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -94,9 +89,15 @@
       "probability": 0.1,
       "eta": 20.0
     },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_partitions": 12,
+      "n_directions": 91,
+      "scaling": 1.0
+    },
     "termination": {
       "max_evaluations": 31850,
-      "convergence_tolerance": 1e-5,
+      "convergence_tolerance": 1e-05,
       "enable_convergence": true,
       "verbose": true
     }
@@ -104,6 +105,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "MOEA/D 3-objective weight vector distribution test benchmark"
+    "created_date": "2025-09-04T17:37:40.147831"
   }
 }

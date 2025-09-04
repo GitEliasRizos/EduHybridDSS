@@ -1,7 +1,7 @@
 {
   "problem": {
-    "name": "SMS-EMOA Steady State Test - Hypervolume Optimization",
-    "description": "Bi-objective problem optimized for SMS-EMOA's steady-state evolution and hypervolume-based selection. Tests S-metric selection and convergence behavior.",
+    "name": "NSGA-II Steady State Test - Bi-objective Optimization",
+    "description": "Bi-objective problem optimized for NSGA-II's non-dominated sorting and crowding distance selection. Tests convergence behavior and diversity maintenance.",
     "type": "Hypervolume Test Problem",
     "variables": [
       {
@@ -31,32 +31,31 @@
         "name": "f1_hypervolume",
         "direction": "Minimize",
         "weight": 0.5,
-        "function": "sum(xi^2 for xi in [x1, x2, x3]) + 0.1 * sin(5 * x1) + 0.1 * sin(5 * x2)"
+        "function": "x1**2 + x2**2 + x3**2 + 0.1 * sin(5 * x1) + 0.1 * sin(5 * x2)"
       },
       {
         "name": "f2_s_metric",
         "direction": "Minimize",
         "weight": 0.5,
-        "function": "sum((xi - 1)^2 for xi in [x1, x2, x3]) + 0.05 * cos(8 * x3)"
+        "function": "(x1 - 1)**2 + (x2 - 1)**2 + (x3 - 1)**2 + 0.05 * cos(8 * x3)"
       }
     ],
     "constraints": [
       {
         "name": "c1_circular_constraint",
         "type": "Inequality",
-        "function": "x1^2 + x2^2 - 3.0",
+        "function": "x1**2 + x2**2 - 3.0",
         "operator": "<="
       }
     ]
   },
   "algorithm": {
-    "category": "Steady-state",
-    "name": "SMS-EMOA",
+    "category": "Pareto-based",
+    "name": "NSGA-II",
     "parameters": {
       "population_size": 50,
       "n_generations": 1000,
-      "seed": 987,
-      "selection": "hypervolume"
+      "seed": 987
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",
@@ -78,6 +77,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "SMS-EMOA steady-state hypervolume optimization test benchmark"
+    "description": "NSGA-II bi-objective convergence optimization test benchmark"
   }
 }

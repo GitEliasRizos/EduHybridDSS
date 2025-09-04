@@ -52,7 +52,7 @@
   },
   "algorithm": {
     "category": "Pareto-based",
-    "name": "SPEA2",
+    "name": "NSGA-II",
     "parameters": {
       "population_size": 100,
       "n_generations": 200,
@@ -78,7 +78,7 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "Constrained pressure vessel design optimization with SPEA2",
+    "description": "Constrained pressure vessel design optimization with NSGA-II",
     "recommended_for": "Engineering design, constrained optimization",
     "reference": "Kannan, B.K., Kramer, S.N. (1994). An Augmented Lagrange Multiplier Based Method for Mixed Integer Discrete Continuous Optimization"
   }

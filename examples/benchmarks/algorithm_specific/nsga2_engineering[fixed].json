@@ -1,32 +1,32 @@
 {
   "problem": {
-    "name": "GDE3 Differential Evolution Test - Engineering Problem",
-    "description": "Complex engineering optimization problem designed for GDE3's differential evolution operators. Features mixed variable constraints and non-linear objective landscape.",
+    "name": "NSGA-II Engineering Test - Complex Constrained Problem",
+    "description": "Complex engineering optimization problem designed for NSGA-II's constraint handling. Features mixed variable constraints and non-linear objective landscape.",
     "type": "Engineering Optimization",
     "variables": [
       {
-        "name": "thickness",
+        "name": "x1",
         "type": "Real",
         "lower_bound": 0.1,
         "upper_bound": 2.0,
         "initial_value": 0.5
       },
       {
-        "name": "width",
+        "name": "x2",
         "type": "Real",
         "lower_bound": 0.1,
         "upper_bound": 10.0,
         "initial_value": 2.0
       },
       {
-        "name": "height",
+        "name": "x3",
         "type": "Real",
         "lower_bound": 0.1,
         "upper_bound": 10.0,
         "initial_value": 2.0
       },
       {
-        "name": "material_grade",
+        "name": "x4",
         "type": "Real",
         "lower_bound": 1.0,
         "upper_bound": 5.0,
@@ -38,56 +38,53 @@
         "name": "weight_minimization",
         "direction": "Minimize",
         "weight": 0.6,
-        "function": "thickness * width * height * material_grade * 7.85"
+        "function": "x1 * x2 * x3 * x4 * 7.85"
       },
       {
         "name": "stress_factor",
         "direction": "Minimize",
         "weight": 0.4,
-        "function": "1000 * material_grade / (thickness * width^2 / 6) + 0.1 * height"
+        "function": "1000 * x4 / (x1 * x2**2 / 6 + 0.001) + 0.1 * x3"
       }
     ],
     "constraints": [
       {
         "name": "c1_aspect_ratio",
         "type": "Inequality",
-        "function": "width / height - 5.0",
+        "function": "x2 / x3 - 5.0",
         "operator": "<="
       },
       {
         "name": "c2_minimum_section",
         "type": "Inequality",
-        "function": "0.05 - thickness * width",
+        "function": "0.05 - x1 * x2",
         "operator": "<="
       },
       {
         "name": "c3_material_compatibility",
         "type": "Inequality",
-        "function": "thickness + width - material_grade * 2",
+        "function": "x1 + x2 - x4 * 2",
         "operator": "<="
       }
     ]
   },
   "algorithm": {
-    "category": "Differential Evolution",
-    "name": "GDE3",
+    "category": "Pareto-based",
+    "name": "NSGA-II",
     "parameters": {
       "population_size": 100,
       "n_generations": 500,
-      "seed": 654,
-      "variant": "DE/rand/1/bin"
+      "seed": 654
     },
     "crossover": {
-      "operator": "DE (Differential Evolution)",
-      "probability": 0.8,
-      "CR": 0.3,
-      "F": 0.7
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
     },
     "mutation": {
-      "operator": "DE Mutation",
-      "probability": 1.0,
-      "eta": 20.0,
-      "strategy": "rand1"
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
     },
     "termination": {
       "max_evaluations": 50000,
@@ -99,6 +96,6 @@
   "metadata": {
     "created_by": "PyMOO GUI",
     "version": "1.0.0",
-    "description": "GDE3 differential evolution operators test with engineering problem"
+    "description": "NSGA-II engineering constraint handling test with complex problem"
   }
 }

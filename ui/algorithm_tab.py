@@ -366,6 +366,7 @@ class AlgorithmTab(QWidget):
         category = self.algorithm_category.currentText()
         self.algorithm_name.clear()
         
+        # Define supported and unsupported algorithms with clear labeling
         algorithms = {
             "Evolutionary Algorithms": [
                 ("NSGA-II", "Non-dominated Sorting Genetic Algorithm II"),
@@ -374,21 +375,21 @@ class AlgorithmTab(QWidget):
             ],
             "Decomposition-based": [
                 ("MOEA/D", "Multi-Objective Evolutionary Algorithm based on Decomposition"),
-                ("MOEA/D-DE", "MOEA/D with Differential Evolution")
+                ("MOEA/D-DE [NOT SUPPORTED YET]", "MOEA/D with Differential Evolution")
             ],
             "Indicator-based": [
-                ("IBEA", "Indicator-Based Evolutionary Algorithm"),
-                ("SMS-EMOA", "S-Metric Selection Evolutionary Multi-Objective Algorithm"),
-                ("HypE", "Hypervolume-based Evolutionary Algorithm")
+                ("IBEA [NOT SUPPORTED YET]", "Indicator-Based Evolutionary Algorithm"),
+                ("SMS-EMOA [NOT SUPPORTED YET]", "S-Metric Selection Evolutionary Multi-Objective Algorithm"),
+                ("HypE [NOT SUPPORTED YET]", "Hypervolume-based Evolutionary Algorithm")
             ],
             "Reference Point-based": [
                 ("NSGA-III", "Non-dominated Sorting Genetic Algorithm III"),
-                ("A-NSGA-III", "Adaptive NSGA-III")
+                ("A-NSGA-III [NOT SUPPORTED YET]", "Adaptive NSGA-III")
             ],
             "Other Algorithms": [
-                ("GDE3", "Generalized Differential Evolution 3"),
-                ("CTAEA", "Constrained Two-Archive Evolutionary Algorithm"),
-                ("BiGE", "Bi-objective Genetic Algorithm")
+                ("GDE3 [NOT SUPPORTED YET]", "Generalized Differential Evolution 3"),
+                ("CTAEA [NOT SUPPORTED YET]", "Constrained Two-Archive Evolutionary Algorithm"),
+                ("BiGE [NOT SUPPORTED YET]", "Bi-objective Genetic Algorithm")
             ]
         }
         
@@ -403,26 +404,29 @@ class AlgorithmTab(QWidget):
         """Update algorithm description"""
         algorithm = self.algorithm_name.currentText()
         
+        # Clean algorithm name for lookup (remove [NOT SUPPORTED YET] suffix)
+        clean_algorithm = algorithm.replace(" [NOT SUPPORTED YET]", "")
+        
         descriptions = {
-            "NSGA-II": "Fast and elitist multi-objective genetic algorithm with non-dominated sorting and crowding distance.",
-            "NSGA-III": "Extension of NSGA-II for many-objective optimization using reference directions.",
-            "MOEA/D": "Decomposes multi-objective problem into scalar subproblems using weight vectors.",
-            "MOEA/D-DE": "MOEA/D variant using Differential Evolution operators.",
-            "IBEA": "Uses indicator functions to compare solutions directly.",
-            "SMS-EMOA": "Steady-state algorithm using hypervolume indicator for selection.",
-            "HypE": "Hypervolume-based algorithm with Monte Carlo sampling for high dimensions.",
-            "GDE3": "Generalized Differential Evolution for multi-objective optimization.",
-            "CTAEA": "Handles constraints using a two-archive approach.",
-            "BiGE": "Specialized for bi-objective optimization problems.",
-            "A-NSGA-III": "Adaptive version of NSGA-III with reference point adaptation."
+            "NSGA-II": "✅ FULLY SUPPORTED - Fast and elitist multi-objective genetic algorithm with non-dominated sorting and crowding distance.",
+            "NSGA-III": "✅ FULLY SUPPORTED - Extension of NSGA-II for many-objective optimization using reference directions.",
+            "MOEA/D": "✅ FULLY SUPPORTED - Decomposes multi-objective problem into scalar subproblems using weight vectors.",
+            "MOEA/D-DE": "❌ NOT YET IMPLEMENTED - MOEA/D variant using Differential Evolution operators. Will fallback to standard NSGA-II if selected.",
+            "IBEA": "❌ NOT YET IMPLEMENTED - Uses indicator functions to compare solutions directly. Will fallback to NSGA-II if selected.",
+            "SMS-EMOA": "❌ NOT YET IMPLEMENTED - Steady-state algorithm using hypervolume indicator for selection. Will fallback to NSGA-II if selected.",
+            "HypE": "❌ NOT YET IMPLEMENTED - Hypervolume-based algorithm with Monte Carlo sampling for high dimensions. Will fallback to NSGA-II if selected.",
+            "GDE3": "❌ NOT YET IMPLEMENTED - Generalized Differential Evolution for multi-objective optimization. Will fallback to NSGA-II if selected.",
+            "CTAEA": "❌ NOT YET IMPLEMENTED - Handles constraints using a two-archive approach. Will fallback to NSGA-II if selected.",
+            "BiGE": "❌ NOT YET IMPLEMENTED - Specialized for bi-objective optimization problems. Will fallback to NSGA-II if selected.",
+            "A-NSGA-III": "❌ NOT YET IMPLEMENTED - Adaptive version of NSGA-III with reference point adaptation. Will fallback to NSGA-II if selected."
         }
         
-        description = descriptions.get(algorithm, "No description available.")
+        description = descriptions.get(clean_algorithm, "No description available.")
         self.algorithm_description.setPlainText(description)
         
         # Show/hide reference directions group based on algorithm
         ref_dir_algorithms = ["NSGA-III", "A-NSGA-III", "MOEA/D", "MOEA/D-DE"]
-        self.reference_directions_group.setVisible(algorithm in ref_dir_algorithms)
+        self.reference_directions_group.setVisible(clean_algorithm in ref_dir_algorithms)
         
     def _update_specific_parameters(self):
         """Update algorithm-specific parameters"""
@@ -481,9 +485,12 @@ class AlgorithmTab(QWidget):
         
     def get_configuration(self):
         """Get the current algorithm configuration"""
+        # Clean algorithm name (remove [NOT SUPPORTED YET] suffix for backend)
+        algorithm_name = self.algorithm_name.currentText().replace(" [NOT SUPPORTED YET]", "")
+        
         config = {
             "category": self.algorithm_category.currentText(),
-            "name": self.algorithm_name.currentText(),
+            "name": algorithm_name,
             "parameters": {
                 "population_size": self.population_size.value(),
                 "n_generations": self.n_generations.value(),

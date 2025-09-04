@@ -35,7 +35,9 @@
     "parameters": {
       "population_size": 100,
       "n_generations": 250,
-      "seed": 42
+      "seed": 42,
+      "decomposition": "Tchebycheff",
+      "n_neighbors": 20
     },
     "crossover": {
       "operator": "SBX (Simulated Binary Crossover)",

@@ -117,15 +117,18 @@ class OptimizationCallback(Callback):
         # Extract and analyze objective values from current population
         if algorithm.pop is not None and len(algorithm.pop) > 0:
             # Get objective values from all individuals in population
-            F = np.array([ind.F for ind in algorithm.pop])
+            F = np.array([ind.F for ind in algorithm.pop if ind.F is not None])
             
-            if F.ndim == 2 and F.shape[0] > 0:
+            if F.size > 0 and F.ndim == 2 and F.shape[0] > 0:
                 # Multi-objective case: use first objective for progress tracking
                 # This provides a consistent progress metric across problem types
                 f_vals = F[:, 0] if F.shape[1] > 0 else F.flatten()
-            else:
+            elif F.size > 0:
                 # Single objective or flattened array case
                 f_vals = F.flatten()
+            else:
+                # No valid objective values found
+                f_vals = np.array([])
                 
             # Calculate and store population statistics if valid data exists
             if len(f_vals) > 0:
@@ -243,11 +246,49 @@ class Optimizer:
     def extract_results(self, problem_config, algorithm_config):
         """Extract and format results for visualization"""
         if self.results is None:
+            print("❌ Results object is None")
             return None
             
         # Get basic results
         objectives = self.results.F
         variables = self.results.X
+        
+        print(f"🔍 Results debug:")
+        print(f"   - self.results type: {type(self.results)}")
+        print(f"   - objectives (F): {objectives is not None}")
+        print(f"   - variables (X): {variables is not None}")
+        if objectives is not None:
+            print(f"   - objectives shape: {objectives.shape}")
+        if variables is not None:
+            print(f"   - variables shape: {variables.shape}")
+        
+        # Check if results are valid before processing
+        if objectives is None or variables is None:
+            raise ValueError("Optimization failed: No valid solutions found. Check problem definition and constraints.")
+        
+        # For constrained problems, filter to feasible solutions only
+        if hasattr(self.results, 'CV') and self.results.CV is not None:
+            # CV (Constraint Violation) exists - filter feasible solutions
+            print(f"🔍 Constraint violations shape: {self.results.CV.shape}")
+            print(f"🔍 CV values range: min={np.min(self.results.CV):.6f}, max={np.max(self.results.CV):.6f}")
+            
+            feasible_mask = np.all(self.results.CV <= 1e-6, axis=1)  # tolerance for constraint satisfaction
+            
+            if np.any(feasible_mask):
+                # Keep only feasible solutions
+                objectives = objectives[feasible_mask]
+                variables = variables[feasible_mask]
+                print(f"🔍 Constraint filtering: {np.sum(feasible_mask)} feasible out of {len(feasible_mask)} total solutions")
+            else:
+                # No feasible solutions found - use best constraint violations
+                cv_sum = np.sum(self.results.CV, axis=1)
+                best_violations = np.argsort(cv_sum)[:min(10, len(cv_sum))]  # Take 10 best
+                objectives = objectives[best_violations]
+                variables = variables[best_violations]
+                print(f"⚠️ No fully feasible solutions found. Using {len(best_violations)} solutions with minimal constraint violations.")
+                print(f"   Best violation sum: {cv_sum[best_violations[0]]:.6f}")
+        else:
+            print(f"🔍 No constraint violations detected - unconstrained problem")
         
         # Ensure arrays are 2D
         if objectives.ndim == 1:

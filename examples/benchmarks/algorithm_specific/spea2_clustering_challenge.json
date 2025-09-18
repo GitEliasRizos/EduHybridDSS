@@ -1,0 +1,95 @@
+{
+  "problem": {
+    "name": "NSGA-II Clustering Challenge - Deceptive Multimodal",
+    "description": "Complex multimodal problem with multiple local Pareto fronts and clustering challenges. Tests NSGA-II's non-dominated sorting and crowding distance. Features deceptive objective space.",
+    "type": "Multimodal Test Problem",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": -5.0,
+        "upper_bound": 5.0,
+        "initial_value": 0.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1_multimodal",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "sum(i * xi^4 - 16 * xi^2 + 5 * xi for i, xi in enumerate([x1, x2, x3, x4], 1)) + 100"
+      },
+      {
+        "name": "f2_clustering",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "sum(xi^2 + sin(5 * pi * xi) for xi in [x1, x2, x3, x4]) + 50"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "c1_boundary",
+        "type": "Inequality",
+        "function": "x1^2 + x2^2 - 16",
+        "operator": "<="
+      },
+      {
+        "name": "c2_nonlinear",
+        "type": "Inequality",
+        "function": "x3^2 + x4^2 - 9",
+        "operator": "<="
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 120,
+      "n_generations": 500,
+      "seed": 123
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.95,
+      "eta": 20.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.15,
+      "eta": 25.0
+    },
+    "termination": {
+      "max_evaluations": 60000,
+      "convergence_tolerance": 1e-5,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "NSGA-II clustering and fitness assignment challenge benchmark"
+  }
+}

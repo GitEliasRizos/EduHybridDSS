@@ -62,10 +62,10 @@ class PairwiseComparisonWidget(QWidget):
         
         # Instructions
         instructions = QLabel(
-            "Compare criteria pairwise using the 1-9 scale:\n"
-            "1 = Equal importance, 3 = Moderate importance, 5 = Strong importance\n"
-            "7 = Very strong importance, 9 = Extreme importance\n"
-            "Use decimals (e.g., 0.5, 0.33) to indicate the second criterion is more important"
+            "Compare criteria pairwise using Saaty's 1-9 scale:\n"
+            "9 = Extreme importance, 7 = Very strong, 5 = Strong, 3 = Moderate, 1 = Equal\n"
+            "Use fractions (1/3, 1/5, etc.) when the second criterion is more important\n"
+            "Select the appropriate value from the dropdown for each comparison."
         )
         instructions.setWordWrap(True)
         instructions.setStyleSheet("QLabel { background-color: #303030; padding: 10px; border-radius: 5px; }")
@@ -84,53 +84,87 @@ class PairwiseComparisonWidget(QWidget):
                     label = QLabel(f"{crit1} vs {crit2}:")
                     comparison_layout.addWidget(label, row, 0)
                     
-                    spinbox = QDoubleSpinBox()
-                    spinbox.setRange(0.11, 9.0)
-                    spinbox.setValue(1.0)
-                    spinbox.setDecimals(2)
-                    spinbox.setSingleStep(0.1)
-                    comparison_layout.addWidget(spinbox, row, 1)
+                    # Create dropdown with Saaty scale values
+                    dropdown = QComboBox()
+                    saaty_values = [
+                        ("9", 9.0, "Extreme importance (first over second)"),
+                        ("8", 8.0, "Very strong to extreme importance"),
+                        ("7", 7.0, "Very strong importance"),
+                        ("6", 6.0, "Strong to very strong importance"),
+                        ("5", 5.0, "Strong importance"),
+                        ("4", 4.0, "Moderate to strong importance"),
+                        ("3", 3.0, "Moderate importance"),
+                        ("2", 2.0, "Slight to moderate importance"),
+                        ("1", 1.0, "Equal importance"),
+                        ("1/2", 0.5, "Slight to moderate importance (second over first)"),
+                        ("1/3", 0.333, "Moderate importance (second over first)"),
+                        ("1/4", 0.25, "Moderate to strong importance (second over first)"),
+                        ("1/5", 0.2, "Strong importance (second over first)"),
+                        ("1/6", 0.167, "Strong to very strong importance (second over first)"),
+                        ("1/7", 0.143, "Very strong importance (second over first)"),
+                        ("1/8", 0.125, "Very strong to extreme importance (second over first)"),
+                        ("1/9", 0.111, "Extreme importance (second over first)")
+                    ]
+                    
+                    for display_text, value, description in saaty_values:
+                        dropdown.addItem(display_text, value)
+                    
+                    # Set default to "1" (Equal importance)
+                    dropdown.setCurrentIndex(8)  # Index of "1" in the list
+                    comparison_layout.addWidget(dropdown, row, 1)
                     
                     explanation = QLabel("Equal importance")
                     explanation.setStyleSheet("QLabel { color: #303030; font-style: italic; }")
                     comparison_layout.addWidget(explanation, row, 2)
                     
-                    # Update explanation when value changes
-                    spinbox.valueChanged.connect(lambda v, lbl=explanation: self._update_explanation(v, lbl))
+                    # Update explanation when selection changes
+                    dropdown.currentIndexChanged.connect(lambda idx, lbl=explanation, cb=dropdown: self._update_explanation_dropdown(idx, lbl, cb))
                     
-                    self.comparison_widgets[(crit1, crit2)] = spinbox
+                    self.comparison_widgets[(crit1, crit2)] = dropdown
                     row += 1
                     
         scroll_area.setWidget(comparison_widget)
         layout.addWidget(scroll_area)
         self.setLayout(layout)
         
-    def _update_explanation(self, value: float, label: QLabel):
-        """Update explanation text based on comparison value"""
-        if value == 1.0:
-            explanation = "Equal importance"
-        elif 1.0 < value <= 2.0:
-            explanation = "Slight to moderate importance"
-        elif 2.0 < value <= 4.0:
-            explanation = "Moderate to strong importance"  
-        elif 4.0 < value <= 6.0:
-            explanation = "Strong to very strong importance"
-        elif 6.0 < value <= 8.0:
-            explanation = "Very strong to extreme importance"
-        elif value > 8.0:
-            explanation = "Extreme importance"
-        elif 0.5 <= value < 1.0:
-            explanation = "Second criterion more important"
-        else:
-            explanation = "Second criterion much more important"
+    def _update_explanation_dropdown(self, index: int, label: QLabel, dropdown: QComboBox):
+        """Update explanation text based on dropdown selection"""
+        if index >= 0:
+            # Get the description from the dropdown data
+            saaty_descriptions = [
+                "Extreme importance (first over second)",
+                "Very strong to extreme importance",
+                "Very strong importance",
+                "Strong to very strong importance", 
+                "Strong importance",
+                "Moderate to strong importance",
+                "Moderate importance",
+                "Slight to moderate importance",
+                "Equal importance",
+                "Slight to moderate importance (second over first)",
+                "Moderate importance (second over first)",
+                "Moderate to strong importance (second over first)",
+                "Strong importance (second over first)",
+                "Strong to very strong importance (second over first)",
+                "Very strong importance (second over first)",
+                "Very strong to extreme importance (second over first)",
+                "Extreme importance (second over first)"
+            ]
             
-        label.setText(explanation)
+            if 0 <= index < len(saaty_descriptions):
+                label.setText(saaty_descriptions[index])
         
     def get_comparisons(self) -> Dict[Tuple[str, str], float]:
         """Get current pairwise comparison values"""
         comparisons = {}
         for (crit1, crit2), widget in self.comparison_widgets.items():
-            comparisons[(crit1, crit2)] = widget.value()
+            # Get the data (float value) associated with the current selection
+            current_index = widget.currentIndex()
+            if current_index >= 0:
+                value = widget.itemData(current_index)
+                comparisons[(crit1, crit2)] = float(value)
+            else:
+                comparisons[(crit1, crit2)] = 1.0  # Default to equal importance
         return comparisons
 
 
@@ -450,7 +484,7 @@ class MCDAResultsWidget(QWidget):
             
         if len(scores) > 1:
             # Score distribution histogram
-            ax1.hist(scores, bins=min(20, len(scores)//2 + 1), alpha=0.7, color='skyblue', edgecolor='black')
+            ax1.hist(scores, bins=min(10, len(scores)//2 + 1), alpha=0.7, color='skyblue', edgecolor='black')
             ax1.set_title(f'{method} Score Distribution')
             ax1.set_xlabel('Score')
             ax1.set_ylabel('Frequency')
@@ -462,7 +496,7 @@ class MCDAResultsWidget(QWidget):
             
         # Ranking visualization
         sorted_indices = np.argsort(-scores)
-        top_n = min(20, len(scores))  # Show top 20
+        top_n = min(10, len(scores))  # Show top 20
         top_indices = sorted_indices[:top_n]
         top_scores = scores[top_indices]
         

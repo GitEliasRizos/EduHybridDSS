@@ -1,6 +1,6 @@
-# PyMOO GUI - Multi-Objective Optimization Interface
+# PyMOO GUI - Multi-Objective Optimization & Decision Analysis Interface
 
-A comprehensive graphical user interface for PyMOO (Multi-objective Optimization in Python) built with PyQt6. This application provides an intuitive, feature-rich environment for defining, configuring, and solving multi-objective optimization problems with professional-grade visualization and analysis capabilities.
+A comprehensive graphical user interface for PyMOO (Multi-objective Optimization in Python) built with PyQt6. This application provides an intuitive, feature-rich environment for defining, configuring, and solving multi-objective optimization problems with professional-grade visualization, analysis capabilities, and integrated **Multi-Criteria Decision Analysis (MCDA)** for Pareto-optimal solution ranking.
 
 ## 🌟 Key Features
 
@@ -32,6 +32,30 @@ A comprehensive graphical user interface for PyMOO (Multi-objective Optimization
 - **Export Options**: Save results as JSON, CSV, or high-resolution images
 - **Statistical Analysis**: Built-in metrics and performance indicators
 
+### 🎖️ **Multi-Criteria Decision Analysis (MCDA)**
+**NEW**: Advanced decision support for Pareto-optimal solution ranking and selection.
+
+#### **Analytic Hierarchy Process (AHP)**
+- **Pairwise Comparisons**: Intuitive dropdown interface using Saaty's 1-9 scale
+- **Weight Calculation**: Principal eigenvalue method following Saaty (1980) methodology
+- **Consistency Validation**: Real-time consistency ratio monitoring with Random Index
+- **Mathematical Rigor**: Robust handling of complex eigenvalues and numerical precision issues
+- **Professional Implementation**: Comprehensive documentation with APA-style academic references
+
+#### **TOPSIS Analysis**
+- **Ideal Solution Ranking**: Distance-based ranking relative to positive and negative ideal solutions
+- **Multiple Normalization**: Vector and linear normalization methods (Hwang & Yoon, 1981)
+- **Mixed Objectives**: Seamless handling of minimize/maximize objective directions
+- **Closeness Coefficients**: Relative closeness calculations for solution ranking
+- **Comprehensive Results**: Detailed analysis with ranking tables and score interpretation
+
+#### **Integration Features**
+- **Seamless PyMOO Integration**: Direct analysis of optimization results
+- **Criteria Mapping**: Automatic mapping of optimization objectives to MCDA criteria
+- **Weight Persistence**: Save and load weight configurations for consistent analysis
+- **Export Capabilities**: Include MCDA rankings in comprehensive result exports
+- **Mathematical Documentation**: Complete theoretical foundations with academic references
+
 ## � Advanced Features
 
 ### 🔧 **Mixed-Variable Optimization**
@@ -58,18 +82,67 @@ A comprehensive graphical user interface for PyMOO (Multi-objective Optimization
 - **Multi-disciplinary Optimization**: Balance competing objectives like cost, performance, weight
 - **Parameter Tuning**: Optimize control parameters with multiple quality criteria
 - **Robustness Analysis**: Find solutions robust to parameter variations
+- **Design Selection**: Use AHP/TOPSIS to rank design alternatives from Pareto front
 
 ### **Scientific Research**
 - **Algorithm Development**: Test new optimization approaches with comprehensive metrics
 - **Benchmark Studies**: Compare algorithm performance across multiple problems
 - **Publication Support**: Generate publication-ready plots and statistical analyses
+- **Decision Analysis**: Apply rigorous MCDA methods for solution selection and ranking
 
 ### **Educational Applications**
 - **Teaching Tool**: Demonstrate multi-objective optimization concepts interactively
 - **Student Projects**: Provide accessible interface for optimization coursework
 - **Research Training**: Learn optimization techniques through hands-on experimentation
+- **MCDA Education**: Understand decision analysis methods with practical implementations
 
-## 🛠 **Supported Algorithms**
+### **Business and Management**
+- **Strategic Decision Making**: Apply AHP for criteria weighting in business decisions
+- **Supplier Selection**: Use TOPSIS for multi-criteria supplier evaluation
+- **Project Portfolio Optimization**: Balance multiple project objectives with decision support
+- **Investment Analysis**: Rank investment alternatives using mathematical decision methods
+
+## � **Quick Start with MCDA**
+
+### Complete Optimization + Decision Analysis Workflow
+
+1. **Define Your Problem** (Problem Tab)
+   - Set up variables, objectives, and constraints
+   - Load from example library or create custom problem
+
+2. **Configure Algorithm** (Algorithm Tab)
+   - Select algorithm (NSGA-II recommended for beginners)
+   - Set population size and generation limits
+   - Choose appropriate operators
+
+3. **Run Optimization** (Results Tab)
+   - Execute optimization with real-time progress
+   - Visualize Pareto front and convergence
+   - Export optimization results
+
+4. **Apply Decision Analysis** (MCDA Tab) ⭐ **NEW**
+   - **AHP Method**: Define criteria importance using pairwise comparisons
+     - Use intuitive dropdown with Saaty scale (1/9 to 9)
+     - Monitor consistency ratio in real-time
+     - Generate criteria weights automatically
+   - **TOPSIS Analysis**: Rank solutions based on ideal solution similarity
+     - Apply calculated weights to optimization results
+     - View ranked solutions with closeness coefficients
+     - Export comprehensive MCDA results
+
+### Example MCDA Workflow
+```python
+# After optimization, in MCDA tab:
+1. Select criteria (your optimization objectives)
+2. Perform pairwise comparisons: 
+   - "Cost vs Quality": 1/3 (Quality 3x more important)
+   - "Cost vs Performance": 1/5 (Performance 5x more important) 
+   - "Quality vs Performance": 1/2 (Performance 2x more important)
+3. Check consistency ratio (should be < 0.1)
+4. Apply TOPSIS ranking to get best solution from Pareto front
+```
+
+## �🛠 **Supported Algorithms**
 
 ### **Pareto-based Approaches**
 - **NSGA-II**: Fast Non-dominated Sorting Genetic Algorithm II

@@ -39,13 +39,18 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
                             QTableWidget, QTableWidgetItem, QHeaderView,
                             QPushButton, QLabel, QProgressBar, QTextEdit,
                             QTabWidget, QSplitter, QComboBox, QCheckBox,
-                            QSpinBox)
+                            QSpinBox, QFileDialog, QMessageBox)
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QTimer
 from PyQt6.QtGui import QFont
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
+import pandas as pd
+import json
+import csv
+import os
+from datetime import datetime
 
 
 class OptimizationWorker(QThread):
@@ -708,10 +713,239 @@ class ResultsTab(QWidget):
     def _export_results(self, format_type):
         """Export results to file"""
         if not self.results:
+            QMessageBox.warning(self, "No Results", "No optimization results available to export.")
             return
             
-        # TODO: Implement actual export functionality
-        self.log_text.append(f"[INFO] Exporting results to {format_type.upper()} format...")
+        try:
+            # Generate default filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            problem_name = self.results.get('problem_config', {}).get('name', 'optimization')
+            algorithm = self.results.get('algorithm', 'unknown')
+            
+            # Clean names for filename
+            safe_problem_name = "".join(c for c in problem_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            safe_algorithm = "".join(c for c in algorithm if c.isalnum() or c in (' ', '-', '_')).strip()
+            
+            if format_type.lower() == 'csv':
+                default_filename = f"{safe_problem_name}_{safe_algorithm}_{timestamp}.csv"
+                filename, _ = QFileDialog.getSaveFileName(
+                    self, 
+                    "Export Results as CSV",
+                    default_filename,
+                    "CSV Files (*.csv);;All Files (*)"
+                )
+                if filename:
+                    self._export_to_csv(filename)
+                    
+            elif format_type.lower() == 'excel':
+                default_filename = f"{safe_problem_name}_{safe_algorithm}_{timestamp}.xlsx"
+                filename, _ = QFileDialog.getSaveFileName(
+                    self, 
+                    "Export Results as Excel",
+                    default_filename,
+                    "Excel Files (*.xlsx);;All Files (*)"
+                )
+                if filename:
+                    self._export_to_excel(filename)
+                    
+            elif format_type.lower() == 'json':
+                default_filename = f"{safe_problem_name}_{safe_algorithm}_{timestamp}.json"
+                filename, _ = QFileDialog.getSaveFileName(
+                    self, 
+                    "Export Results as JSON",
+                    default_filename,
+                    "JSON Files (*.json);;All Files (*)"
+                )
+                if filename:
+                    self._export_to_json(filename)
+                    
+            elif format_type.lower() == 'plot':
+                default_filename = f"{safe_problem_name}_{safe_algorithm}_{timestamp}.png"
+                filename, _ = QFileDialog.getSaveFileName(
+                    self, 
+                    "Export Plot as Image",
+                    default_filename,
+                    "PNG Files (*.png);;PDF Files (*.pdf);;SVG Files (*.svg);;All Files (*)"
+                )
+                if filename:
+                    self._export_plot(filename)
+                    
+        except Exception as e:
+            QMessageBox.critical(self, "Export Error", f"Failed to export results:\n{str(e)}")
+            
+    def _export_to_csv(self, filename):
+        """Export results to CSV format"""
+        try:
+            # Prepare data for CSV export
+            variables = self.results['variables']
+            objectives = self.results['objectives']
+            
+            # Create column names
+            var_names = [f"Var_{i+1}" for i in range(variables.shape[1])]
+            if 'problem_config' in self.results and 'variables' in self.results['problem_config']:
+                var_names = [var['name'] for var in self.results['problem_config']['variables']]
+            
+            obj_names = [f"Obj_{i+1}" for i in range(objectives.shape[1])]
+            if 'problem_config' in self.results and 'objectives' in self.results['problem_config']:
+                obj_names = [obj['name'] for obj in self.results['problem_config']['objectives']]
+            
+            # Combine data
+            all_data = np.column_stack([variables, objectives])
+            all_column_names = var_names + obj_names
+            
+            # Create DataFrame and save to CSV
+            df = pd.DataFrame(all_data, columns=all_column_names)
+            df.to_csv(filename, index=False)
+            
+            self.log_text.append(f"[INFO] Results exported to CSV: {filename}")
+            QMessageBox.information(self, "Export Successful", f"Results successfully exported to:\n{filename}")
+            
+        except Exception as e:
+            raise Exception(f"CSV export failed: {str(e)}")
+            
+    def _export_to_excel(self, filename):
+        """Export results to Excel format with multiple sheets"""
+        try:
+            variables = self.results['variables']
+            objectives = self.results['objectives']
+            
+            # Prepare variable names
+            var_names = [f"Var_{i+1}" for i in range(variables.shape[1])]
+            if 'problem_config' in self.results and 'variables' in self.results['problem_config']:
+                var_names = [var['name'] for var in self.results['problem_config']['variables']]
+            
+            obj_names = [f"Obj_{i+1}" for i in range(objectives.shape[1])]
+            if 'problem_config' in self.results and 'objectives' in self.results['problem_config']:
+                obj_names = [obj['name'] for obj in self.results['problem_config']['objectives']]
+            
+            # Create Excel writer
+            with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+                # Solutions sheet
+                all_data = np.column_stack([variables, objectives])
+                all_column_names = var_names + obj_names
+                solutions_df = pd.DataFrame(all_data, columns=all_column_names)
+                solutions_df.to_excel(writer, sheet_name='Solutions', index=False)
+                
+                # Variables sheet
+                variables_df = pd.DataFrame(variables, columns=var_names)
+                variables_df.to_excel(writer, sheet_name='Variables', index=False)
+                
+                # Objectives sheet
+                objectives_df = pd.DataFrame(objectives, columns=obj_names)
+                objectives_df.to_excel(writer, sheet_name='Objectives', index=False)
+                
+                # Statistics sheet
+                stats_data = []
+                for i, obj_name in enumerate(obj_names):
+                    obj_data = objectives[:, i]
+                    stats_data.append({
+                        'Objective': obj_name,
+                        'Min': obj_data.min(),
+                        'Max': obj_data.max(),
+                        'Mean': obj_data.mean(),
+                        'Std': obj_data.std(),
+                        'Median': np.median(obj_data)
+                    })
+                
+                stats_df = pd.DataFrame(stats_data)
+                stats_df.to_excel(writer, sheet_name='Statistics', index=False)
+                
+                # Configuration sheet
+                config_data = {
+                    'Algorithm': [self.results.get('algorithm', 'Unknown')],
+                    'Number of Solutions': [self.results.get('n_solutions', 0)],
+                    'Number of Generations': [self.results.get('n_generations', 0)],
+                    'Export Date': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+                }
+                config_df = pd.DataFrame(config_data)
+                config_df.to_excel(writer, sheet_name='Configuration', index=False)
+            
+            self.log_text.append(f"[INFO] Results exported to Excel: {filename}")
+            QMessageBox.information(self, "Export Successful", f"Results successfully exported to Excel with multiple sheets:\n{filename}")
+            
+        except Exception as e:
+            raise Exception(f"Excel export failed: {str(e)}")
+            
+    def _export_to_json(self, filename):
+        """Export results to JSON format"""
+        try:
+            # Prepare exportable data (convert numpy arrays to lists)
+            export_data = {
+                'export_info': {
+                    'timestamp': datetime.now().isoformat(),
+                    'version': '1.0',
+                    'software': 'NewDSS Multi-Objective Optimization'
+                },
+                'algorithm': self.results.get('algorithm', 'Unknown'),
+                'n_solutions': int(self.results.get('n_solutions', 0)),
+                'n_generations': int(self.results.get('n_generations', 0)),
+                'variables': self.results['variables'].tolist(),
+                'objectives': self.results['objectives'].tolist(),
+                'problem_config': self.results.get('problem_config', {}),
+                'algorithm_config': self.results.get('algorithm_config', {}),
+            }
+            
+            # Add constraints if available
+            if 'constraints' in self.results and self.results['constraints'] is not None:
+                export_data['constraints'] = self.results['constraints'].tolist()
+            
+            # Add statistics
+            objectives = self.results['objectives']
+            obj_names = [f"Obj_{i+1}" for i in range(objectives.shape[1])]
+            if 'problem_config' in self.results and 'objectives' in self.results['problem_config']:
+                obj_names = [obj['name'] for obj in self.results['problem_config']['objectives']]
+            
+            export_data['statistics'] = {}
+            for i, obj_name in enumerate(obj_names):
+                obj_data = objectives[:, i]
+                export_data['statistics'][obj_name] = {
+                    'min': float(obj_data.min()),
+                    'max': float(obj_data.max()),
+                    'mean': float(obj_data.mean()),
+                    'std': float(obj_data.std()),
+                    'median': float(np.median(obj_data))
+                }
+            
+            # Save to JSON
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(export_data, f, indent=2, ensure_ascii=False)
+            
+            self.log_text.append(f"[INFO] Results exported to JSON: {filename}")
+            QMessageBox.information(self, "Export Successful", f"Results successfully exported to JSON:\n{filename}")
+            
+        except Exception as e:
+            raise Exception(f"JSON export failed: {str(e)}")
+            
+    def _export_plot(self, filename):
+        """Export current plot to image file"""
+        try:
+            if not hasattr(self, 'plot_canvas') or not self.plot_canvas.fig:
+                raise Exception("No plot available to export")
+            
+            # Determine DPI based on file extension
+            file_ext = os.path.splitext(filename)[1].lower()
+            if file_ext == '.pdf':
+                dpi = None  # PDF uses vector format
+            elif file_ext == '.svg':
+                dpi = None  # SVG uses vector format
+            else:
+                dpi = 300  # High DPI for raster formats
+            
+            # Save the plot
+            self.plot_canvas.fig.savefig(
+                filename,
+                dpi=dpi,
+                bbox_inches='tight',
+                facecolor='white',
+                edgecolor='none',
+                format=file_ext[1:] if file_ext else 'png'
+            )
+            
+            self.log_text.append(f"[INFO] Plot exported to: {filename}")
+            QMessageBox.information(self, "Export Successful", f"Plot successfully exported to:\n{filename}")
+            
+        except Exception as e:
+            raise Exception(f"Plot export failed: {str(e)}")
         
     def clear(self):
         """Clear all results and reset the UI"""

@@ -20,9 +20,6 @@ matplotlib>=3.5.0
 # Data export/import (saving your work to Excel files)
 openpyxl>=3.0.0
 
-# Machine learning utilities (used in MCDA decision analysis)
-scikit-learn>=1.0.0
-
 # Optional: Performance enhancements
 # Uncomment the following lines for additional algorithms (AGE, AGE2)
 # numba>=0.56.0  # Required for AGE algorithms

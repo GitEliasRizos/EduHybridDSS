@@ -6,20 +6,57 @@ Order of Preference by Similarity to Ideal Solution) methods to analyze and rank
 PyMOO optimization results based on multiple criteria.
 
 Key Features:
-- AHP implementation with pairwise comparison matrices
-- TOPSIS implementation with ideal and anti-ideal solutions
+- AHP implementation with pairwise comparison matrices and eigenvalue-based weighting
+- TOPSIS implementation with ideal/anti-ideal solutions and distance-based ranking
 - Automatic normalization and weight calculation
 - Comprehensive ranking and scoring
 - Integration with PyMOO results
 - Interactive GUI for method selection and parameter configuration
 
+MCDA Weighting Methodology:
+============================
+
+AHP (Analytic Hierarchy Process):
+---------------------------------
+AHP uses pairwise comparisons to derive criteria weights through eigenvalue decomposition.
+The process involves:
+1. Constructing a reciprocal pairwise comparison matrix from expert judgments
+2. Computing the principal eigenvector to obtain criteria weights
+3. Checking consistency using the Consistency Ratio (CR < 0.1)
+4. Applying weights to normalized alternative scores
+
+Weighting Formula: w = principal_eigenvector / sum(principal_eigenvector)
+Where the principal eigenvector corresponds to the largest eigenvalue of the comparison matrix.
+
+TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution):
+---------------------------------------------------------------------------
+TOPSIS can use any weighting scheme (equal, AHP-derived, or expert-assigned weights).
+The method focuses on distance-based ranking rather than weight derivation:
+1. Normalizes the decision matrix (vector or linear normalization)
+2. Applies predetermined weights to create weighted normalized matrix
+3. Identifies ideal (best) and anti-ideal (worst) solutions
+4. Calculates relative closeness to ideal solution: CC = d⁻/(d⁺ + d⁻)
+
+Where d⁺ = distance to ideal, d⁻ = distance to anti-ideal solution.
+
+References:
+-----------
+Saaty, T. L. (1980). The Analytic Hierarchy Process: Planning, Priority Setting, 
+    Resource Allocation. McGraw-Hill.
+
+Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making: Methods and 
+    Applications. Springer-Verlag.
+
+Triantaphyllou, E. (2000). Multi-criteria decision making methods: A comparative study. 
+    Applied Optimization, 44. Springer.
+
 Classes:
-    AHPAnalyzer: Implements Analytic Hierarchy Process
-    TOPSISAnalyzer: Implements TOPSIS method
+    AHPAnalyzer: Implements Analytic Hierarchy Process with eigenvalue weighting
+    TOPSISAnalyzer: Implements TOPSIS method with flexible weighting schemes
     MCDAManager: Main interface for MCDA analysis
 
 Author: Elias Rizos [it21490]
-Version: 1.0.0
+MCDA Version: 1.0.0
 """
 
 import numpy as np
@@ -36,6 +73,34 @@ class AHPAnalyzer:
     based on mathematics and psychology. It helps decision makers find the choice
     that best suits their goal and understanding of the problem.
     
+    AHP WEIGHTING METHODOLOGY:
+    =========================
+    
+    1. Pairwise Comparison Matrix Construction:
+       - Decision makers provide pairwise comparisons using Saaty's 1-9 scale
+       - Scale: 1=Equal, 3=Moderate, 5=Strong, 7=Very Strong, 9=Extreme importance
+       - Matrix A where a_ij represents importance of criterion i over criterion j
+       - Reciprocal property: a_ji = 1/a_ij ensures mathematical consistency
+    
+    2. Weight Derivation through Eigenvalue Method:
+       - Weights are computed as the normalized principal eigenvector of matrix A
+       - Principal eigenvector corresponds to the largest eigenvalue (λ_max)
+       - Mathematical foundation: A·w = λ_max·w (eigenvalue equation)
+       - Normalization ensures sum of weights equals 1: w_i = v_i / Σv_i
+    
+    3. Consistency Verification:
+       - Consistency Index: CI = (λ_max - n)/(n-1)
+       - Consistency Ratio: CR = CI/RI (where RI is Random Index)
+       - Acceptable consistency: CR < 0.10 (Saaty, 1980)
+       - If CR ≥ 0.10, pairwise comparisons should be revised
+    
+    4. Alternative Scoring:
+       - Alternatives normalized to [0,1] scale for each criterion
+       - Final score: S_i = Σ(w_j × normalized_score_ij)
+       - Higher scores indicate better alternatives
+    
+    Reference: Saaty, T. L. (1980). The Analytic Hierarchy Process. McGraw-Hill.
+    
     Key Steps:
     1. Create pairwise comparison matrix
     2. Calculate priority weights
@@ -49,7 +114,7 @@ class AHPAnalyzer:
         self.consistency_ratio = None
         self.pairwise_matrix = None
         
-    def create_pairwise_matrix(self, criteria_comparisons: Dict[Tuple[str, str], float]) -> np.ndarray:
+    def create_pairwise_matrix(self, criteria_comparisons: Dict[Tuple[str, str], float], criteria_names: List[str] = None) -> np.ndarray:
         """
         Create pairwise comparison matrix from user preferences
         
@@ -61,11 +126,15 @@ class AHPAnalyzer:
                                  5 = Strong importance
                                  7 = Very strong importance
                                  9 = Extreme importance
+            criteria_names: Optional list to preserve order of criteria (if None, extracted from comparisons)
                                  
         Returns:
             Pairwise comparison matrix
         """
-        criteria_names = list(set([item for pair in criteria_comparisons.keys() for item in pair]))
+        # Use provided criteria names or extract from comparisons
+        if criteria_names is None:
+            criteria_names = list(set([item for pair in criteria_comparisons.keys() for item in pair]))
+        
         n = len(criteria_names)
         matrix = np.ones((n, n))
         
@@ -85,27 +154,52 @@ class AHPAnalyzer:
         """
         Calculate priority weights using eigenvalue method
         
+        EIGENVALUE-BASED WEIGHT CALCULATION:
+        ===================================
+        
+        The AHP weight calculation is based on the Perron-Frobenius theorem for positive 
+        reciprocal matrices. The principal eigenvector of the pairwise comparison matrix
+        represents the relative importance (weights) of criteria.
+        
+        Mathematical Process:
+        1. Solve eigenvalue equation: A·w = λ_max·w
+        2. Find largest eigenvalue (λ_max) and corresponding eigenvector
+        3. Normalize eigenvector to sum to 1.0
+        4. Resulting vector represents criteria weights
+        
+        Theoretical Justification:
+        - For consistent matrices: λ_max = n (number of criteria)
+        - For inconsistent matrices: λ_max > n (used for consistency checking)
+        - Principal eigenvector provides the best approximation of true weights
+        - Method is robust to small inconsistencies in human judgment
+        
+        Reference: Saaty, T. L. (1980). The Analytic Hierarchy Process, Chapter 3.
+        
         Args:
-            matrix: Pairwise comparison matrix
+            matrix: Pairwise comparison matrix (n×n reciprocal matrix)
             
         Returns:
-            Priority weights vector
+            Priority weights vector (normalized principal eigenvector)
         """
-        # Calculate eigenvalues and eigenvectors
+        # Calculate eigenvalues and eigenvectors using numpy's linear algebra solver
         eigenvalues, eigenvectors = np.linalg.eig(matrix)
         
         # Find the largest eigenvalue and corresponding eigenvector
-        max_eigenvalue_idx = np.argmax(eigenvalues.real)
+        # The largest eigenvalue corresponds to the principal eigenvector
+        max_eigenvalue_idx = np.argmax(np.abs(eigenvalues.real))
         max_eigenvalue = eigenvalues[max_eigenvalue_idx].real
         principal_eigenvector = eigenvectors[:, max_eigenvalue_idx].real
         
-        # Normalize the eigenvector to get weights
+        # Normalize the eigenvector to get weights that sum to 1.0
+        # This transforms the eigenvector into priority weights
         weights = principal_eigenvector / np.sum(principal_eigenvector)
         
-        # Ensure positive weights
+        # Ensure positive weights (eigenvectors can have negative components)
+        # Take absolute value and renormalize to maintain mathematical validity
         weights = np.abs(weights)
         weights = weights / np.sum(weights)
         
+        # Store for consistency calculation
         self.criteria_weights = weights
         self.max_eigenvalue = max_eigenvalue
         
@@ -115,9 +209,37 @@ class AHPAnalyzer:
         """
         Calculate Consistency Ratio (CR) to check matrix consistency
         
+        CONSISTENCY VERIFICATION IN AHP:
+        ================================
+        
+        Consistency checking is crucial in AHP because human judgments are inherently
+        prone to inconsistencies. The Consistency Ratio measures how consistent the
+        pairwise comparisons are with each other.
+        
+        Mathematical Foundation:
+        1. Consistency Index (CI) = (λ_max - n)/(n-1)
+           - For perfectly consistent matrix: λ_max = n, so CI = 0
+           - Larger CI indicates greater inconsistency
+        
+        2. Random Index (RI) = Average CI of randomly generated matrices
+           - Accounts for inconsistency due to matrix size
+           - Values empirically determined by Saaty (1980)
+        
+        3. Consistency Ratio (CR) = CI/RI
+           - Normalizes CI by expected random inconsistency
+           - CR < 0.10: Acceptable consistency (Saaty's threshold)
+           - CR ≥ 0.10: Judgments should be revised
+        
+        Practical Implications:
+        - CR provides quality control for decision-making process
+        - Helps identify and correct inconsistent judgments
+        - Ensures reliability of derived weights
+        
+        Reference: Saaty, T. L. (1980). The Analytic Hierarchy Process, Chapter 4.
+        
         Args:
             matrix: Pairwise comparison matrix
-            weights: Priority weights
+            weights: Priority weights from eigenvalue calculation
             
         Returns:
             Consistency ratio (should be < 0.1 for acceptable consistency)
@@ -125,57 +247,119 @@ class AHPAnalyzer:
         n = matrix.shape[0]
         
         # Calculate Consistency Index (CI)
+        # CI measures deviation from perfect consistency
         lambda_max = self.max_eigenvalue
         ci = (lambda_max - n) / (n - 1)
         
         # Random Index (RI) values for different matrix sizes
+        # These are empirically determined average consistency indices
+        # for randomly generated reciprocal matrices (Saaty, 1980)
         ri_values = {1: 0, 2: 0, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
-        ri = ri_values.get(n, 1.49)
+        ri = ri_values.get(n, 1.49)  # Use 1.49 for matrices larger than 10×10
         
-        # Consistency Ratio
+        # Consistency Ratio = CI normalized by expected random inconsistency
         cr = ci / ri if ri > 0 else 0
         
         self.consistency_ratio = cr
         return cr
         
-    def score_alternatives(self, alternatives: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    def score_alternatives(self, alternatives: np.ndarray, weights: np.ndarray, 
+                          objectives_info: List[Dict] = None) -> np.ndarray:
         """
-        Score alternatives using calculated weights
+        Score alternatives using calculated weights with intuitive objective handling
+        
+        ALTERNATIVE SCORING IN AHP WITH PYMOO INTEGRATION:
+        =================================================
+        
+        This scoring method directly respects PyMOO objective directions:
+        - Minimize objectives: Lower values are better → get higher AHP scores
+        - Maximize objectives: Higher values are better → get higher AHP scores
+        
+        This creates an intuitive mapping where the AHP scoring aligns with the
+        optimization intent rather than forcing all criteria into "benefit" format.
+        
+        Scoring Process:
+        1. Normalize alternative performance matrix respecting PyMOO directions
+           - For MINIMIZE objectives: Lower actual values → Higher normalized scores
+           - For MAXIMIZE objectives: Higher actual values → Higher normalized scores
+           - All normalized values in [0,1] where 1 = best according to objective
+        
+        2. Apply weighted linear combination
+           - Final score: S_i = Σ(w_j × normalized_performance_ij)
+           - Higher final scores indicate better alternatives overall
+        
+        3. Ranking interpretation
+           - Higher AHP scores = better alternatives
+           - Scoring directly reflects optimization objectives
+           - No conceptual transformation needed
+        
+        Normalization Logic:
+        - MINIMIZE: score = (max_value - actual_value) / (max_value - min_value)
+          → Lower actual values get scores closer to 1.0
+        - MAXIMIZE: score = (actual_value - min_value) / (max_value - min_value)  
+          → Higher actual values get scores closer to 1.0
+        
+        Example:
+        Cost objective (MINIMIZE): [100, 80, 120] → [0.5, 1.0, 0.0]
+        Quality objective (MAXIMIZE): [6, 8, 9] → [0.0, 0.67, 1.0]
         
         Args:
             alternatives: Matrix of alternatives (rows) vs criteria (columns)
-            weights: Criteria weights from AHP
+            weights: Criteria weights from AHP eigenvalue calculation
+            objectives_info: List of objective info dicts with 'direction' key
             
         Returns:
-            AHP scores for each alternative
+            AHP scores for each alternative (higher = better overall performance)
         """
-        # Normalize alternatives matrix (higher is better for all criteria)
-        normalized = alternatives.copy()
+
+        # Normalize alternatives matrix respecting PyMOO objective directions
+        normalized = alternatives.copy().astype(float)
+        
         for j in range(alternatives.shape[1]):
             col_max = np.max(alternatives[:, j])
             col_min = np.min(alternatives[:, j])
+            
             if col_max != col_min:
-                normalized[:, j] = (alternatives[:, j] - col_min) / (col_max - col_min)
+                # Determine objective direction from PyMOO
+                if objectives_info and j < len(objectives_info):
+                    direction = objectives_info[j].get('direction', 'Minimize')
+                else:
+                    direction = 'Minimize'  # Default assumption for PyMOO
+                
+                if direction == 'Minimize':
+                    # MINIMIZE: Lower values are better
+                    # Invert scale so lower actual values get higher scores
+                    normalized[:, j] = (col_max - alternatives[:, j]) / (col_max - col_min)
+                else:  # Maximize
+                    # MAXIMIZE: Higher values are better  
+                    # Standard scale so higher actual values get higher scores
+                    normalized[:, j] = (alternatives[:, j] - col_min) / (col_max - col_min)
             else:
+                # Handle case where all alternatives have same value for criterion j
                 normalized[:, j] = 1.0
         
-        # Calculate weighted scores
+        # Calculate weighted scores using linear additive model
+        # Final AHP score = weighted sum of normalized criterion scores
+        # Higher scores indicate better alternatives according to their PyMOO objectives
         scores = np.dot(normalized, weights)
         return scores
         
-    def analyze(self, alternatives: np.ndarray, criteria_comparisons: Dict[Tuple[str, str], float]) -> Dict:
+    def analyze(self, alternatives: np.ndarray, criteria_comparisons: Dict[Tuple[str, str], float], 
+                criteria_names: List[str] = None, objectives_info: List[Dict] = None) -> Dict:
         """
         Complete AHP analysis
         
         Args:
             alternatives: Matrix of alternatives vs criteria
             criteria_comparisons: Pairwise comparison preferences
+            criteria_names: Optional list to preserve order of criteria
+            objectives_info: Optional list of objective info dicts with 'direction' key
             
         Returns:
             Analysis results dictionary
         """
         # Create pairwise matrix
-        matrix = self.create_pairwise_matrix(criteria_comparisons)
+        matrix = self.create_pairwise_matrix(criteria_comparisons, criteria_names)
         
         # Calculate weights
         weights = self.calculate_weights(matrix)
@@ -183,8 +367,8 @@ class AHPAnalyzer:
         # Check consistency
         cr = self.calculate_consistency_ratio(matrix, weights)
         
-        # Score alternatives
-        scores = self.score_alternatives(alternatives, weights)
+        # Score alternatives with proper objective handling
+        scores = self.score_alternatives(alternatives, weights, objectives_info)
         
         # Rank alternatives
         rankings = np.argsort(-scores) + 1  # +1 for 1-based ranking
@@ -208,6 +392,48 @@ class TOPSISAnalyzer:
     TOPSIS is based on the concept that the chosen alternative should have the
     shortest geometric distance from the ideal solution and the longest geometric
     distance from the anti-ideal solution.
+    
+    TOPSIS METHODOLOGY AND WEIGHTING:
+    =================================
+    
+    Unlike AHP, TOPSIS does not derive weights from comparisons. Instead, it accepts
+    any weighting scheme (equal weights, AHP-derived weights, expert weights, etc.)
+    and focuses on ranking alternatives based on their similarity to ideal solutions.
+    
+    Core Principle:
+    - Best alternative = closest to ideal solution + farthest from anti-ideal solution
+    - Uses geometric distance in multi-dimensional criterion space
+    - Provides relative closeness coefficient (0 ≤ CC ≤ 1, higher is better)
+    
+    WEIGHTING IN TOPSIS:
+    ===================
+    
+    1. Weight Application:
+       - Weights are applied after normalization: V = W × R
+       - Where V = weighted normalized matrix, W = weights, R = normalized matrix
+       - Each criterion value is multiplied by its respective weight
+       - Weights represent relative importance of criteria
+    
+    2. Weight Sources:
+       - Equal weights: w_i = 1/n (simple but may not reflect true importance)
+       - AHP-derived weights: w from eigenvalue decomposition of pairwise comparisons
+       - Expert weights: directly assigned by domain experts
+       - Objective weights: derived from data (e.g., entropy method)
+    
+    3. Impact on Results:
+       - Higher weights amplify differences in criterion performance
+       - Lower weights reduce criterion influence on final ranking
+       - Weight distribution directly affects ideal/anti-ideal solution identification
+    
+    Mathematical Foundation:
+    - Euclidean distance in weighted criterion space
+    - Closeness coefficient: CC_i = d_i⁻ / (d_i⁺ + d_i⁻)
+    - Where d_i⁺ = distance to ideal, d_i⁻ = distance to anti-ideal
+    
+    References:
+    Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making. Springer-Verlag.
+    Chen, C. T. (2000). Extensions of the TOPSIS for group decision-making under fuzzy environment. 
+        Fuzzy Sets and Systems, 114(1), 1-9.
     
     Key Steps:
     1. Normalize the decision matrix
@@ -259,13 +485,38 @@ class TOPSISAnalyzer:
         """
         Calculate weighted normalized decision matrix
         
+        WEIGHT APPLICATION IN TOPSIS:
+        =============================
+        
+        This step applies criteria weights to the normalized decision matrix, creating
+        the weighted normalized matrix that will be used for ideal solution identification
+        and distance calculations.
+        
+        Mathematical Process:
+        V_ij = w_j × r_ij
+        
+        Where:
+        - V_ij = weighted normalized value for alternative i, criterion j
+        - w_j = weight of criterion j (Σw_j = 1)
+        - r_ij = normalized value for alternative i, criterion j
+        
+        Weight Impact:
+        - High weights (w_j → 1): Criterion j dominates the decision
+        - Low weights (w_j → 0): Criterion j has minimal influence
+        - Equal weights (w_j = 1/n): All criteria contribute equally
+        
+        The weighted matrix preserves the relative performance relationships while
+        incorporating the decision maker's preferences about criterion importance.
+        
         Args:
-            normalized_matrix: Normalized decision matrix
-            weights: Criteria weights
+            normalized_matrix: Normalized decision matrix (alternatives × criteria)
+            weights: Criteria weights vector (must sum to 1.0)
             
         Returns:
-            Weighted normalized matrix
+            Weighted normalized matrix (V = W × R)
         """
+        # Element-wise multiplication: each column j multiplied by weight w_j
+        # Broadcasting ensures weight w_j applies to entire column j
         return normalized_matrix * weights
         
     def identify_ideal_solutions(self, weighted_matrix: np.ndarray, 
@@ -274,8 +525,40 @@ class TOPSISAnalyzer:
         """
         Identify ideal and anti-ideal solutions
         
+        IDEAL SOLUTION IDENTIFICATION IN TOPSIS:
+        ========================================
+        
+        The ideal and anti-ideal solutions represent the best and worst possible
+        performance across all criteria, considering their benefit/cost nature.
+        
+        Ideal Solution (A⁺):
+        - For benefit criteria: A⁺_j = max(V_ij) for all i
+        - For cost criteria: A⁺_j = min(V_ij) for all i
+        - Represents the "perfect" alternative (best on all criteria)
+        
+        Anti-Ideal Solution (A⁻):
+        - For benefit criteria: A⁻_j = min(V_ij) for all i  
+        - For cost criteria: A⁻_j = max(V_ij) for all i
+        - Represents the "worst" alternative (worst on all criteria)
+        
+        Criterion Types:
+        1. Benefit criteria (higher is better):
+           - Examples: profit, quality, efficiency, customer satisfaction
+           - Ideal = maximum value, Anti-ideal = minimum value
+        
+        2. Cost criteria (lower is better):
+           - Examples: cost, time, defects, environmental impact
+           - Ideal = minimum value, Anti-ideal = maximum value
+        
+        Weight Influence:
+        The weighted matrix values (V_ij) already incorporate criterion importance,
+        so ideal solutions reflect both performance and weight significance.
+        Higher weights amplify the range between ideal and anti-ideal values.
+        
+        Reference: Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making, Chapter 4.
+        
         Args:
-            weighted_matrix: Weighted normalized matrix
+            weighted_matrix: Weighted normalized matrix (V)
             benefit_criteria: Indices of benefit criteria (higher is better)
             cost_criteria: Indices of cost criteria (lower is better)
             
@@ -286,11 +569,13 @@ class TOPSISAnalyzer:
         anti_ideal = np.zeros(weighted_matrix.shape[1])
         
         # For benefit criteria: ideal = max, anti-ideal = min
+        # Higher values are preferred, so best case = maximum value
         for j in benefit_criteria:
             ideal[j] = np.max(weighted_matrix[:, j])
             anti_ideal[j] = np.min(weighted_matrix[:, j])
             
-        # For cost criteria: ideal = min, anti-ideal = max
+        # For cost criteria: ideal = min, anti-ideal = max  
+        # Lower values are preferred, so best case = minimum value
         for j in cost_criteria:
             ideal[j] = np.min(weighted_matrix[:, j])
             anti_ideal[j] = np.max(weighted_matrix[:, j])
@@ -326,17 +611,53 @@ class TOPSISAnalyzer:
         """
         Calculate closeness coefficient (relative closeness to ideal solution)
         
+        CLOSENESS COEFFICIENT IN TOPSIS:
+        ================================
+        
+        The closeness coefficient (CC) represents the relative closeness of each
+        alternative to the ideal solution. It provides the final ranking metric
+        in TOPSIS methodology.
+        
+        Mathematical Formula:
+        CC_i = d_i⁻ / (d_i⁺ + d_i⁻)
+        
+        Where:
+        - CC_i = closeness coefficient for alternative i
+        - d_i⁺ = Euclidean distance from alternative i to ideal solution
+        - d_i⁻ = Euclidean distance from alternative i to anti-ideal solution
+        
+        Interpretation:
+        - CC_i = 1: Alternative is identical to ideal solution (best possible)
+        - CC_i = 0: Alternative is identical to anti-ideal solution (worst possible)
+        - 0 < CC_i < 1: Alternative is between ideal and anti-ideal solutions
+        - Higher CC_i values indicate better alternatives
+        
+        Geometric Interpretation:
+        The closeness coefficient represents the relative position of an alternative
+        in the line segment connecting the ideal and anti-ideal solutions. It
+        measures how much closer the alternative is to the ideal versus anti-ideal.
+        
+        Weight Influence:
+        Since distances are calculated in weighted criterion space, the closeness
+        coefficient inherently reflects the importance weights assigned to criteria.
+        Alternatives performing well on highly weighted criteria will have higher CC values.
+        
+        Reference: Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making, pp. 128-135.
+        
         Args:
-            d_plus: Distances to ideal solution
-            d_minus: Distances to anti-ideal solution
+            d_plus: Distances to ideal solution for each alternative
+            d_minus: Distances to anti-ideal solution for each alternative
             
         Returns:
             Closeness coefficients (0-1, higher is better)
         """
-        # Avoid division by zero
+        # Avoid division by zero in degenerate cases
+        # If both distances are zero, alternative equals both ideal and anti-ideal
         denominator = d_plus + d_minus
-        denominator[denominator == 0] = 1e-10
+        denominator[denominator == 0] = 1e-10  # Small epsilon to prevent numerical issues
         
+        # Calculate relative closeness to ideal solution
+        # CC = 1 when d_plus = 0 (at ideal), CC = 0 when d_minus = 0 (at anti-ideal)
         closeness = d_minus / denominator
         return closeness
         
@@ -486,7 +807,7 @@ class MCDAManager:
         
         Args:
             pymoo_result: PyMOO optimization result
-            objectives_info: Objective information
+            objectives_info: Objective information with 'name' and 'direction' keys
             criteria_comparisons: Pairwise comparison preferences
             
         Returns:
@@ -501,13 +822,15 @@ class MCDAManager:
         if criteria_comparisons is None:
             criteria_comparisons = self.create_pairwise_comparisons_equal(criteria_names)
             
-        # Perform AHP analysis
-        results = self.ahp.analyze(alternatives, criteria_comparisons)
+        # Perform AHP analysis with criteria names and objectives info to preserve order and handle directions
+        results = self.ahp.analyze(alternatives, criteria_comparisons, criteria_names, objectives_info)
         
         # Add additional information
         results['alternatives_count'] = alternatives.shape[0]
         results['criteria_count'] = alternatives.shape[1]
         results['alternatives_matrix'] = alternatives
+        results['benefit_criteria'] = benefit_criteria
+        results['cost_criteria'] = cost_criteria
         
         self.last_analysis = results
         return results
@@ -630,31 +953,55 @@ class MCDAManager:
 
 # Example usage and testing functions
 def demo_ahp_example():
-    """Demonstrate AHP with example data"""
-    print("=== AHP Demo ===")
+    """Demonstrate AHP with example data showing PyMOO-style mixed objectives"""
+    print("=== AHP Demo with Mixed PyMOO Objectives ===")
     
     # Example alternatives matrix (3 alternatives, 3 criteria)
+    # Alternative 1: Cost=$100, Quality=8/10, Time=2hrs
+    # Alternative 2: Cost=$80,  Quality=6/10, Time=3hrs  
+    # Alternative 3: Cost=$120, Quality=9/10, Time=1hr
     alternatives = np.array([
-        [7, 8, 6],   # Alternative 1
-        [8, 6, 9],   # Alternative 2  
-        [6, 9, 7]    # Alternative 3
+        [100, 8, 2],   # Alternative 1
+        [80,  6, 3],   # Alternative 2  
+        [120, 9, 1]    # Alternative 3
     ])
     
-    # Example pairwise comparisons (price vs performance vs reliability)
+    # PyMOO-style objectives info
+    objectives_info = [
+        {'name': 'Cost', 'direction': 'Minimize'},      # Lower cost is better
+        {'name': 'Quality', 'direction': 'Maximize'},   # Higher quality is better
+        {'name': 'Time', 'direction': 'Minimize'}       # Lower time is better
+    ]
+    
+    # Example pairwise comparisons
     criteria_comparisons = {
-        ('price', 'performance'): 0.5,      # Performance is twice as important as price
-        ('price', 'reliability'): 0.33,     # Reliability is 3x more important than price
-        ('performance', 'reliability'): 0.5 # Reliability is twice as important as performance
+        ('Cost', 'Quality'): 0.5,      # Quality is twice as important as Cost
+        ('Cost', 'Time'): 2.0,         # Cost is twice as important as Time
+        ('Quality', 'Time'): 3.0       # Quality is 3x more important than Time
     }
     
     ahp = AHPAnalyzer()
-    results = ahp.analyze(alternatives, criteria_comparisons)
+    results = ahp.analyze(alternatives, criteria_comparisons, 
+                         criteria_names=['Cost', 'Quality', 'Time'],
+                         objectives_info=objectives_info)
     
     print(f"Criteria weights: {results['weights']}")
     print(f"Consistency ratio: {results['consistency_ratio']:.4f}")
     print(f"Is consistent: {results['is_consistent']}")
-    print(f"Alternative scores: {results['scores']}")
-    print(f"Rankings: {results['rankings']}")
+    
+    print("\nAlternative Performance:")
+    for i, alt in enumerate(alternatives):
+        print(f"  Alt {i+1}: Cost=${alt[0]}, Quality={alt[1]}/10, Time={alt[2]}hrs")
+    
+    print(f"\nAHP Scores (higher = better overall):")
+    for i, score in enumerate(results['scores']):
+        print(f"  Alt {i+1}: {score:.4f} (Rank: {results['rankings'][i]})")
+    
+    print(f"\nInterpretation:")
+    print(f"- Cost minimization: Lower cost gets higher score")
+    print(f"- Quality maximization: Higher quality gets higher score") 
+    print(f"- Time minimization: Lower time gets higher score")
+    print(f"- Final AHP score reflects overall performance considering all objectives")
     
     
 def demo_topsis_example():
@@ -683,6 +1030,105 @@ def demo_topsis_example():
     print(f"Rankings: {results['rankings']}")
     print(f"Ideal solution: {results['ideal_solution']}")
     print(f"Anti-ideal solution: {results['anti_ideal_solution']}")
+
+
+"""
+COMPARATIVE ANALYSIS: AHP vs TOPSIS WEIGHTING APPROACHES
+========================================================
+
+AHP (Analytic Hierarchy Process) WEIGHTING:
+===========================================
+
+Advantages:
+- Derives weights from systematic pairwise comparisons
+- Provides consistency checking mechanism (CR < 0.10)
+- Theoretical foundation in eigenvalue decomposition
+- Captures relative importance through ratio scale
+- Well-established methodology with extensive validation
+
+Disadvantages:
+- Requires numerous pairwise comparisons (n(n-1)/2 for n criteria)
+- Susceptible to rank reversal problem
+- May be time-consuming for many criteria
+- Assumes ratio scale preferences (may not always be realistic)
+
+When to Use AHP Weighting:
+- When criteria importance is uncertain and needs systematic derivation
+- When decision makers can provide meaningful pairwise comparisons
+- When consistency verification is important
+- For strategic decisions requiring careful weight justification
+
+TOPSIS WEIGHTING FLEXIBILITY:
+============================
+
+Weight Sources for TOPSIS:
+1. Equal Weights (w_i = 1/n):
+   - Simple, unbiased approach
+   - Appropriate when no clear criteria preferences exist
+   - Baseline for comparing other weighting schemes
+
+2. AHP-Derived Weights:
+   - Combines AHP's systematic weight derivation with TOPSIS ranking
+   - Leverages strengths of both methods
+   - Provides consistency checking for weights
+
+3. Expert Weights:
+   - Direct assignment by domain experts
+   - Faster than pairwise comparisons
+   - Requires high expertise and experience
+
+4. Objective Weights (e.g., Entropy Method):
+   - Data-driven weight determination
+   - Based on information content of criteria
+   - Reduces subjective bias but may not reflect preferences
+
+INTEGRATION STRATEGY:
+====================
+
+Recommended Approach:
+1. Use AHP to derive weights when criteria importance is uncertain
+2. Apply both AHP and TOPSIS to same problem for validation
+3. Compare rankings for consistency check
+4. Use TOPSIS with various weighting schemes for sensitivity analysis
+
+Mathematical Relationship:
+- AHP provides theoretically sound weight derivation
+- TOPSIS provides geometrically intuitive distance-based ranking
+- Combined approach leverages strengths of both methodologies
+
+PRACTICAL IMPLEMENTATION GUIDELINES:
+===================================
+
+For Decision Support Systems:
+1. Offer multiple weighting options (equal, AHP, expert, objective)
+2. Provide sensitivity analysis showing impact of weight changes
+3. Allow interactive weight adjustment with real-time ranking updates
+4. Display consistency measures when using AHP weights
+5. Show correlation between different methods for validation
+
+Quality Assurance:
+- Always check AHP consistency (CR < 0.10)
+- Perform sensitivity analysis on weight variations
+- Compare results across different methods
+- Validate results with domain experts
+- Document weight derivation methodology
+
+References for Further Reading:
+==============================
+
+Foundational Papers:
+- Saaty, T. L. (1980). The Analytic Hierarchy Process: Planning, Priority Setting, Resource Allocation. McGraw-Hill.
+- Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making: Methods and Applications. Springer-Verlag.
+
+Comparative Studies:
+- Triantaphyllou, E. (2000). Multi-criteria decision making methods: A comparative study. Applied Optimization, 44.
+- Behzadian, M., et al. (2012). A state-of the-art survey of TOPSIS applications. Expert Systems with Applications, 39(17), 13051-13069.
+
+Weight Determination Methods:
+- Roszkowska, E. (2013). Rank ordering criteria weighting methods – a comparative overview. Optimum Studia Ekonomiczne, 5(65), 14-33.
+- Odu, G. O. (2019). Weighting methods for multi-criteria decision making technique. Journal of Applied Sciences and Environmental Management, 23(8), 1449-1457.
+
+"""
 
 
 if __name__ == "__main__":

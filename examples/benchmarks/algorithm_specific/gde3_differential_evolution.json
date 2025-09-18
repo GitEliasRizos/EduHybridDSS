@@ -1,0 +1,102 @@
+{
+  "problem": {
+    "name": "NSGA-II Engineering Test - Complex Constrained Problem",
+    "description": "Complex engineering optimization problem designed for NSGA-II's constraint handling. Features mixed variable constraints and non-linear objective landscape.",
+    "type": "Engineering Optimization",
+    "variables": [
+      {
+        "name": "thickness",
+        "type": "Real",
+        "lower_bound": 0.1,
+        "upper_bound": 2.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "width",
+        "type": "Real",
+        "lower_bound": 0.1,
+        "upper_bound": 10.0,
+        "initial_value": 2.0
+      },
+      {
+        "name": "height",
+        "type": "Real",
+        "lower_bound": 0.1,
+        "upper_bound": 10.0,
+        "initial_value": 2.0
+      },
+      {
+        "name": "material_grade",
+        "type": "Real",
+        "lower_bound": 1.0,
+        "upper_bound": 5.0,
+        "initial_value": 3.0
+      }
+    ],
+    "objectives": [
+      {
+        "name": "weight_minimization",
+        "direction": "Minimize",
+        "weight": 0.6,
+        "function": "thickness * width * height * material_grade * 7.85"
+      },
+      {
+        "name": "stress_factor",
+        "direction": "Minimize",
+        "weight": 0.4,
+        "function": "1000 * material_grade / (thickness * width^2 / 6) + 0.1 * height"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "c1_aspect_ratio",
+        "type": "Inequality",
+        "function": "width / height - 5.0",
+        "operator": "<="
+      },
+      {
+        "name": "c2_minimum_section",
+        "type": "Inequality",
+        "function": "0.05 - thickness * width",
+        "operator": "<="
+      },
+      {
+        "name": "c3_material_compatibility",
+        "type": "Inequality",
+        "function": "thickness + width - material_grade * 2",
+        "operator": "<="
+      }
+    ]
+  },
+  "algorithm": {
+    "category": "Pareto-based",
+    "name": "NSGA-II",
+    "parameters": {
+      "population_size": 100,
+      "n_generations": 500,
+      "seed": 654
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "DE Mutation",
+      "probability": 1.0,
+      "eta": 20.0,
+      "strategy": "rand1"
+    },
+    "termination": {
+      "max_evaluations": 50000,
+      "convergence_tolerance": 1e-5,
+      "enable_convergence": true,
+      "verbose": true
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "NSGA-II engineering constraint handling test with complex problem"
+  }
+}

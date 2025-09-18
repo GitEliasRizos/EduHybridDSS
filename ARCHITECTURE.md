@@ -107,18 +107,72 @@ is designed for:
   - Parameter validation and suggestions
   - Advanced options for expert users
 
-#### ResultsTab
-- **Purpose**: Optimization execution and result visualization
+### 6. MCDA Integration
+
+#### MCDATab
+- **Purpose**: Multi-criteria decision analysis interface for optimization results
 - **Responsibilities**:
-  - Optimization execution coordination
-  - Progress monitoring and display
-  - Result visualization and analysis
-  - Export functionality
+  - Criteria definition and weight configuration
+  - AHP (Analytic Hierarchy Process) pairwise comparison interface
+  - TOPSIS analysis configuration and execution
+  - MCDA results visualization and interpretation
 - **Key Features**:
-  - Multi-threaded optimization execution
-  - Real-time progress updates
-  - Professional visualization with matplotlib
-  - Comprehensive result export options
+  - Dropdown-based Saaty scale for AHP comparisons
+  - Real-time consistency ratio monitoring
+  - Multiple normalization methods for TOPSIS
+  - Interactive results tables with sorting and ranking
+
+#### MCDAManager (in `core/mcda.py`)
+- **Purpose**: Multi-criteria decision analysis coordinator
+- **Responsibilities**:
+  - Integrate optimization results with MCDA methods
+  - Coordinate AHP and TOPSIS analysis workflows
+  - Process PyMOO results into MCDA-compatible format
+  - Manage criteria definitions and user preferences
+- **Key Features**:
+  - Seamless PyMOO integration for result processing
+  - Support for both AHP and TOPSIS methodologies
+  - Comprehensive mathematical documentation with APA references
+  - Professional-grade implementations with academic rigor
+
+#### AHPAnalyzer
+- **Purpose**: Analytic Hierarchy Process implementation
+- **Responsibilities**:
+  - Process pairwise comparison matrices using Saaty's 1-9 scale
+  - Calculate criteria weights using eigenvalue decomposition
+  - Compute and validate consistency ratios
+  - Handle complex eigenvalue scenarios with mathematical rigor
+- **Mathematical Foundation**:
+  - Principal eigenvalue-based weight calculation following Saaty (1980)
+  - Consistency ratio validation using Random Index methodology
+  - Robust handling of complex eigenvalues from numerical precision
+  - Comprehensive documentation with academic references
+
+#### TOPSISAnalyzer  
+- **Purpose**: Technique for Order Preference by Similarity to Ideal Solution
+- **Responsibilities**:
+  - Implement vector and linear normalization methods
+  - Calculate positive and negative ideal solutions
+  - Compute relative closeness coefficients for ranking
+  - Handle both minimization and maximization criteria
+- **Mathematical Foundation**:
+  - Multiple normalization approaches (Hwang & Yoon, 1981)
+  - Euclidean distance-based similarity measurements
+  - Robust handling of mixed objective directions
+  - Professional implementation with comprehensive documentation
+
+#### PairwiseComparisonWidget
+- **Purpose**: Specialized UI component for AHP pairwise comparisons
+- **Responsibilities**:
+  - Provide intuitive dropdown interface for Saaty scale values
+  - Maintain reciprocal consistency in comparison matrices
+  - Real-time validation of comparison inputs
+  - User-friendly presentation of pairwise comparison workflow
+- **Key Features**:
+  - QComboBox-based Saaty scale selection (1/9 to 9)
+  - Automatic reciprocal value handling
+  - Clear labeling with criteria names
+  - Responsive layout for multiple criteria scenarios
 
 ### Business Logic Layer (`core/`)
 
@@ -239,6 +293,59 @@ The application uses Qt's threading model to ensure responsive user experience:
 - **Resource Management**: Proper cleanup on thread termination
 - **Error Isolation**: Worker thread errors don't crash main application
 
+## 🎯 MCDA Integration
+
+The PyMOO GUI includes a comprehensive Multi-Criteria Decision Analysis (MCDA) module that enables sophisticated post-optimization analysis of Pareto-optimal solutions. This integration provides professional-grade decision support capabilities.
+
+### MCDA Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   PyMOO Results │    │   MCDA Module   │    │  Decision       │
+│                 │    │                 │    │  Support        │
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ • Pareto Front  │───►│ • AHP Analyzer  │───►│ • Ranked Solns  │
+│ • Decision Vars │    │ • TOPSIS Engine │    │ • Weight Vector │
+│ • Objective Vals│    │ • MCDA Manager  │    │ • Consistency   │
+│ • Constraint Vals│    │ • UI Controller │    │ • Preferences  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Mathematical Foundations
+
+#### Analytic Hierarchy Process (AHP)
+- **Theoretical Basis**: Saaty's eigenvalue method for deriving criteria weights
+- **Implementation**: Principal eigenvalue decomposition with consistency validation
+- **Key Equation**: $A \cdot w = \lambda_{max} \cdot w$ where $w$ represents criteria weights
+- **Consistency Measure**: $CR = \frac{CI}{RI} = \frac{\lambda_{max} - n}{(n-1) \cdot RI}$
+- **Reference**: Saaty, T. L. (1980). The Analytic Hierarchy Process. McGraw-Hill.
+
+#### TOPSIS Method  
+- **Theoretical Basis**: Distance-based ranking relative to ideal solutions
+- **Normalization**: Vector normalization $r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{k=1}^{m} x_{kj}^2}}$
+- **Ideal Solutions**: $A^+ = \{v_1^+, v_2^+, ..., v_n^+\}$ and $A^- = \{v_1^-, v_2^-, ..., v_n^-\}$
+- **Closeness Coefficient**: $C_i = \frac{S_i^-}{S_i^+ + S_i^-}$ where $S_i^+$ and $S_i^-$ are distances to ideal solutions
+- **Reference**: Hwang, C. L., & Yoon, K. (1981). Multiple Attribute Decision Making. Springer.
+
+### Data Flow in MCDA Module
+
+```
+PyMOO Results → prepare_pymoo_results() → Decision Matrix
+       ↓
+Criteria Definition → AHP Pairwise Comparisons → Weight Vector
+       ↓                      ↓                      ↓  
+TOPSIS Analysis ← Normalized Matrix ← apply_weights() ← Weight Integration
+       ↓
+Ranked Solutions → UI Display → Export Capabilities
+```
+
+### Integration Points
+
+1. **Results Tab Integration**: Seamless transition from optimization results to MCDA analysis
+2. **Criteria Mapping**: Automatic mapping of optimization objectives to MCDA criteria
+3. **Weight Persistence**: Save and load weight configurations for consistent analysis
+4. **Export Integration**: Include MCDA rankings in result export functionality
+
 ## 🔌 Extension Points
 
 The architecture provides several extension points for future enhancements:
@@ -263,10 +370,21 @@ The architecture provides several extension points for future enhancements:
 - **Integration**: Add to export dialog and processing
 - **Formats**: New file formats, cloud integration, database storage
 
-### 5. Validation Extensions
-- **Interface**: Extend Validators with new validation rules
-- **Integration**: Add to real-time validation pipeline
-- **Features**: Custom business rules, external validation services
+### 6. MCDA Method Extensions
+- **Interface**: Implement new MCDA methods in core/mcda.py
+- **Integration**: Add to MCDAManager method selection
+- **UI**: Extend MCDATab with method-specific parameters
+- **Examples**: ELECTRE, PROMETHEE, SAW, VIKOR methods
+
+### 7. Criteria Definition Extensions
+- **Interface**: Extend criteria input mechanisms  
+- **Integration**: Add advanced criteria types and relationships
+- **Features**: Hierarchical criteria, group decision making, fuzzy criteria
+
+### 8. Mathematical Extensions
+- **Interface**: Add advanced mathematical operators and validations
+- **Integration**: Extend eigenvalue handling, add sensitivity analysis
+- **Features**: Uncertainty analysis, robustness testing, what-if scenarios
 
 ## 📊 Performance Considerations
 

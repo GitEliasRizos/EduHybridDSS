@@ -3,7 +3,8 @@ PyMOO GUI - Developer Guide
 
 This guide provides comprehensive information for developers working on the
 PyMOO GUI project, including coding standards, development workflows, and
-contribution guidelines.
+contribution guidelines. Special attention is given to MCDA module development
+and mathematical implementation patterns.
 
 ## 📋 Table of Contents
 
@@ -11,8 +12,9 @@ contribution guidelines.
 2. [Coding Standards](#coding-standards)  
 3. [Project Structure](#project-structure)
 4. [Development Workflow](#development-workflow)
-5. [Testing Guidelines](#testing-guidelines)
-6. [Contributing](#contributing)
+5. [MCDA Development](#mcda-development)
+6. [Testing Guidelines](#testing-guidelines)
+7. [Contributing](#contributing)
 
 ## 🛠 Development Setup
 
@@ -24,7 +26,7 @@ python --version
 # Install dependencies
 pip install -r requirements.txt
 
-# Development dependencies
+# Development dependencies (optional but recommended)
 pip install pytest pytest-qt black flake8 mypy
 ```
 
@@ -36,7 +38,8 @@ cd pymoo-gui
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+# On Windows: venv\\Scripts\\activate
+# On Unix/MacOS: source venv/bin/activate
 
 # Install in development mode
 pip install -e .
@@ -343,7 +346,324 @@ git push origin feature/new-algorithm-support
 4. **Testing**: All tests must pass
 5. **Documentation**: Update docs for user-facing changes
 
-## 🧪 Testing Guidelines
+## � MCDA Development
+
+The Multi-Criteria Decision Analysis (MCDA) module is a critical component requiring careful attention to mathematical rigor, numerical stability, and user experience. This section provides comprehensive guidance for MCDA development.
+
+### Mathematical Implementation Standards
+
+#### Eigenvalue Decomposition (AHP)
+```python
+def calculate_weights(self, comparison_matrix: np.ndarray) -> Tuple[np.ndarray, float]:
+    """
+    Calculate criteria weights using principal eigenvalue method.
+    
+    Implementation follows Saaty (1980) methodology with robust handling
+    of numerical precision issues and complex eigenvalues.
+    
+    Mathematical Foundation:
+    - Principal eigenvalue: A * w = λ_max * w
+    - Consistency Ratio: CR = (λ_max - n) / ((n-1) * RI)
+    
+    Args:
+        comparison_matrix: n×n pairwise comparison matrix following Saaty scale
+        
+    Returns:
+        tuple: (normalized_weights, consistency_ratio)
+        
+    Raises:
+        ValueError: If matrix is not square or contains invalid values
+        
+    References:
+        Saaty, T. L. (1980). The Analytic Hierarchy Process. McGraw-Hill.
+    """
+    # Validate input matrix
+    if not self._validate_comparison_matrix(comparison_matrix):
+        raise ValueError("Invalid comparison matrix format")
+    
+    # Calculate eigenvalues and eigenvectors
+    eigenvalues, eigenvectors = np.linalg.eig(comparison_matrix)
+    
+    # Find principal eigenvalue (largest real eigenvalue)
+    max_eigenvalue_idx = np.argmax(np.real(eigenvalues))
+    principal_eigenvalue = np.real(eigenvalues[max_eigenvalue_idx])
+    principal_eigenvector = np.real(eigenvectors[:, max_eigenvalue_idx])
+    
+    # Handle potential negative weights from numerical precision
+    principal_eigenvector = np.abs(principal_eigenvector)
+    
+    # Normalize weights to sum to 1
+    weights = principal_eigenvector / np.sum(principal_eigenvector)
+    
+    # Calculate consistency ratio
+    n = len(comparison_matrix)
+    consistency_index = (principal_eigenvalue - n) / (n - 1)
+    random_index = self._get_random_index(n)
+    consistency_ratio = consistency_index / random_index if random_index > 0 else 0
+    
+    return weights, consistency_ratio
+```
+
+#### TOPSIS Implementation Pattern
+```python
+def analyze_with_topsis(
+    self, 
+    decision_matrix: np.ndarray, 
+    weights: np.ndarray,
+    objectives: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Perform TOPSIS analysis with comprehensive error handling.
+    
+    Implements vector normalization method following Hwang & Yoon (1981)
+    with support for mixed objective directions (minimize/maximize).
+    
+    Mathematical Steps:
+    1. Vector normalization: r_ij = x_ij / √(Σ x_kj²)
+    2. Weighted normalized matrix: v_ij = w_j * r_ij  
+    3. Ideal solutions: A⁺ = {max(v_ij)} for benefit, {min(v_ij)} for cost
+    4. Distance calculations: D⁺ and D⁻ using Euclidean distance
+    5. Closeness coefficient: C_i = D⁻ / (D⁺ + D⁻)
+    
+    Args:
+        decision_matrix: m×n matrix of alternatives vs criteria
+        weights: n-element weight vector from AHP or direct input
+        objectives: List of objective configurations with directions
+        
+    Returns:
+        Dict containing rankings, scores, and analysis details
+    """
+    # Input validation and preprocessing
+    validated_matrix = self._validate_and_preprocess_matrix(decision_matrix)
+    normalized_matrix = self._normalize_matrix(validated_matrix, method='vector')
+    weighted_matrix = self._apply_weights(normalized_matrix, weights)
+    
+    # Calculate ideal solutions based on objective directions
+    ideal_positive, ideal_negative = self._calculate_ideal_solutions(
+        weighted_matrix, objectives
+    )
+    
+    # Distance calculations with numerical stability checks
+    distances_positive = self._calculate_distances(weighted_matrix, ideal_positive)
+    distances_negative = self._calculate_distances(weighted_matrix, ideal_negative)
+    
+    # Closeness coefficients with division by zero protection
+    closeness_coefficients = self._calculate_closeness_coefficients(
+        distances_positive, distances_negative
+    )
+    
+    return self._format_topsis_results(closeness_coefficients, decision_matrix)
+```
+
+### UI Component Development Patterns
+
+#### Custom Widget Development (PairwiseComparisonWidget)
+```python
+class PairwiseComparisonWidget(QWidget):
+    """
+    Custom widget for AHP pairwise comparisons using Saaty scale.
+    
+    This widget demonstrates proper PyQt6 development patterns including:
+    - Signal-slot communication
+    - Custom layout management  
+    - Data validation and consistency
+    - User experience optimization
+    """
+    
+    # Define signals at class level for proper Qt integration
+    comparison_changed = pyqtSignal(int, int, float)  # row, col, value
+    matrix_completed = pyqtSignal(np.ndarray)
+    
+    def __init__(self, criteria_names: List[str], parent=None):
+        super().__init__(parent)
+        self.criteria_names = criteria_names
+        self.comparison_widgets = {}
+        self._init_ui()
+        self._connect_signals()
+    
+    def _init_ui(self):
+        """Initialize UI with proper layout and styling."""
+        layout = QGridLayout(self)
+        
+        # Create header labels
+        for i, name in enumerate(self.criteria_names):
+            label = QLabel(name)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(label, 0, i + 1)
+            layout.addWidget(QLabel(name), i + 1, 0)
+        
+        # Create comparison dropdowns for upper triangle
+        for i in range(len(self.criteria_names)):
+            for j in range(i + 1, len(self.criteria_names)):
+                combo = self._create_saaty_combo()
+                layout.addWidget(combo, i + 1, j + 1)
+                self.comparison_widgets[(i, j)] = combo
+                
+    def _create_saaty_combo(self) -> QComboBox:
+        """Create standardized Saaty scale dropdown."""
+        combo = QComboBox()
+        
+        # Saaty scale values with descriptive labels
+        saaty_scale = [
+            (1/9, "1/9 - Extremely Less Important"),
+            (1/7, "1/7 - Very Strongly Less Important"), 
+            (1/5, "1/5 - Strongly Less Important"),
+            (1/3, "1/3 - Moderately Less Important"),
+            (1, "1 - Equal Importance"),
+            (3, "3 - Moderately More Important"),
+            (5, "5 - Strongly More Important"),
+            (7, "7 - Very Strongly More Important"),
+            (9, "9 - Extremely More Important")
+        ]
+        
+        for value, label in saaty_scale:
+            combo.addItem(label, value)
+            
+        # Set default to equal importance
+        combo.setCurrentIndex(4)  # Index for value 1
+        
+        # Connect to update handler
+        combo.currentIndexChanged.connect(self._on_comparison_changed)
+        
+        return combo
+```
+
+### Debugging and Testing Patterns
+
+#### MCDA-Specific Testing
+```python
+import pytest
+import numpy as np
+from core.mcda import AHPAnalyzer, TOPSISAnalyzer
+
+class TestAHPAnalyzer:
+    """Comprehensive test suite for AHP implementation."""
+    
+    @pytest.fixture
+    def perfect_consistency_matrix(self):
+        """3x3 matrix with perfect consistency for testing."""
+        return np.array([
+            [1.0, 3.0, 5.0],
+            [1/3, 1.0, 5/3],
+            [1/5, 3/5, 1.0]
+        ])
+    
+    @pytest.fixture  
+    def inconsistent_matrix(self):
+        """Matrix with known inconsistency for testing tolerance."""
+        return np.array([
+            [1.0, 2.0, 8.0],
+            [0.5, 1.0, 6.0], 
+            [0.125, 1/6, 1.0]
+        ])
+    
+    def test_weight_calculation_perfect_consistency(self, perfect_consistency_matrix):
+        """Test weight calculation with perfectly consistent matrix."""
+        analyzer = AHPAnalyzer()
+        weights, cr = analyzer.calculate_weights(perfect_consistency_matrix)
+        
+        # Weights should sum to 1
+        assert np.isclose(np.sum(weights), 1.0, atol=1e-10)
+        
+        # Consistency ratio should be very small for perfect consistency
+        assert cr < 0.01, f"CR should be near zero, got {cr}"
+        
+        # Weights should be positive
+        assert np.all(weights > 0), "All weights should be positive"
+    
+    def test_consistency_ratio_calculation(self, inconsistent_matrix):
+        """Test consistency ratio calculation with inconsistent matrix."""
+        analyzer = AHPAnalyzer()
+        weights, cr = analyzer.calculate_weights(inconsistent_matrix)
+        
+        # CR should be above acceptable threshold (0.1)
+        assert cr > 0.1, f"Expected high CR for inconsistent matrix, got {cr}"
+        
+    def test_eigenvalue_edge_cases(self):
+        """Test handling of edge cases in eigenvalue computation."""
+        analyzer = AHPAnalyzer()
+        
+        # Test with matrix having complex eigenvalues
+        complex_matrix = np.array([
+            [1.0, 2.0, 0.1],
+            [0.5, 1.0, 0.2],
+            [10.0, 5.0, 1.0]
+        ])
+        
+        # Should not raise exception and return real weights
+        weights, cr = analyzer.calculate_weights(complex_matrix)
+        assert np.all(np.isreal(weights)), "Weights should be real numbers"
+        assert np.isreal(cr), "Consistency ratio should be real"
+```
+
+#### Debugging Workflow for MCDA Issues
+
+1. **Matrix Validation Issues**:
+```python
+def debug_comparison_matrix(self, matrix: np.ndarray):
+    """Debug helper for comparison matrix issues."""
+    print(f"Matrix shape: {matrix.shape}")
+    print(f"Matrix dtype: {matrix.dtype}")
+    print(f"Reciprocal check: {self._check_reciprocity(matrix)}")
+    print(f"Eigenvalues: {np.linalg.eigvals(matrix)}")
+    print(f"Condition number: {np.linalg.cond(matrix)}")
+```
+
+2. **Weight Calculation Debugging**:
+```python
+def debug_weight_calculation(self, comparison_matrix: np.ndarray):
+    """Step-by-step debugging of weight calculation."""
+    eigenvals, eigenvecs = np.linalg.eig(comparison_matrix)
+    print(f"All eigenvalues: {eigenvals}")
+    
+    # Check for complex eigenvalues
+    complex_mask = np.iscomplex(eigenvals)
+    if np.any(complex_mask):
+        print(f"Complex eigenvalues found: {eigenvals[complex_mask]}")
+        
+    # Principal eigenvalue analysis
+    max_idx = np.argmax(np.real(eigenvals))
+    principal_val = eigenvals[max_idx]
+    principal_vec = eigenvecs[:, max_idx]
+    
+    print(f"Principal eigenvalue: {principal_val}")
+    print(f"Principal eigenvector: {principal_vec}")
+    print(f"Is principal eigenvector real: {np.all(np.isreal(principal_vec))}")
+```
+
+### Performance Optimization
+
+#### Numerical Stability
+```python
+# Use appropriate tolerances for floating point comparisons
+EIGENVALUE_TOLERANCE = 1e-10
+WEIGHT_TOLERANCE = 1e-12
+
+def _normalize_weights_stable(self, weights: np.ndarray) -> np.ndarray:
+    """Numerically stable weight normalization."""
+    # Handle potential negative weights from numerical precision
+    weights = np.abs(weights)
+    
+    # Check for zero weights
+    if np.sum(weights) < WEIGHT_TOLERANCE:
+        raise ValueError("All weights are effectively zero")
+        
+    return weights / np.sum(weights)
+```
+
+#### Memory Management for Large Matrices
+```python
+def _process_large_decision_matrix(self, matrix: np.ndarray) -> np.ndarray:
+    """Efficient processing of large decision matrices."""
+    # Use numpy operations that minimize memory allocation
+    if matrix.size > 10000:  # Threshold for large matrices
+        # Process in chunks if necessary
+        return self._chunked_normalization(matrix)
+    else:
+        return self._standard_normalization(matrix)
+```
+
+## �🧪 Testing Guidelines
 
 ### Test Structure
 ```python

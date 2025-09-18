@@ -1,0 +1,106 @@
+{
+  "problem": {
+    "name": "NSGA-III Many-Objective DTLZ2",
+    "description": "4-objective DTLZ2 optimized for NSGA-III: Tests reference direction mechanism and many-objective optimization. Use reference directions with H1=6 for 35 directions. Expected: Well-distributed solutions on 4D sphere.",
+    "type": "Custom Problem",
+    "variables": [
+      {
+        "name": "x1",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x2",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x3",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x4",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      },
+      {
+        "name": "x5",
+        "type": "Real",
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "initial_value": 0.5
+      }
+    ],
+    "objectives": [
+      {
+        "name": "f1",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * cos(x1 * pi / 2) * cos(x2 * pi / 2)"
+      },
+      {
+        "name": "f2",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * cos(x1 * pi / 2) * sin(x2 * pi / 2)"
+      },
+      {
+        "name": "f3",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * sin(x1 * pi / 2) * cos(x2 * pi / 4)"
+      },
+      {
+        "name": "f4",
+        "direction": "Minimize",
+        "weight": 1.0,
+        "function": "(1 + ((x3 - 0.5)**2 + (x4 - 0.5)**2 + (x5 - 0.5)**2)) * sin(x1 * pi / 2) * sin(x2 * pi / 4)"
+      }
+    ],
+    "constraints": []
+  },
+  "algorithm": {
+    "category": "Reference Point-based",
+    "name": "NSGA-III",
+    "parameters": {
+      "population_size": 35,
+      "n_generations": 300,
+      "seed": 42
+    },
+    "crossover": {
+      "operator": "SBX (Simulated Binary Crossover)",
+      "probability": 0.9,
+      "eta": 15.0
+    },
+    "mutation": {
+      "operator": "Polynomial Mutation",
+      "probability": 0.1,
+      "eta": 20.0
+    },
+    "termination": {
+      "max_evaluations": 10500,
+      "convergence_tolerance": 1e-6,
+      "enable_convergence": true,
+      "verbose": true
+    },
+    "reference_directions": {
+      "type": "Das-Dennis",
+      "n_dim": 4,
+      "n_partitions": 6
+    }
+  },
+  "metadata": {
+    "created_by": "PyMOO GUI",
+    "version": "1.0.0",
+    "description": "NSGA-III 4-objective DTLZ2 benchmark"
+  }
+}

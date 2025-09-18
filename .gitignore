@@ -4,3 +4,4 @@ tests/
 pycache/*
 *pycache*
 .venv
+*debug*

@@ -381,6 +381,9 @@ def make_serializable(obj: Any) -> Any:
     # Handle numpy floating point types - convert to standard Python float
     elif isinstance(obj, np.floating):
         return float(obj)
+    # Handle numpy boolean types - convert to standard Python bool
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
     # Recursively process dictionary values
     elif isinstance(obj, dict):
         return {key: make_serializable(value) for key, value in obj.items()}

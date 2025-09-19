@@ -570,13 +570,8 @@ class MCDAResultsWidget(QWidget):
         
         if filename:
             try:
-                # Prepare results for JSON serialization
-                export_data = {}
-                for key, value in self.current_results.items():
-                    if isinstance(value, np.ndarray):
-                        export_data[key] = value.tolist()
-                    else:
-                        export_data[key] = value
+                # Use comprehensive JSON serialization helper
+                export_data = self._make_json_serializable(self.current_results)
                         
                 with open(filename, 'w') as f:
                     json.dump(export_data, f, indent=2)
@@ -585,6 +580,38 @@ class MCDAResultsWidget(QWidget):
                 
             except Exception as e:
                 QMessageBox.critical(self, "Export Error", f"Failed to export JSON: {str(e)}")
+    
+    def _make_json_serializable(self, obj):
+        """Convert numpy arrays, booleans, and other non-serializable objects to JSON-compatible format"""
+        import numpy as np
+        
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return list(self._make_json_serializable(list(obj)))
+        elif isinstance(obj, (np.int64, np.int32, np.integer)):
+            return int(obj)
+        elif isinstance(obj, (np.float64, np.float32, np.floating)):
+            return float(obj)
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        elif isinstance(obj, bool):
+            return obj  # Regular Python booleans are JSON serializable
+        elif hasattr(obj, 'item'):  # numpy scalars
+            return obj.item()
+        else:
+            # For any other object types that might not be JSON serializable
+            try:
+                # Test if it's already JSON serializable
+                json.dumps(obj)
+                return obj
+            except (TypeError, ValueError):
+                # Convert to string as fallback
+                return str(obj)
     
     def clear_results(self):
         """Clear all results and reset the widget to initial state"""

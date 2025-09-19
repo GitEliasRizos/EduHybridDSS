@@ -908,7 +908,23 @@ class MainWindow(QMainWindow):
                 # Get session data for alternatives
                 sessions = self.db_manager.get_active_sessions()
                 session = next((s for s in sessions if s['id'] == session_id), None)
+                
+                if not session:
+                    results_text.append("❌ Session not found.")
+                    return
+                
                 alternatives_data = session.get('alternatives_data', [])
+                
+                # Debug information
+                results_text.append(f"Debug: Found {len(ahp_matrices)} AHP matrices")
+                results_text.append(f"Debug: Session data available: {session is not None}")
+                results_text.append(f"Debug: Alternatives data type: {type(alternatives_data)}")
+                results_text.append(f"Debug: Alternatives data length: {len(alternatives_data) if alternatives_data else 'None'}")
+                
+                if not alternatives_data:
+                    results_text.append("❌ No alternatives data found in this session.")
+                    results_text.append("This session was not created from optimization results.")
+                    return
                 
                 # Compute AHP group decision
                 ahp_result = self.db_manager._compute_ahp_group_decision(ahp_matrices, alternatives_data)

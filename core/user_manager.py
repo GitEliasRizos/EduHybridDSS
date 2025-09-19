@@ -461,26 +461,47 @@ class UserDatabaseManager:
         This is the standard approach for AHP group decision making:
         For each matrix element (i,j): geometric_mean = (a1_ij × a2_ij × ... × an_ij)^(1/n)
         """
+        print(f"Debug aggregate_ahp_matrices: input matrices type: {type(matrices)}")
         if not matrices:
             raise ValueError("No matrices to aggregate")
             
+        print(f"Debug aggregate_ahp_matrices: matrices keys: {list(matrices.keys())}")
+        print(f"Debug aggregate_ahp_matrices: matrices count: {len(matrices)}")
+        
         # Get matrix dimensions from first matrix
         first_matrix = next(iter(matrices.values()))
+        print(f"Debug aggregate_ahp_matrices: first matrix shape: {first_matrix.shape}")
+        print(f"Debug aggregate_ahp_matrices: first matrix type: {type(first_matrix)}")
         n = first_matrix.shape[0]
         
         # Initialize result matrix
         aggregated = np.ones((n, n))
+        print(f"Debug aggregate_ahp_matrices: initialized aggregated matrix shape: {aggregated.shape}")
         
         # Calculate geometric mean for each element
         for i in range(n):
             for j in range(n):
                 if i != j:  # Skip diagonal elements (they remain 1)
-                    elements = [matrix[i, j] for matrix in matrices.values()]
-                    # Geometric mean: (a1 × a2 × ... × an)^(1/n)
-                    geometric_mean = np.power(np.prod(elements), 1.0 / len(elements))
-                    aggregated[i, j] = geometric_mean
-                    aggregated[j, i] = 1.0 / geometric_mean  # Reciprocal property
-                    
+                    try:
+                        elements = [matrix[i, j] for matrix in matrices.values()]
+                        print(f"Debug aggregate: Processing ({i},{j}), elements: {elements}")
+                        
+                        if not elements:
+                            raise ValueError(f"No elements found for position ({i},{j})")
+                        
+                        # Geometric mean: (a1 × a2 × ... × an)^(1/n)
+                        geometric_mean = np.power(np.prod(elements), 1.0 / len(elements))
+                        aggregated[i, j] = geometric_mean
+                        aggregated[j, i] = 1.0 / geometric_mean  # Reciprocal property
+                        
+                    except Exception as e:
+                        print(f"Debug aggregate: Error at position ({i},{j}): {e}")
+                        print(f"Debug aggregate: matrices.values() type: {type(matrices.values())}")
+                        print(f"Debug aggregate: matrices.values(): {list(matrices.values())}")
+                        raise
+        
+        print(f"Debug aggregate_ahp_matrices: final aggregated matrix shape: {aggregated.shape}")
+        print(f"Debug aggregate_ahp_matrices: final aggregated matrix:\n{aggregated}")
         return aggregated
         
     def aggregate_topsis_weights(self, weights_dict: Dict[str, List[float]]) -> List[float]:
@@ -608,13 +629,33 @@ class UserDatabaseManager:
                                    alternatives_data: List[Dict]) -> Dict:
         """Compute group decision using aggregated AHP matrices"""
         
+        print(f"Debug AHP: ahp_matrices type: {type(ahp_matrices)}, length: {len(ahp_matrices) if ahp_matrices else 'None'}")
+        print(f"Debug AHP: alternatives_data type: {type(alternatives_data)}, length: {len(alternatives_data) if alternatives_data else 'None'}")
+        
+        if not ahp_matrices:
+            raise ValueError("No AHP matrices provided")
+        
+        if not alternatives_data:
+            raise ValueError("No alternatives data provided")
+        
         # Aggregate all AHP matrices using geometric mean
         aggregated_matrix = self.aggregate_ahp_matrices(ahp_matrices)
+        print(f"Debug AHP: aggregated_matrix returned: {aggregated_matrix is not None}")
+        print(f"Debug AHP: aggregated_matrix shape: {aggregated_matrix.shape if aggregated_matrix is not None else 'None'}")
         
         # Compute weights from aggregated matrix using eigenvalue method
-        eigenvalues, eigenvectors = np.linalg.eig(aggregated_matrix)
-        max_eigenvalue_index = np.argmax(eigenvalues.real)
-        principal_eigenvector = eigenvectors[:, max_eigenvalue_index].real
+        try:
+            eigenvalues, eigenvectors = np.linalg.eig(aggregated_matrix)
+            print(f"Debug AHP: eigenvalues shape: {eigenvalues.shape}")
+            print(f"Debug AHP: eigenvectors shape: {eigenvectors.shape}")
+            
+            max_eigenvalue_index = np.argmax(eigenvalues.real)
+            principal_eigenvector = eigenvectors[:, max_eigenvalue_index].real
+            print(f"Debug AHP: principal_eigenvector shape: {principal_eigenvector.shape}")
+            
+        except Exception as e:
+            print(f"Debug AHP: Error in eigenvalue computation: {e}")
+            raise
         
         # Normalize weights to sum to 1
         weights = principal_eigenvector / np.sum(principal_eigenvector)
@@ -623,15 +664,36 @@ class UserDatabaseManager:
         
         # Apply weights to alternatives
         alternative_scores = []
-        for alt in alternatives_data:
+        for i, alt in enumerate(alternatives_data):
+            print(f"Debug AHP: Processing alternative {i}: {alt}")
+            
+            if 'values' not in alt:
+                raise ValueError(f"Alternative {i} missing 'values' field")
+            
             values = np.array(alt['values'])
-            # Normalize values (higher is better)
-            normalized_values = values / np.max(values, axis=0)
+            print(f"Debug AHP: Alternative {i} values: {values}, shape: {values.shape}")
+            
+            # Normalize values (higher is better) - avoid division by zero
+            max_values = np.max(values) if np.max(values) > 0 else 1
+            normalized_values = values / max_values
             score = np.sum(weights * normalized_values)
             alternative_scores.append(score)
         
+        print(f"Debug AHP: alternative_scores: {alternative_scores}")
+        print(f"Debug AHP: alternative_scores type: {type(alternative_scores)}")
+        print(f"Debug AHP: alternative_scores length: {len(alternative_scores)}")
+        
+        if not alternative_scores:
+            raise ValueError("No alternative scores computed")
+        
         # Create rankings (1 = best, 2 = second best, etc.)
-        rankings = np.argsort(np.argsort(alternative_scores)[::-1]) + 1
+        try:
+            rankings = np.argsort(np.argsort(alternative_scores)[::-1]) + 1
+            print(f"Debug AHP: rankings computed successfully: {rankings}")
+        except Exception as e:
+            print(f"Debug AHP: Error computing rankings: {e}")
+            print(f"Debug AHP: alternative_scores when error: {alternative_scores}")
+            raise
         
         # Compute consistency ratio
         n = len(weights)

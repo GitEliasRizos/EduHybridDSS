@@ -5,3 +5,5 @@ pycache/*
 *pycache*
 .venv
 *debug*
+databases/*.db
+databases/*.db-*

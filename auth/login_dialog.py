@@ -11,7 +11,7 @@ class LoginDialog(QDialog):
     """Login dialog for PyMOO GUI multi-user system"""
     
     # Signal emitted when login is successful
-    login_successful = pyqtSignal(str, str)  # username, role
+    login_successful = pyqtSignal(dict)  # user_data dict
     
     def __init__(self):
         super().__init__()
@@ -69,14 +69,13 @@ class LoginDialog(QDialog):
         password_layout.addWidget(self.password_field)
         layout.addLayout(password_layout)
         
-        # Role selection (for new users)
+        # Role selection
         role_layout = QHBoxLayout()
         role_label = QLabel("Role:")
         role_label.setMinimumWidth(80)
         self.role_combo = QComboBox()
-        self.role_combo.addItems(["user", "admin"])
+        self.role_combo.addItems(["Admin", "User"])
         self.role_combo.setMinimumHeight(30)
-        self.role_combo.setCurrentText("user")
         role_layout.addWidget(role_label)
         role_layout.addWidget(self.role_combo)
         layout.addLayout(role_layout)
@@ -89,24 +88,16 @@ class LoginDialog(QDialog):
         self.login_button.setDefault(True)
         self.login_button.clicked.connect(self.handle_login)
         
-        self.register_button = QPushButton("Register")
-        self.register_button.setMinimumHeight(35)
-        self.register_button.clicked.connect(self.handle_register)
-        
         self.exit_button = QPushButton("Exit")
         self.exit_button.setMinimumHeight(35)
         self.exit_button.clicked.connect(self.reject)
         
         button_layout.addWidget(self.login_button)
-        button_layout.addWidget(self.register_button)
         button_layout.addWidget(self.exit_button)
         layout.addLayout(button_layout)
         
         # Info text
-        info_label = QLabel("Default admin: username='admin', password='admin'")
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setStyleSheet("color: gray; font-size: 10px;")
-        layout.addWidget(info_label)
+        
         
         self.setLayout(layout)
         
@@ -120,75 +111,40 @@ class LoginDialog(QDialog):
     def ensure_admin_user(self):
         """Ensure default admin user exists"""
         try:
-            from auth.user_manager import UserManager
-            user_manager = UserManager()
-            
-            # Check if admin exists
-            if not user_manager.user_exists('admin'):
-                success = user_manager.create_user('admin', 'admin', 'admin')
-                if success:
-                    print("Default admin user created: username='admin', password='admin'")
+            from core.user_manager import UserDatabaseManager
+            user_manager = UserDatabaseManager()
+            # The UserDatabaseManager automatically ensures admin user exists
+            print(f"Admin user available: username='{user_manager.ADMIN_USERNAME}', password='{user_manager.ADMIN_PASSWORD}'")
         except Exception as e:
-            print(f"Warning: Could not create admin user: {e}")
+            print(f"Warning: Could not initialize user manager: {e}")
     
     def handle_login(self):
         """Handle login attempt"""
         username = self.username_field.text().strip()
         password = self.password_field.text()
+        role = self.role_combo.currentText().lower()
         
         if not username or not password:
             QMessageBox.warning(self, "Login Error", "Please enter both username and password.")
             return
             
         try:
-            from auth.user_manager import UserManager
-            user_manager = UserManager()
+            from core.user_manager import UserDatabaseManager
+            user_manager = UserDatabaseManager()
             
-            if user_manager.verify_user(username, password):
-                role = user_manager.get_user_role(username)
-                self.login_successful.emit(username, role)
+            # Use authenticate_user to get complete user data
+            user_data = user_manager.authenticate_user(username, password, role)
+            
+            if user_data:
+                self.login_successful.emit(user_data)
                 self.accept()
             else:
-                QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
+                QMessageBox.warning(self, "Login Failed", "Invalid username, password, or role.")
                 self.password_field.clear()
                 self.password_field.setFocus()
                 
         except Exception as e:
             QMessageBox.critical(self, "Login Error", f"An error occurred during login: {str(e)}")
-    
-    def handle_register(self):
-        """Handle user registration"""
-        username = self.username_field.text().strip()
-        password = self.password_field.text()
-        role = self.role_combo.currentText()
-        
-        if not username or not password:
-            QMessageBox.warning(self, "Registration Error", "Please enter both username and password.")
-            return
-            
-        if len(password) < 3:
-            QMessageBox.warning(self, "Registration Error", "Password must be at least 3 characters long.")
-            return
-            
-        try:
-            from auth.user_manager import UserManager
-            user_manager = UserManager()
-            
-            if user_manager.user_exists(username):
-                QMessageBox.warning(self, "Registration Failed", "Username already exists.")
-                return
-                
-            if user_manager.create_user(username, password, role):
-                QMessageBox.information(self, "Registration Successful", 
-                                      f"User '{username}' registered successfully with role '{role}'.")
-                # Auto-login after registration
-                self.login_successful.emit(username, role)
-                self.accept()
-            else:
-                QMessageBox.warning(self, "Registration Failed", "Failed to create user.")
-                
-        except Exception as e:
-            QMessageBox.critical(self, "Registration Error", f"An error occurred during registration: {str(e)}")
 
 # Test the dialog standalone
 if __name__ == "__main__":
@@ -196,8 +152,8 @@ if __name__ == "__main__":
     
     dialog = LoginDialog()
     
-    def on_login_success(username, role):
-        print(f"Login successful: {username} ({role})")
+    def on_login_success(user_data):
+        print(f"Login successful: {user_data}")
         app.quit()
     
     dialog.login_successful.connect(on_login_success)

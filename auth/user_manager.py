@@ -8,16 +8,21 @@ import json
 class UserManager:
     """Manages user authentication and group decision making data"""
     
-    def __init__(self, db_path: str = "users.db"):
+    ADMIN_USERNAME = "iiooooiooi"
+    ADMIN_PASSWORD = "301415"
+    
+    def __init__(self, db_path: str = "databases/pymoo.db"):
         self.db_path = db_path
         self.init_database()
+        self.ensure_admin_user()
     
+    # initialize the database if not exists
     def init_database(self):
         """Initialize the user database"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Users table
+        # create Users table if not exists
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +33,7 @@ class UserManager:
             )
         ''')
         
-        # AHP comparisons table
+        # create AHP comparisons table if not exists
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS ahp_comparisons (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +48,7 @@ class UserManager:
             )
         ''')
         
-        # TOPSIS weights table
+        # create TOPSIS weights table if not exists
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS topsis_weights (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +61,7 @@ class UserManager:
             )
         ''')
         
-        # Group sessions table
+        # create Group sessions table if not exists
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS group_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,12 +78,43 @@ class UserManager:
         conn.commit()
         conn.close()
     
+    def ensure_admin_user(self):
+        """Ensure the admin user exists"""
+        if not self.user_exists(self.ADMIN_USERNAME):
+            self._create_admin_user()
+    
+    def _create_admin_user(self):
+        """Create the admin user (internal method)"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            password_hash = self._hash_password(self.ADMIN_PASSWORD)
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                (self.ADMIN_USERNAME, password_hash, 'admin')
+            )
+            
+            conn.commit()
+            conn.close()
+            print(f"Admin user created: username='{self.ADMIN_USERNAME}', password='{self.ADMIN_PASSWORD}'")
+            return True
+        except Exception as e:
+            print(f"Error creating admin user: {e}")
+            return False
+    
+    # basic hashing of passwors TODO: improve security
     def _hash_password(self, password: str) -> str:
         """Hash password using SHA-256"""
         return hashlib.sha256(password.encode()).hexdigest()
     
-    def create_user(self, username: str, password: str, role: str = 'user') -> bool:
-        """Create a new user"""
+    
+    # create a new user [only callable by SystemAdmin
+    def create_regular_user(self, username: str, password: str, admin_username: str) -> bool:
+        
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can create users")
+        
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -86,7 +122,7 @@ class UserManager:
             password_hash = self._hash_password(password)
             cursor.execute(
                 "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, password_hash, role)
+                (username, password_hash, 'user')
             )
             
             conn.commit()
@@ -147,6 +183,164 @@ class UserManager:
         except Exception as e:
             print(f"Error getting user role: {e}")
             return None
+    
+    def update_user_role(self, username: str, new_role: str, admin_username: str) -> bool:
+        """Update a user's role (only callable by admin)"""
+        # Verify that the caller is admin
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can update user roles")
+        
+        # Prevent changing the main admin's role
+        if username == self.ADMIN_USERNAME:
+            raise PermissionError("Cannot change the main admin's role")
+        
+        # Validate role
+        if new_role not in ['user', 'admin']:
+            raise ValueError("Role must be 'user' or 'admin'")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("UPDATE users SET role = ? WHERE username = ?", (new_role, username))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating user role: {e}")
+            return False
+
+    def delete_user(self, username: str, admin_username: str) -> bool:
+        """Delete a user and all their data (only callable by admin)"""
+        # Verify that the caller is admin
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can delete users")
+        
+        # Prevent deleting the main admin account only
+        if username == self.ADMIN_USERNAME:
+            raise PermissionError("Cannot delete the main admin account")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Delete user's AHP comparisons
+            cursor.execute("DELETE FROM ahp_comparisons WHERE username = ?", (username,))
+            
+            # Delete user's TOPSIS weights  
+            cursor.execute("DELETE FROM topsis_weights WHERE username = ?", (username,))
+            
+            # Delete the user
+            cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error deleting user: {e}")
+            return False
+    
+    def update_username(self, old_username: str, new_username: str, admin_username: str) -> bool:
+        """Update a user's username (only callable by admin)"""
+        # Verify that the caller is admin
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can update usernames")
+        
+        # Prevent updating admin username this way
+        if old_username == self.ADMIN_USERNAME:
+            raise PermissionError("Use update_admin_username for admin account")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Update username in users table
+            cursor.execute("UPDATE users SET username = ? WHERE username = ?", (new_username, old_username))
+            
+            # Update username in related tables
+            cursor.execute("UPDATE ahp_comparisons SET username = ? WHERE username = ?", (new_username, old_username))
+            cursor.execute("UPDATE topsis_weights SET username = ? WHERE username = ?", (new_username, old_username))
+            cursor.execute("UPDATE group_sessions SET created_by = ? WHERE created_by = ?", (new_username, old_username))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating username: {e}")
+            return False
+    
+    def reset_password(self, username: str, new_password: str, admin_username: str) -> bool:
+        """Reset a user's password (only callable by admin)"""
+        # Verify that the caller is admin
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can reset passwords")
+        
+        # Prevent resetting admin password this way
+        if username == self.ADMIN_USERNAME:
+            raise PermissionError("Use update_admin_password for admin account")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            password_hash = self._hash_password(new_password)
+            cursor.execute("UPDATE users SET password_hash = ? WHERE username = ?", (password_hash, username))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error resetting password: {e}")
+            return False
+    
+    def update_admin_username(self, old_username: str, new_username: str, current_password: str) -> bool:
+        """Update admin username (requires current password verification)"""
+        # Verify current password
+        if not self.verify_user(old_username, current_password):
+            raise PermissionError("Current password is incorrect")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Update username in users table
+            cursor.execute("UPDATE users SET username = ? WHERE username = ? AND role = 'admin'", (new_username, old_username))
+            
+            # Update username in related tables
+            cursor.execute("UPDATE ahp_comparisons SET username = ? WHERE username = ?", (new_username, old_username))
+            cursor.execute("UPDATE topsis_weights SET username = ? WHERE username = ?", (new_username, old_username))
+            cursor.execute("UPDATE group_sessions SET created_by = ? WHERE created_by = ?", (new_username, old_username))
+            
+            conn.commit()
+            conn.close()
+            
+            # Update the class constant
+            self.ADMIN_USERNAME = new_username
+            return True
+        except Exception as e:
+            print(f"Error updating admin username: {e}")
+            return False
+    
+    def update_admin_password(self, username: str, new_password: str, current_password: str) -> bool:
+        """Update admin password (requires current password verification)"""
+        # Verify current password
+        if not self.verify_user(username, current_password):
+            raise PermissionError("Current password is incorrect")
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            password_hash = self._hash_password(new_password)
+            cursor.execute("UPDATE users SET password_hash = ? WHERE username = ? AND role = 'admin'", (password_hash, username))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating admin password: {e}")
+            return False
     
     def create_group_session(self, session_id: str, problem_name: str, 
                            criteria_names: List[str], created_by: str) -> bool:

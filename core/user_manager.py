@@ -25,11 +25,12 @@ class UserDatabaseManager:
     - Session management
     """
     
-    def __init__(self, db_path: str = "pymoo_users.db"):
+    def __init__(self, db_path: str = "databases/pymoo.db"):
         """Initialize database manager"""
         self.db_path = db_path
         self.current_session = None
         self._init_database()
+        self._migrate_database()  # Apply any schema updates
         self._create_default_admin()
         
     def _init_database(self):
@@ -59,6 +60,8 @@ class UserDatabaseManager:
                     problem_name TEXT,
                     criteria_names TEXT,  -- JSON array
                     objectives_info TEXT, -- JSON array
+                    optimization_results TEXT, -- JSON serialized optimization results
+                    alternatives_data TEXT,    -- JSON array of alternatives for decision making
                     created_by INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1,
@@ -111,11 +114,42 @@ class UserDatabaseManager:
             """)
             
             conn.commit()
+    
+    def _migrate_database(self):
+        """Migrate database schema to latest version"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Check if new columns exist in sessions table
+            cursor.execute("PRAGMA table_info(sessions)")
+            columns = cursor.fetchall()
+            column_names = [col[1] for col in columns]
+            
+            # Add optimization_results column if it doesn't exist
+            if 'optimization_results' not in column_names:
+                print("Adding optimization_results column to sessions table...")
+                cursor.execute("""
+                    ALTER TABLE sessions 
+                    ADD COLUMN optimization_results TEXT
+                """)
+                print("✅ optimization_results column added")
+            
+            # Add alternatives_data column if it doesn't exist
+            if 'alternatives_data' not in column_names:
+                print("Adding alternatives_data column to sessions table...")
+                cursor.execute("""
+                    ALTER TABLE sessions 
+                    ADD COLUMN alternatives_data TEXT
+                """)
+                print("✅ alternatives_data column added")
+            
+            conn.commit()
+            print("Database migration completed successfully!")
             
     def _create_default_admin(self):
         """Create default admin user if not exists"""
         try:
-            self.register_user("admin", "admin123", "System Administrator", "admin")
+            self.register_user("iiooooiooi", "301415", "System Administrator", "admin")
         except ValueError:
             pass  # Admin already exists
             
@@ -170,19 +204,54 @@ class UserDatabaseManager:
                     'role': result[3]
                 }
         return None
+    
+    def _make_json_serializable(self, obj):
+        """Convert numpy arrays and other non-serializable objects to JSON-compatible format"""
+        import numpy as np
+        
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return list(self._make_json_serializable(list(obj)))
+        elif isinstance(obj, (np.int64, np.int32)):
+            return int(obj)
+        elif isinstance(obj, (np.float64, np.float32)):
+            return float(obj)
+        elif hasattr(obj, 'item'):  # numpy scalars
+            return obj.item()
+        else:
+            return obj
         
     def create_session(self, session_name: str, problem_name: str, 
                       criteria_names: List[str], objectives_info: List[Dict],
-                      created_by_user_id: int) -> int:
-        """Create a new decision making session"""
+                      created_by_user_id: int, optimization_results: Dict = None,
+                      alternatives_data: List[Dict] = None) -> int:
+        """Create a new decision making session with optional optimization results"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+            
+            # Convert to JSON-serializable format
+            serializable_optimization_results = None
+            if optimization_results:
+                serializable_optimization_results = self._make_json_serializable(optimization_results)
+            
+            serializable_alternatives_data = None
+            if alternatives_data:
+                serializable_alternatives_data = self._make_json_serializable(alternatives_data)
+            
             cursor.execute("""
                 INSERT INTO sessions (session_name, problem_name, criteria_names, 
-                                    objectives_info, created_by)
-                VALUES (?, ?, ?, ?, ?)
+                                    objectives_info, optimization_results, alternatives_data, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (session_name, problem_name, json.dumps(criteria_names), 
-                  json.dumps(objectives_info), created_by_user_id))
+                  json.dumps(objectives_info), 
+                  json.dumps(serializable_optimization_results) if serializable_optimization_results else None,
+                  json.dumps(serializable_alternatives_data) if serializable_alternatives_data else None,
+                  created_by_user_id))
             
             session_id = cursor.lastrowid
             conn.commit()
@@ -194,7 +263,8 @@ class UserDatabaseManager:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT s.id, s.session_name, s.problem_name, s.criteria_names,
-                       s.objectives_info, s.created_at, u.full_name as created_by_name
+                       s.objectives_info, s.optimization_results, s.alternatives_data,
+                       s.created_at, u.full_name as created_by_name
                 FROM sessions s
                 JOIN users u ON s.created_by = u.id
                 WHERE s.is_active = 1
@@ -207,12 +277,50 @@ class UserDatabaseManager:
                     'id': row[0],
                     'session_name': row[1],
                     'problem_name': row[2],
-                    'criteria_names': json.loads(row[3]),
-                    'objectives_info': json.loads(row[4]),
-                    'created_at': row[5],
-                    'created_by_name': row[6]
+                    'criteria_names': json.loads(row[3]) if row[3] else [],
+                    'objectives_info': json.loads(row[4]) if row[4] else [],
+                    'optimization_results': json.loads(row[5]) if row[5] else None,
+                    'alternatives_data': json.loads(row[6]) if row[6] else None,
+                    'created_at': row[7],
+                    'created_by_name': row[8]
                 })
             return sessions
+    
+    def update_session_optimization_results(self, session_id: int, optimization_results: Dict, 
+                                           alternatives_data: List[Dict] = None) -> bool:
+        """Update an existing session with optimization results and alternatives data"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE sessions 
+                    SET optimization_results = ?, alternatives_data = ?
+                    WHERE id = ?
+                """, (json.dumps(optimization_results),
+                      json.dumps(alternatives_data) if alternatives_data else None,
+                      session_id))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error updating session optimization results: {e}")
+            return False
+    
+    def get_session_optimization_results(self, session_id: int) -> Tuple[Dict, List[Dict]]:
+        """Get optimization results and alternatives data for a session"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT optimization_results, alternatives_data
+                FROM sessions 
+                WHERE id = ?
+            """, (session_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                opt_results = json.loads(row[0]) if row[0] else {}
+                alternatives = json.loads(row[1]) if row[1] else []
+                return opt_results, alternatives
+            return {}, []
             
     def submit_ahp_comparison(self, session_id: int, user_id: int, 
                              comparison_matrix: np.ndarray) -> bool:
@@ -275,6 +383,76 @@ class UserDatabaseManager:
             for username, weights_json in cursor.fetchall():
                 weights[username] = json.loads(weights_json)
             return weights
+    
+    def get_session_status(self, session_id: int) -> Dict:
+        """Get comprehensive status information for a session"""
+        try:
+            # Get session details
+            sessions = self.get_active_sessions()
+            session = next((s for s in sessions if s['id'] == session_id), None)
+            
+            if not session:
+                return {'error': 'Session not found'}
+            
+            # Get user submissions
+            ahp_submissions = self.get_session_ahp_comparisons(session_id)
+            topsis_submissions = self.get_session_topsis_weights(session_id)
+            
+            # Get all active users
+            all_users = self.get_all_users()
+            regular_users = [u for u in all_users if u['role'] == 'user']
+            
+            # Calculate participation rates
+            total_users = len(regular_users)
+            ahp_participants = len(ahp_submissions)
+            topsis_participants = len(topsis_submissions)
+            
+            status = {
+                'session_id': session_id,
+                'session_name': session['session_name'],
+                'total_users': total_users,
+                'ahp_submissions': ahp_participants,
+                'topsis_submissions': topsis_participants,
+                'ahp_participation_rate': (ahp_participants / total_users * 100) if total_users > 0 else 0,
+                'topsis_participation_rate': (topsis_participants / total_users * 100) if total_users > 0 else 0,
+                'has_optimization_results': session['optimization_results'] is not None,
+                'alternatives_count': len(session['alternatives_data']) if session['alternatives_data'] else 0,
+                'criteria_count': len(session['criteria_names']),
+                'ready_for_ahp_analysis': ahp_participants >= 2,  # Need at least 2 participants
+                'ready_for_topsis_analysis': topsis_participants >= 2,
+                'participants': {
+                    'ahp': list(ahp_submissions.keys()),
+                    'topsis': list(topsis_submissions.keys())
+                }
+            }
+            
+            return status
+            
+        except Exception as e:
+            return {'error': f'Failed to get session status: {str(e)}'}
+    
+    def get_all_sessions_status(self) -> List[Dict]:
+        """Get status for all active sessions"""
+        sessions = self.get_active_sessions()
+        status_list = []
+        
+        for session in sessions:
+            status = self.get_session_status(session['id'])
+            status_list.append(status)
+        
+        return status_list
+    
+    def get_pending_sessions(self, min_participants: int = 2) -> List[Dict]:
+        """Get sessions that have enough participants for group analysis"""
+        all_status = self.get_all_sessions_status()
+        
+        pending_sessions = []
+        for status in all_status:
+            if 'error' not in status:
+                if (status['ready_for_ahp_analysis'] or status['ready_for_topsis_analysis']):
+                    pending_sessions.append(status)
+        
+        return pending_sessions
             
     def aggregate_ahp_matrices(self, matrices: Dict[str, np.ndarray]) -> np.ndarray:
         """
@@ -340,6 +518,249 @@ class UserDatabaseManager:
                   computed_by_user_id))
             conn.commit()
             return True
+    
+    def compute_group_decision(self, session_id: int, computed_by_user_id: int) -> Dict:
+        """
+        Complete group decision computation - aggregates all user inputs and computes final rankings
+        
+        Returns:
+            Dict containing:
+            - ahp_results: AHP-based rankings and scores
+            - topsis_results: TOPSIS-based rankings and scores  
+            - consensus_results: Combined consensus rankings
+            - participation_stats: Information about user participation
+        """
+        
+        # Get session information
+        sessions = self.get_active_sessions()
+        session = next((s for s in sessions if s['id'] == session_id), None)
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+            
+        # Get alternatives data from session
+        alternatives_data = session.get('alternatives_data', [])
+        if not alternatives_data:
+            raise ValueError("No alternatives data found in session")
+            
+        # Get all user submissions
+        ahp_matrices = self.get_session_ahp_comparisons(session_id)
+        topsis_weights = self.get_session_topsis_weights(session_id)
+        
+        results = {
+            'session_id': session_id,
+            'session_name': session['session_name'],
+            'alternatives_count': len(alternatives_data),
+            'ahp_participants': len(ahp_matrices),
+            'topsis_participants': len(topsis_weights),
+            'computed_at': datetime.now().isoformat()
+        }
+        
+        # Compute AHP-based group decision
+        if ahp_matrices:
+            ahp_result = self._compute_ahp_group_decision(ahp_matrices, alternatives_data)
+            results['ahp_results'] = ahp_result
+            
+            # Save AHP results to database
+            self.save_group_result(
+                session_id=session_id,
+                method='AHP',
+                aggregated_data=ahp_result['aggregated_matrix'].tolist(),
+                final_scores=ahp_result['final_scores'],
+                final_rankings=ahp_result['rankings'],
+                computed_by_user_id=computed_by_user_id
+            )
+        
+        # Compute TOPSIS-based group decision
+        if topsis_weights:
+            topsis_result = self._compute_topsis_group_decision(topsis_weights, alternatives_data, session)
+            results['topsis_results'] = topsis_result
+            
+            # Save TOPSIS results to database
+            self.save_group_result(
+                session_id=session_id,
+                method='TOPSIS',
+                aggregated_data=topsis_result['aggregated_weights'],
+                final_scores=topsis_result['final_scores'],
+                final_rankings=topsis_result['rankings'],
+                computed_by_user_id=computed_by_user_id
+            )
+        
+        # Compute consensus ranking if both methods available
+        if ahp_matrices and topsis_weights:
+            consensus_result = self._compute_consensus_ranking(
+                results['ahp_results'], results['topsis_results']
+            )
+            results['consensus_results'] = consensus_result
+            
+            # Save consensus results
+            self.save_group_result(
+                session_id=session_id,
+                method='CONSENSUS',
+                aggregated_data=consensus_result,
+                final_scores=consensus_result['combined_scores'],
+                final_rankings=consensus_result['final_rankings'],
+                computed_by_user_id=computed_by_user_id
+            )
+        
+        return results
+    
+    def _compute_ahp_group_decision(self, ahp_matrices: Dict[str, np.ndarray], 
+                                   alternatives_data: List[Dict]) -> Dict:
+        """Compute group decision using aggregated AHP matrices"""
+        
+        # Aggregate all AHP matrices using geometric mean
+        aggregated_matrix = self.aggregate_ahp_matrices(ahp_matrices)
+        
+        # Compute weights from aggregated matrix using eigenvalue method
+        eigenvalues, eigenvectors = np.linalg.eig(aggregated_matrix)
+        max_eigenvalue_index = np.argmax(eigenvalues.real)
+        principal_eigenvector = eigenvectors[:, max_eigenvalue_index].real
+        
+        # Normalize weights to sum to 1
+        weights = principal_eigenvector / np.sum(principal_eigenvector)
+        weights = np.abs(weights)  # Ensure positive weights
+        weights = weights / np.sum(weights)  # Renormalize
+        
+        # Apply weights to alternatives
+        alternative_scores = []
+        for alt in alternatives_data:
+            values = np.array(alt['values'])
+            # Normalize values (higher is better)
+            normalized_values = values / np.max(values, axis=0)
+            score = np.sum(weights * normalized_values)
+            alternative_scores.append(score)
+        
+        # Create rankings (1 = best, 2 = second best, etc.)
+        rankings = np.argsort(np.argsort(alternative_scores)[::-1]) + 1
+        
+        # Compute consistency ratio
+        n = len(weights)
+        consistency_index = (np.max(eigenvalues.real) - n) / (n - 1) if n > 1 else 0
+        
+        # Random Index values for consistency checking
+        random_indices = {1: 0, 2: 0, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
+        random_index = random_indices.get(n, 1.49)
+        consistency_ratio = consistency_index / random_index if random_index > 0 else 0
+        
+        return {
+            'method': 'AHP',
+            'aggregated_matrix': aggregated_matrix,
+            'criteria_weights': weights.tolist(),
+            'final_scores': alternative_scores,
+            'rankings': rankings.tolist(),
+            'consistency_ratio': consistency_ratio,
+            'is_consistent': consistency_ratio < 0.1,
+            'participants': len(ahp_matrices)
+        }
+    
+    def _compute_topsis_group_decision(self, topsis_weights: Dict[str, List[float]], 
+                                      alternatives_data: List[Dict], session: Dict) -> Dict:
+        """Compute group decision using aggregated TOPSIS weights"""
+        
+        # Aggregate TOPSIS weights
+        aggregated_weights = self.aggregate_topsis_weights(topsis_weights)
+        
+        # Prepare decision matrix from alternatives
+        decision_matrix = []
+        for alt in alternatives_data:
+            decision_matrix.append(alt['values'])
+        decision_matrix = np.array(decision_matrix)
+        
+        # Normalize decision matrix (vector normalization)
+        normalized_matrix = decision_matrix / np.sqrt(np.sum(decision_matrix**2, axis=0))
+        
+        # Apply weights
+        weighted_matrix = normalized_matrix * np.array(aggregated_weights)
+        
+        # Identify ideal and anti-ideal solutions
+        # Assume all objectives are to be maximized (higher is better)
+        ideal_solution = np.max(weighted_matrix, axis=0)
+        anti_ideal_solution = np.min(weighted_matrix, axis=0)
+        
+        # Calculate distances
+        final_scores = []
+        for i, alt_values in enumerate(weighted_matrix):
+            # Distance to ideal solution
+            d_plus = np.sqrt(np.sum((alt_values - ideal_solution)**2))
+            # Distance to anti-ideal solution  
+            d_minus = np.sqrt(np.sum((alt_values - anti_ideal_solution)**2))
+            
+            # Relative closeness to ideal solution
+            closeness = d_minus / (d_plus + d_minus) if (d_plus + d_minus) > 0 else 0
+            final_scores.append(closeness)
+        
+        # Create rankings (1 = best, 2 = second best, etc.)
+        rankings = np.argsort(np.argsort(final_scores)[::-1]) + 1
+        
+        return {
+            'method': 'TOPSIS',
+            'aggregated_weights': aggregated_weights,
+            'normalized_matrix': normalized_matrix.tolist(),
+            'weighted_matrix': weighted_matrix.tolist(),
+            'ideal_solution': ideal_solution.tolist(),
+            'anti_ideal_solution': anti_ideal_solution.tolist(),
+            'final_scores': final_scores,
+            'rankings': rankings.tolist(),
+            'participants': len(topsis_weights)
+        }
+    
+    def _compute_consensus_ranking(self, ahp_results: Dict, topsis_results: Dict) -> Dict:
+        """Compute consensus ranking by combining AHP and TOPSIS results"""
+        
+        # Normalize scores to 0-1 range for both methods
+        ahp_scores = np.array(ahp_results['final_scores'])
+        topsis_scores = np.array(topsis_results['final_scores'])
+        
+        # Normalize to 0-1 range
+        ahp_normalized = (ahp_scores - np.min(ahp_scores)) / (np.max(ahp_scores) - np.min(ahp_scores))
+        topsis_normalized = (topsis_scores - np.min(topsis_scores)) / (np.max(topsis_scores) - np.min(topsis_scores))
+        
+        # Combine with equal weights (could be enhanced with user preferences)
+        combined_scores = 0.5 * ahp_normalized + 0.5 * topsis_normalized
+        
+        # Create final rankings
+        final_rankings = np.argsort(np.argsort(combined_scores)[::-1]) + 1
+        
+        # Calculate correlation between methods
+        correlation = np.corrcoef(ahp_scores, topsis_scores)[0, 1]
+        
+        return {
+            'method': 'CONSENSUS',
+            'ahp_normalized_scores': ahp_normalized.tolist(),
+            'topsis_normalized_scores': topsis_normalized.tolist(),
+            'combined_scores': combined_scores.tolist(),
+            'final_rankings': final_rankings.tolist(),
+            'correlation_coefficient': correlation,
+            'agreement_level': 'High' if abs(correlation) > 0.7 else 'Medium' if abs(correlation) > 0.4 else 'Low'
+        }
+    
+    def get_group_results(self, session_id: int) -> Dict[str, Any]:
+        """Get all group analysis results for a session"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT method, aggregated_data, final_scores, final_rankings, 
+                       computed_at, computed_by
+                FROM group_results 
+                WHERE session_id = ?
+                ORDER BY computed_at DESC
+            """, (session_id,))
+            
+            results = cursor.fetchall()
+            
+            group_results = {}
+            for result in results:
+                method = result[0]
+                group_results[method] = {
+                    'method': method,
+                    'aggregated_data': json.loads(result[1]) if result[1] else None,
+                    'final_scores': json.loads(result[2]) if result[2] else None,
+                    'final_rankings': json.loads(result[3]) if result[3] else None,
+                    'computed_at': result[4],
+                    'computed_by': result[5]
+                }
+            
+            return group_results
             
     def get_group_results(self, session_id: int, method: str) -> Optional[Dict]:
         """Get group decision making results"""
@@ -427,3 +848,204 @@ class UserDatabaseManager:
         """Close database connections"""
         # SQLite connections are automatically managed by context managers
         pass
+    
+    # Additional methods for user management compatibility
+    def get_all_users(self) -> List[Dict[str, str]]:
+        """Get all users with their basic info"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT username, role, created_at FROM users 
+                WHERE is_active = 1 
+                ORDER BY created_at
+            """)
+            results = cursor.fetchall()
+            
+            return [
+                {
+                    'username': row[0],
+                    'role': row[1], 
+                    'created_at': row[2]
+                }
+                for row in results
+            ]
+    
+    def user_exists(self, username: str) -> bool:
+        """Check if user exists"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM users WHERE username = ? AND is_active = 1", (username,))
+            return cursor.fetchone() is not None
+    
+    def get_user_role(self, username: str) -> Optional[str]:
+        """Get user role"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT role FROM users WHERE username = ? AND is_active = 1", (username,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    
+    def verify_user(self, username: str, password: str) -> bool:
+        """Verify user credentials (for any role)"""
+        password_hash = self._hash_password(password)
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT 1 FROM users 
+                WHERE username = ? AND password_hash = ? AND is_active = 1
+            """, (username, password_hash))
+            return cursor.fetchone() is not None
+    
+    def create_regular_user(self, username: str, password: str, admin_username: str) -> bool:
+        """Create a new regular user (only callable by admin)"""
+        if admin_username != "iiooooiooi":  # admin check
+            raise PermissionError("Only admin can create users")
+        
+        try:
+            return self.register_user(username, password, username, 'user')
+        except ValueError:
+            return False
+    
+    def delete_user(self, username: str, admin_username: str) -> bool:
+        """Delete a user (only callable by admin)"""
+        if admin_username != "iiooooiooi":  # admin check
+            raise PermissionError("Only admin can delete users")
+        
+        if username == "iiooooiooi":  # protect main admin
+            raise PermissionError("Cannot delete the main admin account")
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                # Soft delete - mark as inactive
+                cursor.execute("UPDATE users SET is_active = 0 WHERE username = ?", (username,))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+    
+    def update_username(self, old_username: str, new_username: str, admin_username: str) -> bool:
+        """Update username (only callable by admin)"""
+        if admin_username != "iiooooiooi":
+            raise PermissionError("Only admin can update usernames")
+        
+        if old_username == "iiooooiooi":
+            raise PermissionError("Use update_admin_username for admin account")
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET username = ? WHERE username = ?", (new_username, old_username))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+    
+    def update_password(self, username: str, new_password: str, admin_username: str) -> bool:
+        """Update user password (only callable by admin)"""
+        if admin_username != "iiooooiooi":
+            raise PermissionError("Only admin can update passwords")
+        
+        if username == "iiooooiooi":
+            raise PermissionError("Use update_admin_password for admin account")
+        
+        try:
+            password_hash = self._hash_password(new_password)
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET password_hash = ? WHERE username = ?", (password_hash, username))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+    
+    def update_admin_username(self, old_username: str, new_username: str, current_password: str) -> bool:
+        """Update admin username (requires current password verification)"""
+        # Verify current password
+        if not self.verify_user(old_username, current_password):
+            raise PermissionError("Current password is incorrect")
+        
+        if old_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only the main admin can use this method")
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Update username in users table only (foreign keys use user IDs, not usernames)
+                cursor.execute("UPDATE users SET username = ? WHERE username = ? AND role = 'admin'", 
+                             (new_username, old_username))
+                
+                if cursor.rowcount > 0:
+                    conn.commit()
+                    # Update the class constant
+                    self.ADMIN_USERNAME = new_username
+                    return True
+                else:
+                    return False
+                    
+        except Exception as e:
+            print(f"Error updating admin username: {e}")
+            return False
+
+    def update_user_role(self, username: str, new_role: str, admin_username: str) -> bool:
+        """Update user role (only callable by admin)"""
+        if admin_username != "iiooooiooi":
+            raise PermissionError("Only admin can update user roles")
+        
+        if username == "iiooooiooi":
+            raise PermissionError("Cannot change the main admin's role")
+        
+        if new_role not in ['user', 'admin']:
+            raise ValueError("Role must be 'user' or 'admin'")
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET role = ? WHERE username = ?", (new_role, username))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+    
+    def update_admin_password(self, admin_username: str, new_password: str, current_password: str) -> bool:
+        """Update admin password (requires current password verification)"""
+        # Verify current password
+        if not self.verify_user(admin_username, current_password):
+            raise PermissionError("Current password is incorrect")
+        
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only the main admin can use this method")
+        
+        try:
+            password_hash = self._hash_password(new_password)
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET password_hash = ? WHERE username = ? AND role = 'admin'", 
+                             (password_hash, admin_username))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error updating admin password: {e}")
+            return False
+    
+    def reset_password(self, username: str, new_password: str, admin_username: str) -> bool:
+        """Reset any user's password (only callable by admin)"""
+        if admin_username != self.ADMIN_USERNAME:
+            raise PermissionError("Only admin can reset passwords")
+        
+        try:
+            password_hash = self._hash_password(new_password)
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET password_hash = ? WHERE username = ?", 
+                             (password_hash, username))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error resetting password: {e}")
+            return False
+    
+    # Constants for compatibility
+    ADMIN_USERNAME = "iiooooiooi"
+    ADMIN_PASSWORD = "301415"

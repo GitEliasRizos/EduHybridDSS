@@ -2,35 +2,16 @@
 
 """
 Main Application Entry Point with Multi-User Authentication
-
-This module serves as the primary entry point for the PyMOO GUI application
-with multi-user group decision making capabilities. It initializes the Qt 
-application framework, handles user authentication, and launches the 
-appropriate interface based on user role.
-
-Application Configuration:
-- Sets application metadata (name, version, organization)
-- Configures the visual style theme (Fusion for modern appearance)
-- Handles user authentication and role-based access control
-- Initializes the appropriate interface (admin or user)
-
-User Roles:
-- Admin: Full access to PyMOO GUI + Group Decision Making
-- User: Limited access to criteria comparison input only
-
-Dependencies:
-- PyQt6: GUI framework for cross-platform desktop applications
-- Custom UI modules: Main window, login dialog, user interface
-- Core modules: User database manager
 """
 
 import sys
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMessageBox, QMenuBar, QMenu
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction
 from ui.main_window import MainWindow
 from auth.login_dialog import LoginDialog
-from ui.group_decision.user_interface import UserInterface
-from ui.group_decision.group_decision_tab import GroupDecisionTab
+from auth.user_management_dialog import UserManagementDialog
+from core.user_manager import UserDatabaseManager
 
 def main():
     """
@@ -51,13 +32,11 @@ def main():
     login_dialog = LoginDialog()
     
     # Store login result
-    username = None
-    role = None
+    user_data = None
     
-    def on_login_success(user, user_role):
-        nonlocal username, role
-        username = user
-        role = user_role
+    def on_login_success(user_info):
+        nonlocal user_data
+        user_data = user_info
     
     login_dialog.login_successful.connect(on_login_success)
     
@@ -66,32 +45,46 @@ def main():
         return
     
     # Check if we got valid login data
-    if not username or not role:
+    if not user_data:
         QMessageBox.warning(None, "Login Error", "Failed to get user information.")
         return
     
     # Launch appropriate interface based on role
     try:
-        if role == "admin":
-            # Launch full PyMOO GUI with group decision making
+        if user_data['role'] == "admin":
+            # Launch full PyMOO GUI for admin
             window = MainWindow()
+            window.setWindowTitle(f"PyMOO GUI - Admin Panel ({user_data['username']})")
             
-            # Add group decision making tab to the admin interface
-            group_tab = GroupDecisionTab()
-            window.tab_widget.addTab(group_tab, "Group Decision Making")
+            # Add user management menu for admin
+            menubar = window.menuBar()
+            admin_menu = menubar.addMenu("Admin")
             
-            window.setWindowTitle(f"PyMOO GUI - Admin Panel ({username})")
+            user_mgmt_action = QAction("User Management", window)
+            user_mgmt_action.triggered.connect(lambda: show_user_management(user_data['username']))
+            admin_menu.addAction(user_mgmt_action)
+            
             window.show()
             
         else:  # role == "user" or regular user
-            # Launch simplified user interface
-            window = UserInterface(username, role)
-            window.show()
+            # Launch user interface for criteria comparison
+            from ui.user_interface import UserInterface
+            
+            user_window = UserInterface(
+                user_data=user_data,  # Pass the complete user data
+                db_manager=UserDatabaseManager()
+            )
+            user_window.show()
             
     except Exception as e:
         QMessageBox.critical(None, "Interface Error", 
                            f"Failed to launch interface: {str(e)}")
         return
+    
+    def show_user_management(admin_username):
+        """Show user management dialog"""
+        dialog = UserManagementDialog(admin_username)
+        dialog.exec()
     
     # Enter Qt event loop and handle application exit
     sys.exit(app.exec())

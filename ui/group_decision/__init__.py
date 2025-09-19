@@ -1,1 +1,0 @@
-# Group decision making UI components

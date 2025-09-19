@@ -65,6 +65,9 @@ class UserInterface(QMainWindow):
         self.content_tabs.setEnabled(False)  # Disabled until session selected
         main_layout.addWidget(self.content_tabs)
         
+        # Optimization Results tab (first tab so users see results before comparisons)
+        self._create_results_tab()
+        
         # AHP tab
         self._create_ahp_tab()
         
@@ -82,7 +85,7 @@ class UserInterface(QMainWindow):
         header_frame = QFrame()
         header_frame.setStyleSheet("""
             QFrame {
-                background-color: #34495e;
+                background-color: #542263;
                 border-radius: 8px;
                 padding: 15px;
             }
@@ -91,14 +94,14 @@ class UserInterface(QMainWindow):
         
         # Welcome text
         welcome_label = QLabel(f"Welcome, {self.user_data['full_name']}!")
-        welcome_label.setStyleSheet("color: white; font-size: 18px; font-weight: bold;")
+        welcome_label.setStyleSheet("color: #fff; font-size: 18px; font-weight: bold;")
         header_layout.addWidget(welcome_label)
         
         header_layout.addStretch()
         
         # User info
         info_label = QLabel(f"Role: {self.user_data['role'].title()} | User ID: {self.user_data['username']}")
-        info_label.setStyleSheet("color: #bdc3c7; font-size: 12px;")
+        info_label.setStyleSheet("color: #fff; font-size: 12px;")
         header_layout.addWidget(info_label)
         
         layout.addWidget(header_frame)
@@ -127,16 +130,87 @@ class UserInterface(QMainWindow):
         self.session_info_label = QLabel("Please select a session to begin.")
         self.session_info_label.setStyleSheet("""
             QLabel {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
+                background-color: #542263;
+                border: 1px solid #542263;
                 border-radius: 4px;
                 padding: 10px;
-                color: #495057;
+                color: #fff;
             }
         """)
         session_layout.addWidget(self.session_info_label)
         
         layout.addWidget(session_group)
+    
+    def _create_results_tab(self):
+        """Create optimization results display tab"""
+        results_widget = QWidget()
+        results_layout = QVBoxLayout(results_widget)
+        
+        # Instructions
+        instructions = QLabel("""
+        <b>Optimization Results Overview:</b><br><br>
+        Below are the solutions found by the optimization algorithm. Each solution represents 
+        a different trade-off between the objectives. Please review these alternatives 
+        before providing your preferences in the comparison tabs.<br><br>
+        <b>Understanding the Data:</b><br>
+        • Each row represents one solution (alternative)<br>
+        • Each column shows the objective value for that solution<br>
+        • Lower values are better for minimization objectives<br>
+        • Higher values are better for maximization objectives
+        """)
+        instructions.setWordWrap(True)
+        instructions.setStyleSheet("""
+            QLabel {
+                background-color: #f0f8ff;
+                border: 1px solid #e0e0e0;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 5px;
+                font-size: 13px;
+            }
+        """)
+        results_layout.addWidget(instructions)
+        
+        # Results table
+        self.results_table = QTableWidget()
+        self.results_table.setAlternatingRowColors(True)
+        self.results_table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #e0e0e0;
+                background-color: white;
+                alternate-background-color: #f9f9f9;
+            }
+            QHeaderView::section {
+                background-color: #542263;
+                color: white;
+                padding: 8px;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+        results_layout.addWidget(self.results_table)
+        
+        # No results message (initially shown)
+        self.no_results_label = QLabel("""
+        <div style='text-align: center; padding: 50px;'>
+        <b>No optimization results available for this session.</b><br><br>
+        This session was created without optimization results, or the results 
+        could not be loaded. Please contact the administrator.
+        </div>
+        """)
+        self.no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_results_label.setStyleSheet("""
+            QLabel {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 5px;
+                color: #856404;
+                font-size: 14px;
+            }
+        """)
+        results_layout.addWidget(self.no_results_label)
+        
+        self.content_tabs.addTab(results_widget, "📊 Optimization Results")
         
     def _create_ahp_tab(self):
         """Create AHP comparison tab"""
@@ -157,11 +231,12 @@ class UserInterface(QMainWindow):
         """)
         instructions.setStyleSheet("""
             QLabel {
-                background-color: #e8f4fd;
-                border: 1px solid #bee5eb;
+                background-color: #542263;
+                border: 1px solid #542263;
                 border-radius: 4px;
                 padding: 15px;
                 font-size: 11px;
+                color: #fff;
             }
         """)
         ahp_layout.addWidget(instructions)
@@ -187,15 +262,15 @@ class UserInterface(QMainWindow):
         self.ahp_submit_button = QPushButton("Submit AHP Comparisons")
         self.ahp_submit_button.setStyleSheet("""
             QPushButton {
-                background-color: #28a745;
-                color: white;
+                background-color: #542263;
+                color: #fff;
                 border: none;
                 padding: 10px 20px;
                 border-radius: 4px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #218838;
+                background-color: #542263;
             }
         """)
         self.ahp_submit_button.clicked.connect(self._submit_ahp_comparisons)
@@ -221,8 +296,8 @@ class UserInterface(QMainWindow):
         """)
         instructions.setStyleSheet("""
             QLabel {
-                background-color: #fff3cd;
-                border: 1px solid #ffeaa7;
+                background-color: #542263;
+                border: 1px solid #542263;
                 border-radius: 4px;
                 padding: 15px;
                 font-size: 11px;
@@ -266,15 +341,15 @@ class UserInterface(QMainWindow):
         self.topsis_submit_button = QPushButton("Submit TOPSIS Weights")
         self.topsis_submit_button.setStyleSheet("""
             QPushButton {
-                background-color: #17a2b8;
-                color: white;
+                background-color: #542263b8;
+                color: #fff;
                 border: none;
                 padding: 10px 20px;
                 border-radius: 4px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #138496;
+                background-color: #542263;
             }
         """)
         self.topsis_submit_button.clicked.connect(self._submit_topsis_weights)
@@ -292,8 +367,8 @@ class UserInterface(QMainWindow):
         self.status_label = QLabel("No session selected.")
         self.status_label.setStyleSheet("""
             QLabel {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
+                background-color: #542263;
+                border: 1px solid #542263;
                 border-radius: 4px;
                 padding: 10px;
                 font-size: 12px;
@@ -310,14 +385,14 @@ class UserInterface(QMainWindow):
         self.logout_button = QPushButton("Logout")
         self.logout_button.setStyleSheet("""
             QPushButton {
-                background-color: #6c757d;
-                color: white;
+                background-color: #542263;
+                color: #fff;
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
             }
             QPushButton:hover {
-                background-color: #545b62;
+                background-color: #542263;
             }
         """)
         self.logout_button.clicked.connect(self.close)
@@ -379,6 +454,7 @@ class UserInterface(QMainWindow):
         )
         
         # Setup comparison interfaces
+        self._setup_optimization_results()
         self._setup_ahp_matrix()
         self._setup_topsis_weights()
         
@@ -387,6 +463,75 @@ class UserInterface(QMainWindow):
         
         # Enable content tabs
         self.content_tabs.setEnabled(True)
+    
+    def _setup_optimization_results(self):
+        """Setup optimization results display"""
+        if not self.current_session:
+            return
+            
+        alternatives_data = self.current_session.get('alternatives_data', [])
+        
+        if not alternatives_data:
+            # No optimization results available
+            self.results_table.hide()
+            self.no_results_label.show()
+            return
+            
+        # Hide the no results message and show the table
+        self.no_results_label.hide()
+        self.results_table.show()
+        
+        # Setup table dimensions
+        num_alternatives = len(alternatives_data)
+        num_objectives = len(self.criteria_names)
+        
+        self.results_table.setRowCount(num_alternatives)
+        self.results_table.setColumnCount(num_objectives)
+        
+        # Set headers
+        self.results_table.setHorizontalHeaderLabels(self.criteria_names)
+        
+        # Set row headers (alternative names)
+        row_headers = []
+        for i, alt in enumerate(alternatives_data):
+            alt_name = alt.get('name', f"Solution {i+1}")
+            row_headers.append(alt_name)
+        self.results_table.setVerticalHeaderLabels(row_headers)
+        
+        # Populate table with objective values
+        for i, alternative in enumerate(alternatives_data):
+            values = alternative.get('values', [])
+            for j, value in enumerate(values):
+                if j < num_objectives:  # Make sure we don't exceed column count
+                    # Format the value nicely
+                    if isinstance(value, (int, float)):
+                        formatted_value = f"{value:.4f}"
+                    else:
+                        formatted_value = str(value)
+                    
+                    item = QTableWidgetItem(formatted_value)
+                    item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Read-only
+                    
+                    # Color code based on objective type (if available)
+                    if j < len(self.objectives_info):
+                        obj_info = self.objectives_info[j]
+                        if obj_info.get('direction') == 'minimize':
+                            # Light red background for minimization objectives
+                            item.setBackground(QPalette().color(QPalette.ColorRole.Light))
+                        else:
+                            # Light green background for maximization objectives  
+                            item.setBackground(QPalette().color(QPalette.ColorRole.Base))
+                    
+                    self.results_table.setItem(i, j, item)
+        
+        # Resize columns to content
+        self.results_table.resizeColumnsToContents()
+        
+        # Make headers bold
+        header_font = QFont()
+        header_font.setBold(True)
+        self.results_table.horizontalHeader().setFont(header_font)
+        self.results_table.verticalHeader().setFont(header_font)
         
     def _setup_ahp_matrix(self):
         """Setup AHP comparison matrix"""

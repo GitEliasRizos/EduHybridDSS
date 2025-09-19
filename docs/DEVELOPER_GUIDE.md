@@ -228,8 +228,15 @@ pymoo-gui/
 ├── main.py                 # Application entry point
 ├── requirements.txt        # Python dependencies
 ├── README.md              # Project documentation
-├── ARCHITECTURE.md        # Architecture overview
-├── DEVELOPER_GUIDE.md     # This file
+│
+├── docs/                  # Documentation files
+│   ├── ARCHITECTURE.md    # Architecture overview
+│   ├── DEVELOPER_GUIDE.md # This file
+│   ├── PASSWORD_MANAGEMENT.md # Password management guide
+│   └── PROJECT_STATUS.md  # Project status and roadmap
+│
+├── databases/             # Database files
+│   └── pymoo.db          # Main application database
 │
 ├── ui/                    # User interface components
 │   ├── __init__.py

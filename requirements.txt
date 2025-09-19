@@ -1,28 +1,25 @@
 # PyMOO GUI Application Dependencies
 #
-# This file specifies the required Python packages and their minimum versions
-# for the PyMOO GUI application. Install using: pip install -r requirements.txt
-
-# Multi-objective optimization framework - core computational engine
-pymoo>=0.6.0
-
-# Cross-platform GUI framework for desktop application interface
+# Install using: pip install -r requirements.txt
+#
+# Cross-platform GUI framework
 PyQt6>=6.5.0
-
-# Scientific computing (advanced math tools)
+#
+# Multi-objective optimization framework
+pymoo>=0.6.0
+#
+# Math tools
 numpy>=1.21.0  # Like a super powerful calculator
 scipy>=1.7.0   # More advanced scientific functions
 pandas>=1.3.0  # Smart spreadsheet-like data handling
-
-# Visualization (making pretty charts and graphs)
+#
+# Visualization (plots)
 matplotlib>=3.5.0
-
-# Data export/import (saving your work to Excel files)
+#
+# Data export/import as/from excel
 openpyxl>=3.0.0
-
-# Optional: Performance enhancements
-# Uncomment the following lines for additional algorithms (AGE, AGE2)
-# numba>=0.56.0  # Required for AGE algorithms
-
+#
+# ----------- Optional: Performance enhancements --------------------
 # Optional: Enhanced visualization
 # seaborn>=0.11.0  # For advanced statistical plots
+# -------------------------------------------------------------------

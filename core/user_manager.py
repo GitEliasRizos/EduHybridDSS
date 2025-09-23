@@ -102,7 +102,7 @@ class UserDatabaseManager:
                 CREATE TABLE IF NOT EXISTS group_results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id INTEGER,
-                    method TEXT CHECK (method IN ('ahp', 'topsis')),
+                    method TEXT CHECK (method IN ('ahp', 'topsis', 'consensus')),
                     aggregated_data TEXT,  -- JSON serialized results
                     final_scores TEXT,     -- JSON array
                     final_rankings TEXT,   -- JSON array
@@ -142,6 +142,78 @@ class UserDatabaseManager:
                     ADD COLUMN alternatives_data TEXT
                 """)
                 print("✅ alternatives_data column added")
+            
+            # Update group_results table constraint to include 'consensus'
+            cursor.execute("PRAGMA table_info(group_results)")
+            group_results_columns = cursor.fetchall()
+            
+            if group_results_columns:  # Table exists
+                # Check current constraint by trying to insert 'consensus'
+                try:
+                    cursor.execute("INSERT INTO group_results (session_id, method, aggregated_data, final_scores, final_rankings, computed_by) VALUES (999, 'consensus', '{}', '[]', '[]', 1)")
+                    cursor.execute("DELETE FROM group_results WHERE session_id = 999")  # Clean up test
+                    print("group_results table already supports 'consensus' method")
+                except sqlite3.IntegrityError:
+                    print("Updating group_results table to support 'consensus' method...")
+                    
+                    # Backup existing data
+                    cursor.execute("SELECT * FROM group_results")
+                    existing_data = cursor.fetchall()
+                    
+                    # Drop and recreate table with updated constraint
+                    cursor.execute("DROP TABLE group_results")
+                    cursor.execute("""
+                        CREATE TABLE group_results (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            session_id INTEGER,
+                            method TEXT CHECK (method IN ('ahp', 'topsis', 'consensus')),
+                            aggregated_data TEXT,
+                            final_scores TEXT,
+                            final_rankings TEXT,
+                            computed_by INTEGER,
+                            computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (session_id) REFERENCES sessions (id),
+                            FOREIGN KEY (computed_by) REFERENCES users (id)
+                        )
+                    """)
+                    
+                    # Restore data
+                    for row in existing_data:
+                        cursor.execute("""
+                            INSERT INTO group_results 
+                            (id, session_id, method, aggregated_data, final_scores, final_rankings, computed_by, computed_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, row)
+                    
+                    print("group_results table updated successfully")
+            
+            # Migrate problem_name to problem_description in sessions table
+            cursor.execute("PRAGMA table_info(sessions)")
+            sessions_columns = [col[1] for col in cursor.fetchall()]
+            
+            if 'problem_name' in sessions_columns and 'problem_description' not in sessions_columns:
+                print("Migrating sessions table: problem_name -> problem_description...")
+                
+                # Add new column
+                cursor.execute("""
+                    ALTER TABLE sessions 
+                    ADD COLUMN problem_description TEXT
+                """)
+                
+                # Copy data from old column to new column
+                cursor.execute("""
+                    UPDATE sessions 
+                    SET problem_description = problem_name
+                    WHERE problem_name IS NOT NULL
+                """)
+                
+                # Note: SQLite doesn't support dropping columns directly
+                # We'll keep the old column for backward compatibility
+                # but the application will use problem_description
+                
+                print("✅ problem_description column added and data migrated")
+            elif 'problem_description' in sessions_columns:
+                print("Sessions table already has problem_description column")
             
             conn.commit()
             print("Database migration completed successfully!")
@@ -226,7 +298,7 @@ class UserDatabaseManager:
         else:
             return obj
         
-    def create_session(self, session_name: str, problem_name: str, 
+    def create_session(self, session_name: str, problem_description: str, 
                       criteria_names: List[str], objectives_info: List[Dict],
                       created_by_user_id: int, optimization_results: Dict = None,
                       alternatives_data: List[Dict] = None) -> int:
@@ -244,10 +316,10 @@ class UserDatabaseManager:
                 serializable_alternatives_data = self._make_json_serializable(alternatives_data)
             
             cursor.execute("""
-                INSERT INTO sessions (session_name, problem_name, criteria_names, 
+                INSERT INTO sessions (session_name, problem_description, criteria_names, 
                                     objectives_info, optimization_results, alternatives_data, created_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (session_name, problem_name, json.dumps(criteria_names), 
+            """, (session_name, problem_description, json.dumps(criteria_names), 
                   json.dumps(objectives_info), 
                   json.dumps(serializable_optimization_results) if serializable_optimization_results else None,
                   json.dumps(serializable_alternatives_data) if serializable_alternatives_data else None,
@@ -262,8 +334,9 @@ class UserDatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT s.id, s.session_name, s.problem_name, s.criteria_names,
-                       s.objectives_info, s.optimization_results, s.alternatives_data,
+                SELECT s.id, s.session_name, 
+                       COALESCE(s.problem_description, s.problem_name) as problem_description,
+                       s.criteria_names, s.objectives_info, s.optimization_results, s.alternatives_data,
                        s.created_at, u.full_name as created_by_name
                 FROM sessions s
                 JOIN users u ON s.created_by = u.id
@@ -276,7 +349,7 @@ class UserDatabaseManager:
                 sessions.append({
                     'id': row[0],
                     'session_name': row[1],
-                    'problem_name': row[2],
+                    'problem_description': row[2],
                     'criteria_names': json.loads(row[3]) if row[3] else [],
                     'objectives_info': json.loads(row[4]) if row[4] else [],
                     'optimization_results': json.loads(row[5]) if row[5] else None,
@@ -370,6 +443,7 @@ class UserDatabaseManager:
             
     def get_session_topsis_weights(self, session_id: int) -> Dict[str, List[float]]:
         """Get all TOPSIS weights for a session"""
+        print(f"Debug get_session_topsis_weights: session_id: {session_id}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -379,9 +453,22 @@ class UserDatabaseManager:
                 WHERE t.session_id = ?
             """, (session_id,))
             
+            rows = cursor.fetchall()
+            print(f"Debug get_session_topsis_weights: found {len(rows)} TOPSIS weight entries")
+            
             weights = {}
-            for username, weights_json in cursor.fetchall():
-                weights[username] = json.loads(weights_json)
+            for i, (username, weights_json) in enumerate(rows):
+                print(f"Debug get_session_topsis_weights: processing entry {i}: user={username}")
+                print(f"Debug get_session_topsis_weights: weights_json type: {type(weights_json)}")
+                print(f"Debug get_session_topsis_weights: weights_json content: {weights_json}")
+                
+                try:
+                    weights[username] = json.loads(weights_json)
+                    print(f"Debug get_session_topsis_weights: parsed weights for {username}: {weights[username]}")
+                except Exception as e:
+                    print(f"Debug get_session_topsis_weights: Error parsing JSON for {username}: {e}")
+                    
+            print(f"Debug get_session_topsis_weights: final weights dict: {weights}")
             return weights
     
     def get_session_status(self, session_id: int) -> Dict:
@@ -508,18 +595,41 @@ class UserDatabaseManager:
         """
         Aggregate TOPSIS weights using arithmetic mean
         """
+        print(f"Debug aggregate_topsis_weights: input weights_dict type: {type(weights_dict)}")
         if not weights_dict:
             raise ValueError("No weights to aggregate")
             
+        print(f"Debug aggregate_topsis_weights: weights_dict keys: {list(weights_dict.keys())}")
+        print(f"Debug aggregate_topsis_weights: weights_dict count: {len(weights_dict)}")
+        
         # Convert to numpy array for easier calculation
-        weights_arrays = [np.array(weights) for weights in weights_dict.values()]
-        weights_matrix = np.stack(weights_arrays)
+        try:
+            weights_arrays = [np.array(weights) for weights in weights_dict.values()]
+            print(f"Debug aggregate_topsis_weights: created {len(weights_arrays)} weight arrays")
+            
+            if not weights_arrays:
+                raise ValueError("No weight arrays created")
+                
+            # Check if weights_dict.values() might be None
+            weights_values = weights_dict.values()
+            print(f"Debug aggregate_topsis_weights: weights_dict.values() type: {type(weights_values)}")
+            print(f"Debug aggregate_topsis_weights: weights_dict.values(): {list(weights_values)}")
+            
+            weights_matrix = np.stack(weights_arrays)
+            print(f"Debug aggregate_topsis_weights: weights_matrix shape: {weights_matrix.shape}")
+            
+        except Exception as e:
+            print(f"Debug aggregate_topsis_weights: Error creating arrays: {e}")
+            print(f"Debug aggregate_topsis_weights: weights_dict content: {weights_dict}")
+            raise
         
         # Calculate arithmetic mean
         aggregated_weights = np.mean(weights_matrix, axis=0)
+        print(f"Debug aggregate_topsis_weights: aggregated_weights before normalization: {aggregated_weights}")
         
         # Normalize to sum to 1
         aggregated_weights = aggregated_weights / np.sum(aggregated_weights)
+        print(f"Debug aggregate_topsis_weights: final aggregated_weights: {aggregated_weights}")
         
         return aggregated_weights.tolist()
         
@@ -616,7 +726,7 @@ class UserDatabaseManager:
             # Save consensus results
             self.save_group_result(
                 session_id=session_id,
-                method='CONSENSUS',
+                method='consensus',
                 aggregated_data=consensus_result,
                 final_scores=consensus_result['combined_scores'],
                 final_rankings=consensus_result['final_rankings'],
@@ -719,14 +829,41 @@ class UserDatabaseManager:
                                       alternatives_data: List[Dict], session: Dict) -> Dict:
         """Compute group decision using aggregated TOPSIS weights"""
         
+        print(f"Debug TOPSIS: topsis_weights type: {type(topsis_weights)}, length: {len(topsis_weights) if topsis_weights else 'None'}")
+        print(f"Debug TOPSIS: alternatives_data type: {type(alternatives_data)}, length: {len(alternatives_data) if alternatives_data else 'None'}")
+        print(f"Debug TOPSIS: session type: {type(session)}")
+        
+        if not topsis_weights:
+            raise ValueError("No TOPSIS weights provided")
+        
+        if not alternatives_data:
+            raise ValueError("No alternatives data provided")
+        
         # Aggregate TOPSIS weights
-        aggregated_weights = self.aggregate_topsis_weights(topsis_weights)
+        try:
+            aggregated_weights = self.aggregate_topsis_weights(topsis_weights)
+            print(f"Debug TOPSIS: aggregated_weights: {aggregated_weights}")
+            print(f"Debug TOPSIS: aggregated_weights type: {type(aggregated_weights)}")
+        except Exception as e:
+            print(f"Debug TOPSIS: Error in weight aggregation: {e}")
+            raise
         
         # Prepare decision matrix from alternatives
-        decision_matrix = []
-        for alt in alternatives_data:
-            decision_matrix.append(alt['values'])
-        decision_matrix = np.array(decision_matrix)
+        try:
+            decision_matrix = []
+            for i, alt in enumerate(alternatives_data):
+                print(f"Debug TOPSIS: Processing alternative {i}: {alt}")
+                if 'values' not in alt:
+                    raise ValueError(f"Alternative {i} missing 'values' field")
+                decision_matrix.append(alt['values'])
+                
+            print(f"Debug TOPSIS: decision_matrix length: {len(decision_matrix)}")
+            decision_matrix = np.array(decision_matrix)
+            print(f"Debug TOPSIS: decision_matrix shape: {decision_matrix.shape}")
+            
+        except Exception as e:
+            print(f"Debug TOPSIS: Error preparing decision matrix: {e}")
+            raise
         
         # Normalize decision matrix (vector normalization)
         normalized_matrix = decision_matrix / np.sqrt(np.sum(decision_matrix**2, axis=0))
@@ -798,6 +935,8 @@ class UserDatabaseManager:
     
     def get_group_results(self, session_id: int) -> Dict[str, Any]:
         """Get all group analysis results for a session"""
+        print(f"Debug get_group_results: Fetching results for session {session_id}")
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -809,23 +948,32 @@ class UserDatabaseManager:
             """, (session_id,))
             
             results = cursor.fetchall()
+            print(f"Debug get_group_results: Found {len(results)} result entries")
             
             group_results = {}
-            for result in results:
+            for i, result in enumerate(results):
                 method = result[0]
-                group_results[method] = {
-                    'method': method,
-                    'aggregated_data': json.loads(result[1]) if result[1] else None,
-                    'final_scores': json.loads(result[2]) if result[2] else None,
-                    'final_rankings': json.loads(result[3]) if result[3] else None,
-                    'computed_at': result[4],
-                    'computed_by': result[5]
-                }
+                print(f"Debug get_group_results: Processing result {i+1}: method={method}")
+                
+                try:
+                    group_results[method] = {
+                        'method': method,
+                        'aggregated_data': json.loads(result[1]) if result[1] else None,
+                        'final_scores': json.loads(result[2]) if result[2] else None,
+                        'final_rankings': json.loads(result[3]) if result[3] else None,
+                        'computed_at': result[4],
+                        'computed_by': result[5]
+                    }
+                    print(f"Debug get_group_results: Successfully processed {method}")
+                except Exception as e:
+                    print(f"Debug get_group_results: Error processing {method}: {e}")
+                    raise
             
+            print(f"Debug get_group_results: Returning {len(group_results)} methods: {list(group_results.keys())}")
             return group_results
             
-    def get_group_results(self, session_id: int, method: str) -> Optional[Dict]:
-        """Get group decision making results"""
+    def get_single_group_result(self, session_id: int, method: str) -> Optional[Dict]:
+        """Get group decision making results for a specific method"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""

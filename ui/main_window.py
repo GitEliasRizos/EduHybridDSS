@@ -527,7 +527,8 @@ class MainWindow(QMainWindow):
     
     def _offer_group_session_creation(self, results, problem_config, objectives_info):
         """Ask admin if they want to create a group decision session from optimization results"""
-        from PyQt6.QtWidgets import QInputDialog, QMessageBox
+        from PyQt6.QtWidgets import QMessageBox
+        from ui.session_creation_dialog import SessionCreationDialog
         
         # Ask if they want to create a group session
         reply = QMessageBox.question(
@@ -539,15 +540,20 @@ class MainWindow(QMainWindow):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            # Get session name from user
-            session_name, ok = QInputDialog.getText(
-                self, 
-                "Group Session Name", 
-                "Enter a name for this group decision session:",
-                text=f"Optimization Session {len(self.db_manager.get_active_sessions()) + 1}"
+            # Show custom session creation dialog
+            current_session_count = len(self.db_manager.get_active_sessions())
+            suggested_name = f"Optimization Session {current_session_count + 1}"
+            
+            dialog = SessionCreationDialog(
+                parent=self,
+                suggested_name=suggested_name,
+                current_session_count=current_session_count
             )
             
-            if ok and session_name.strip():
+            if dialog.exec() == SessionCreationDialog.DialogCode.Accepted:
+                session_data = dialog.get_session_data()
+                session_name = session_data['session_name']
+                problem_description = session_data['problem_description']
                 try:
                     # Extract criteria names from objectives
                     criteria_names = [obj['name'] for obj in objectives_info]
@@ -555,17 +561,35 @@ class MainWindow(QMainWindow):
                     # Prepare alternatives data (optimization solutions)
                     alternatives_data = []
                     
+                    # Debug the optimization results format
+                    print(f"Debug session creation: results type: {type(results)}")
+                    print(f"Debug session creation: results hasattr F: {hasattr(results, 'F') if results else False}")
+                    if hasattr(results, 'F'):
+                        print(f"Debug session creation: results.F type: {type(results.F)}")
+                        print(f"Debug session creation: results.F shape: {results.F.shape if hasattr(results.F, 'shape') else 'no shape'}")
+                    if isinstance(results, dict):
+                        print(f"Debug session creation: results keys: {list(results.keys())}")
+                    
                     # Handle PyMOO Result objects
                     if hasattr(results, 'F') and results.F is not None:
                         # PyMOO Result object - use F attribute for objective values
                         objective_values = results.F
+                        print(f"Debug session creation: Using results.F with shape {objective_values.shape}")
+                    elif isinstance(results, dict) and 'objectives' in results:
+                        # Dictionary format from extract_results
+                        objective_values = results['objectives']
+                        print(f"Debug session creation: Using results['objectives'] with shape {objective_values.shape}")
                     elif isinstance(results, dict) and 'objective_values' in results:
-                        # Dictionary format
+                        # Legacy dictionary format
                         objective_values = results['objective_values']
+                        print(f"Debug session creation: Using results['objective_values']")
                     else:
                         objective_values = None
+                        print(f"Debug session creation: No valid objective values found!")
+                        print(f"Debug session creation: Available keys: {list(results.keys()) if isinstance(results, dict) else 'Not a dict'}")
                     
                     if objective_values is not None:
+                        print(f"Debug session creation: Processing {len(objective_values)} solutions")
                         for i, solution in enumerate(objective_values):
                             alt_data = {
                                 'id': i + 1,
@@ -573,6 +597,9 @@ class MainWindow(QMainWindow):
                                 'values': solution.tolist() if hasattr(solution, 'tolist') else list(solution)
                             }
                             alternatives_data.append(alt_data)
+                            print(f"Debug session creation: Added alternative {i+1}: {alt_data['values']}")
+                    else:
+                        print(f"Debug session creation: No alternatives created - objective_values is None")
                     
                     # Convert optimization results to JSON-serializable format
                     json_serializable_results = self._make_json_serializable(results)
@@ -580,8 +607,8 @@ class MainWindow(QMainWindow):
                     # Create the session (assuming admin user ID is 1 for now)
                     admin_user_id = 1  # TODO: Get from authentication system
                     session_id = self.db_manager.create_session(
-                        session_name=session_name.strip(),
-                        problem_name=problem_config.get('problem_name', 'Unnamed Problem'),
+                        session_name=session_name,
+                        problem_description=problem_description,
                         criteria_names=criteria_names,
                         objectives_info=objectives_info,
                         created_by_user_id=admin_user_id,
@@ -713,7 +740,7 @@ class MainWindow(QMainWindow):
             
             for i, session in enumerate(sessions):
                 sessions_table.setItem(i, 0, QTableWidgetItem(session['session_name']))
-                sessions_table.setItem(i, 1, QTableWidgetItem(session['problem_name']))
+                sessions_table.setItem(i, 1, QTableWidgetItem(session['problem_description']))
                 sessions_table.setItem(i, 2, QTableWidgetItem(str(len(session['criteria_names']))))
                 
                 alt_count = len(session['alternatives_data']) if session['alternatives_data'] else 0
@@ -932,7 +959,7 @@ class MainWindow(QMainWindow):
                 # Save results
                 self.db_manager.save_group_result(
                     session_id=session_id,
-                    method='AHP',
+                    method='ahp',
                     aggregated_data=ahp_result['aggregated_matrix'].tolist(),
                     final_scores=ahp_result['final_scores'],
                     final_rankings=ahp_result['rankings'],
@@ -951,7 +978,23 @@ class MainWindow(QMainWindow):
                 # Get session data
                 sessions = self.db_manager.get_active_sessions()
                 session = next((s for s in sessions if s['id'] == session_id), None)
+                
+                if not session:
+                    results_text.append("❌ Session not found.")
+                    return
+                
                 alternatives_data = session.get('alternatives_data', [])
+                
+                # Debug information  
+                results_text.append(f"Debug: Found {len(topsis_weights)} TOPSIS weight sets")
+                results_text.append(f"Debug: Session data available: {session is not None}")
+                results_text.append(f"Debug: Alternatives data type: {type(alternatives_data)}")
+                results_text.append(f"Debug: Alternatives data length: {len(alternatives_data) if alternatives_data else 'None'}")
+                
+                if not alternatives_data:
+                    results_text.append("❌ No alternatives data found in this session.")
+                    results_text.append("This session was not created from optimization results.")
+                    return
                 
                 # Compute TOPSIS group decision
                 topsis_result = self.db_manager._compute_topsis_group_decision(topsis_weights, alternatives_data, session)
@@ -959,7 +1002,7 @@ class MainWindow(QMainWindow):
                 # Save results
                 self.db_manager.save_group_result(
                     session_id=session_id,
-                    method='TOPSIS',
+                    method='topsis',
                     aggregated_data=topsis_result['aggregated_weights'],
                     final_scores=topsis_result['final_scores'],
                     final_rankings=topsis_result['rankings'],
@@ -1063,117 +1106,152 @@ class MainWindow(QMainWindow):
         """View previous group analysis results"""
         from PyQt6.QtWidgets import QDialog, QVBoxLayout, QComboBox, QLabel, QPushButton, QTextEdit
         
-        # Get sessions that have results
-        sessions = self.db_manager.get_active_sessions()
-        sessions_with_results = []
-        
-        for session in sessions:
-            results = self.db_manager.get_group_results(session['id'])
-            if results:
-                session['group_results'] = results
-                sessions_with_results.append(session)
-        
-        if not sessions_with_results:
-            QMessageBox.information(
+        try:
+            # Get sessions that have results
+            sessions = self.db_manager.get_active_sessions()
+            
+            sessions_with_results = []
+            
+            for session in sessions:
+                try:
+                    results = self.db_manager.get_group_results(session['id'])
+                    if results:
+                        session['group_results'] = results
+                        sessions_with_results.append(session)
+                except Exception as e:
+                    continue
+            
+            if not sessions_with_results:
+                QMessageBox.information(
+                    self,
+                    "No Results Available",
+                    "No group analysis results have been computed yet.\n\n"
+                    "Run group analysis on sessions with user submissions to generate results."
+                )
+                return
+                
+        except Exception as e:
+            QMessageBox.critical(
                 self,
-                "No Results Available",
-                "No group analysis results have been computed yet.\n\n"
-                "Run group analysis on sessions with user submissions to generate results."
+                "Error Loading Results",
+                f"Failed to load group analysis results:\n{str(e)}"
             )
             return
         
         # Results viewer dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Group Analysis Results")
-        dialog.setMinimumSize(800, 600)
-        
-        layout = QVBoxLayout(dialog)
-        
-        # Instructions
-        instructions = QLabel("""
-        <b>Group Analysis Results Viewer</b><br><br>
-        Select a session to view its group decision analysis results. Results include
-        AHP rankings, TOPSIS rankings, and consensus rankings when available.
-        """)
-        instructions.setWordWrap(True)
-        layout.addWidget(instructions)
-        
-        # Session selection
-        session_label = QLabel("Select Session:")
-        layout.addWidget(session_label)
-        
-        session_combo = QComboBox()
-        for session in sessions_with_results:
-            methods = list(session['group_results'].keys())
-            session_combo.addItem(
-                f"{session['session_name']} ({', '.join(methods)})",
-                session
+        try:
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Group Analysis Results")
+            dialog.setMinimumSize(800, 600)
+            
+            layout = QVBoxLayout(dialog)
+            
+            # Instructions
+            instructions = QLabel("""
+            <b>Group Analysis Results Viewer</b><br><br>
+            Select a session to view its group decision analysis results. Results include
+            AHP rankings, TOPSIS rankings, and consensus rankings when available.
+            """)
+            instructions.setWordWrap(True)
+            layout.addWidget(instructions)
+            
+            # Session selection
+            session_label = QLabel("Select Session:")
+            layout.addWidget(session_label)
+            
+            session_combo = QComboBox()
+            for session in sessions_with_results:
+                try:
+                    methods = list(session['group_results'].keys())
+                    session_combo.addItem(
+                        f"{session['session_name']} ({', '.join(methods)})",
+                        session
+                    )
+                except Exception as e:
+                    continue
+            layout.addWidget(session_combo)
+            
+            # Results display
+            results_text = QTextEdit()
+            results_text.setReadOnly(True)
+            results_text.setFont(QFont("Consolas", 10))
+            layout.addWidget(results_text)
+            
+            # Load results button
+            def load_results():
+                try:
+                    session = session_combo.currentData()
+                    if session:
+                        self._display_saved_results(session, results_text)
+                except Exception as e:
+                    QMessageBox.critical(dialog, "Error", f"Failed to load results:\n{str(e)}")
+            
+            load_btn = QPushButton("Load Results")
+            load_btn.clicked.connect(load_results)
+            layout.addWidget(load_btn)
+            
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.close)
+            layout.addWidget(close_btn)
+            
+            # Load first session by default
+            if sessions_with_results:
+                load_results()
+            
+            dialog.exec()
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Dialog Error",
+                f"Failed to create results viewer dialog:\n{str(e)}"
             )
-        layout.addWidget(session_combo)
-        
-        # Results display
-        results_text = QTextEdit()
-        results_text.setReadOnly(True)
-        results_text.setFont(QFont("Consolas", 10))
-        layout.addWidget(results_text)
-        
-        # Load results button
-        def load_results():
-            session = session_combo.currentData()
-            if session:
-                self._display_saved_results(session, results_text)
-        
-        load_btn = QPushButton("Load Results")
-        load_btn.clicked.connect(load_results)
-        layout.addWidget(load_btn)
-        
-        # Close button
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(dialog.close)
-        layout.addWidget(close_btn)
-        
-        # Load first session by default
-        if sessions_with_results:
-            load_results()
-        
-        dialog.exec()
     
     def _display_saved_results(self, session, results_text):
         """Display saved group analysis results"""
-        results_text.clear()
-        
-        results_text.append(f"{'='*80}")
-        results_text.append(f"GROUP ANALYSIS RESULTS")
-        results_text.append(f"{'='*80}")
-        results_text.append(f"Session: {session['session_name']}")
-        results_text.append(f"Problem: {session['problem_name']}")
-        results_text.append(f"Alternatives: {len(session.get('alternatives_data', []))}")
-        
-        group_results = session['group_results']
-        
-        # Display each method's results
-        for method, result in group_results.items():
-            results_text.append(f"\n{'='*50}")
-            results_text.append(f"{method} ANALYSIS RESULTS")
-            results_text.append(f"{'='*50}")
-            results_text.append(f"Computed: {result['computed_at']}")
-            results_text.append(f"Computed by user ID: {result['computed_by']}")
+        try:
+            results_text.clear()
             
-            if result['final_scores'] and result['final_rankings']:
-                results_text.append("\nFinal Rankings:")
-                for i, (score, rank) in enumerate(zip(result['final_scores'], result['final_rankings'])):
-                    results_text.append(f"  Alternative {i+1}: Score={score:.3f}, Rank={rank}")
+            results_text.append(f"{'='*80}")
+            results_text.append(f"GROUP ANALYSIS RESULTS")
+            results_text.append(f"{'='*80}")
+            results_text.append(f"Session: {session['session_name']}")
+            results_text.append(f"Problem: {session['problem_description']}")
+            results_text.append(f"Alternatives: {len(session.get('alternatives_data', []))}")
             
-            # Display method-specific data
-            if method == 'CONSENSUS' and result['aggregated_data']:
-                consensus_data = result['aggregated_data']
-                if 'correlation_coefficient' in consensus_data:
-                    results_text.append(f"\nCorrelation between methods: {consensus_data['correlation_coefficient']:.3f}")
-                    results_text.append(f"Agreement level: {consensus_data.get('agreement_level', 'Unknown')}")
-        
-        results_text.append(f"\n{'='*80}")
-        results_text.append("END OF RESULTS")
-        results_text.append(f"{'='*80}")
+            group_results = session['group_results']
+            
+            # Display each method's results
+            for method, result in group_results.items():
+                results_text.append(f"\n{'='*50}")
+                results_text.append(f"{method.upper()} ANALYSIS RESULTS")
+                results_text.append(f"{'='*50}")
+                results_text.append(f"Computed: {result['computed_at']}")
+                results_text.append(f"Computed by user ID: {result['computed_by']}")
+                
+                if result['final_scores'] and result['final_rankings']:
+                    results_text.append("\nFinal Rankings:")
+                    for i, (score, rank) in enumerate(zip(result['final_scores'], result['final_rankings'])):
+                        results_text.append(f"  Alternative {i+1}: Score={score:.3f}, Rank={rank}")
+                
+                # Display method-specific data
+                if method == 'consensus' and result['aggregated_data']:
+                    consensus_data = result['aggregated_data']
+                    if 'correlation_coefficient' in consensus_data:
+                        results_text.append(f"\nCorrelation between methods: {consensus_data['correlation_coefficient']:.3f}")
+                        results_text.append(f"Agreement level: {consensus_data.get('agreement_level', 'Unknown')}")
+            
+            results_text.append(f"\n{'='*80}")
+            results_text.append("END OF RESULTS")
+            results_text.append(f"{'='*80}")
+            
+        except Exception as e:
+            results_text.clear()
+            results_text.append(f"Error displaying results: {str(e)}")
+            results_text.append(f"\nSession data: {session}")
+            import traceback
+            results_text.append(f"\nTraceback:\n{traceback.format_exc()}")
     
     def _refresh_sessions_table(self, table):
         """Refresh the sessions table"""
@@ -1183,7 +1261,7 @@ class MainWindow(QMainWindow):
         
         for i, session in enumerate(sessions):
             table.setItem(i, 0, QTableWidgetItem(session['session_name']))
-            table.setItem(i, 1, QTableWidgetItem(session['problem_name']))
+            table.setItem(i, 1, QTableWidgetItem(session['problem_description']))
             table.setItem(i, 2, QTableWidgetItem(str(len(session['criteria_names']))))
             
             alt_count = len(session['alternatives_data']) if session['alternatives_data'] else 0

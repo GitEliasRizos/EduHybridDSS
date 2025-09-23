@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QPixmap, QIcon, QPalette
 from core.user_manager import UserDatabaseManager
+from core.mcda import AHPAnalyzer
 
 
 class UserInterface(QMainWindow):
@@ -220,14 +221,17 @@ class UserInterface(QMainWindow):
         # Instructions
         instructions = QLabel("""
         <b>AHP Pairwise Comparison Instructions:</b><br><br>
-        Compare each pair of criteria using the scale below:<br>
+        Select the appropriate importance level from each dropdown menu to compare criteria pairs.<br>
+        The system automatically calculates and displays reciprocal values.<br><br>
+        
+        <b>Comparison Scale:</b><br>
+        • <b>9</b> = Extreme importance (first over second)<br>
+        • <b>7</b> = Very strong importance<br>
+        • <b>5</b> = Strong importance<br>
+        • <b>3</b> = Moderate importance<br>
         • <b>1</b> = Equal importance<br>
-        • <b>3</b> = Moderate importance of first over second<br>
-        • <b>5</b> = Strong importance of first over second<br>
-        • <b>7</b> = Very strong importance of first over second<br>
-        • <b>9</b> = Extreme importance of first over second<br>
-        • <b>2, 4, 6, 8</b> = Intermediate values<br>
-        • <b>Fractions (1/3, 1/5, etc.)</b> = Reverse importance
+        • <b>1/3, 1/5, 1/7, 1/9</b> = Reverse importance (second over first)<br>
+        • <b>2, 4, 6, 8</b> and fractions = Intermediate values
         """)
         instructions.setStyleSheet("""
             QLabel {
@@ -256,6 +260,24 @@ class UserInterface(QMainWindow):
         self.ahp_reset_button = QPushButton("Reset Matrix")
         self.ahp_reset_button.clicked.connect(self._reset_ahp_matrix)
         ahp_button_layout.addWidget(self.ahp_reset_button)
+        
+        # Add consistency check button
+        self.ahp_check_button = QPushButton("Check Consistency")
+        self.ahp_check_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2e7d32;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1b5e20;
+            }
+        """)
+        self.ahp_check_button.clicked.connect(self._check_consistency_only)
+        ahp_button_layout.addWidget(self.ahp_check_button)
         
         ahp_button_layout.addStretch()
         
@@ -414,7 +436,7 @@ class UserInterface(QMainWindow):
         sessions = self.db_manager.get_active_sessions()
         for session in sessions:
             self.session_combo.addItem(
-                f"{session['session_name']} - {session['problem_name']}",
+                f"{session['session_name']} - {session['problem_description']}",
                 session['id']
             )
             
@@ -448,7 +470,7 @@ class UserInterface(QMainWindow):
         criteria_text = ", ".join(self.criteria_names)
         self.session_info_label.setText(
             f"<b>Session:</b> {session['session_name']}<br>"
-            f"<b>Problem:</b> {session['problem_name']}<br>"
+            f"<b>Problem:</b> {session['problem_description']}<br>"
             f"<b>Criteria:</b> {criteria_text}<br>"
             f"<b>Created:</b> {session['created_at']}"
         )
@@ -534,7 +556,7 @@ class UserInterface(QMainWindow):
         self.results_table.verticalHeader().setFont(header_font)
         
     def _setup_ahp_matrix(self):
-        """Setup AHP comparison matrix"""
+        """Setup AHP comparison matrix with dropdown menus"""
         n = len(self.criteria_names)
         self.ahp_table.setRowCount(n)
         self.ahp_table.setColumnCount(n)
@@ -543,7 +565,7 @@ class UserInterface(QMainWindow):
         self.ahp_table.setHorizontalHeaderLabels(self.criteria_names)
         self.ahp_table.setVerticalHeaderLabels(self.criteria_names)
         
-        # Initialize matrix
+        # Initialize matrix with dropdowns
         for i in range(n):
             for j in range(n):
                 if i == j:
@@ -551,9 +573,46 @@ class UserInterface(QMainWindow):
                     item = QTableWidgetItem("1.0")
                     item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
                     item.setBackground(QPalette().color(QPalette.ColorRole.Light))
-                else:
+                    self.ahp_table.setItem(i, j, item)
+                elif i < j:  # Upper triangle - use dropdowns
+                    dropdown = QComboBox()
+                    
+                    # Saaty scale values (same as admin interface)
+                    saaty_values = [
+                        ("9", 9.0, "Extreme importance (first over second)"),
+                        ("8", 8.0, "Very strong to extreme importance"),
+                        ("7", 7.0, "Very strong importance"),
+                        ("6", 6.0, "Strong to very strong importance"),
+                        ("5", 5.0, "Strong importance"),
+                        ("4", 4.0, "Moderate to strong importance"),
+                        ("3", 3.0, "Moderate importance"),
+                        ("2", 2.0, "Slight to moderate importance"),
+                        ("1", 1.0, "Equal importance"),
+                        ("1/2", 0.5, "Slight to moderate importance (second over first)"),
+                        ("1/3", 0.333, "Moderate importance (second over first)"),
+                        ("1/4", 0.25, "Moderate to strong importance (second over first)"),
+                        ("1/5", 0.2, "Strong importance (second over first)"),
+                        ("1/6", 0.167, "Strong to very strong importance (second over first)"),
+                        ("1/7", 0.143, "Very strong importance (second over first)"),
+                        ("1/8", 0.125, "Very strong to extreme importance (second over first)"),
+                        ("1/9", 0.111, "Extreme importance (second over first)")
+                    ]
+                    
+                    for display_text, value, description in saaty_values:
+                        dropdown.addItem(display_text, value)
+                    
+                    # Set default to "1" (Equal importance)
+                    dropdown.setCurrentIndex(8)  # Index of "1" in the list
+                    
+                    # Connect to auto-update reciprocal
+                    dropdown.currentIndexChanged.connect(lambda: self._update_reciprocals())
+                    
+                    self.ahp_table.setCellWidget(i, j, dropdown)
+                else:  # Lower triangle - show reciprocal values
                     item = QTableWidgetItem("1.0")
-                self.ahp_table.setItem(i, j, item)
+                    item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
+                    item.setBackground(QPalette().color(QPalette.ColorRole.Light))
+                    self.ahp_table.setItem(i, j, item)
                 
         # Resize columns
         self.ahp_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -576,26 +635,45 @@ class UserInterface(QMainWindow):
             self.topsis_weight_inputs[criterion] = spinbox
             self.topsis_form_layout.addRow(f"{criterion}:", spinbox)
             
-    def _auto_fill_reciprocals(self):
-        """Auto-fill reciprocal values in AHP matrix"""
-        n = self.ahp_table.rowCount()
+    def _update_reciprocals(self):
+        """Update reciprocal values automatically when user changes comparison"""
+        n = len(self.criteria_names)
         
         for i in range(n):
-            for j in range(i + 1, n):
-                try:
-                    value = float(self.ahp_table.item(i, j).text())
-                    reciprocal = 1.0 / value if value != 0 else 1.0
-                    self.ahp_table.item(j, i).setText(f"{reciprocal:.4f}")
-                except (ValueError, ZeroDivisionError):
-                    pass
+            for j in range(n):
+                if i < j:  # Upper triangle has dropdowns
+                    dropdown = self.ahp_table.cellWidget(i, j)
+                    if dropdown and isinstance(dropdown, QComboBox):
+                        value = dropdown.currentData()
+                        if value and value != 0:
+                            # Set reciprocal in lower triangle
+                            reciprocal_value = 1.0 / value
+                            reciprocal_item = QTableWidgetItem(f"{reciprocal_value:.3f}")
+                            reciprocal_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                            reciprocal_item.setBackground(QPalette().color(QPalette.ColorRole.Light))
+                            self.ahp_table.setItem(j, i, reciprocal_item)
+    
+    def _auto_fill_reciprocals(self):
+        """Auto-fill reciprocal values in AHP matrix (now handled automatically by dropdowns)"""
+        # This method is now automatically handled when dropdown values change
+        # Call the update method to ensure all reciprocals are current
+        self._update_reciprocals()
                     
     def _reset_ahp_matrix(self):
         """Reset AHP matrix to default values"""
         n = self.ahp_table.rowCount()
         for i in range(n):
             for j in range(n):
-                if i != j:
-                    self.ahp_table.item(i, j).setText("1.0")
+                if i < j:  # Upper triangle has dropdowns
+                    dropdown = self.ahp_table.cellWidget(i, j)
+                    if dropdown and isinstance(dropdown, QComboBox):
+                        dropdown.setCurrentIndex(8)  # Set to "1" (Equal importance)
+                elif i > j:  # Lower triangle has reciprocal items
+                    if self.ahp_table.item(i, j):
+                        self.ahp_table.item(i, j).setText("1.000")
+        
+        # Update all reciprocals
+        self._update_reciprocals()
                     
     def _set_equal_topsis_weights(self):
         """Set equal weights for all criteria"""
@@ -625,8 +703,8 @@ class UserInterface(QMainWindow):
         for spinbox in self.topsis_weight_inputs.values():
             spinbox.setValue(1.0)
             
-    def _submit_ahp_comparisons(self):
-        """Submit AHP pairwise comparisons"""
+    def _check_consistency_only(self):
+        """Check matrix consistency without submitting"""
         if not self.current_session:
             QMessageBox.warning(self, "Error", "No session selected.")
             return
@@ -638,14 +716,157 @@ class UserInterface(QMainWindow):
             
             for i in range(n):
                 for j in range(n):
-                    if i != j:
-                        value = float(self.ahp_table.item(i, j).text())
-                        matrix[i, j] = value
+                    if i == j:
+                        matrix[i, j] = 1.0  # Diagonal is always 1
+                    elif i < j:  # Upper triangle: get value from dropdown
+                        dropdown = self.ahp_table.cellWidget(i, j)
+                        if dropdown and isinstance(dropdown, QComboBox):
+                            value = dropdown.currentData()
+                            matrix[i, j] = float(value) if value else 1.0
+                        else:
+                            matrix[i, j] = 1.0
+                    else:  # Lower triangle: get reciprocal from item
+                        item = self.ahp_table.item(i, j)
+                        if item:
+                            try:
+                                value = float(item.text())
+                                matrix[i, j] = value
+                            except ValueError:
+                                matrix[i, j] = 1.0 / matrix[j, i]  # Calculate reciprocal
+                        else:
+                            matrix[i, j] = 1.0 / matrix[j, i]  # Calculate reciprocal
                         
             # Basic validation
             if np.any(matrix <= 0):
                 QMessageBox.warning(self, "Error", "All comparison values must be positive.")
                 return
+                
+            # Check consistency
+            is_consistent, cr, consistency_message = self._check_ahp_consistency(matrix)
+            
+            # Show consistency result
+            if is_consistent:
+                QMessageBox.information(self, "Consistency Check", consistency_message)
+            else:
+                # Show warning with guidance
+                extended_message = f"{consistency_message}\n\nTips for improving consistency:\n\n"
+                extended_message += "1. Review your pairwise comparisons for logical conflicts\n"
+                extended_message += "2. If A > B and B > C, then A should be > C\n"
+                extended_message += "3. Use intermediate values (2, 4, 6, 8) when unsure\n"
+                extended_message += "4. Consider if extreme values (9, 1/9) are really justified\n"
+                extended_message += "5. Double-check reciprocal relationships"
+                
+                QMessageBox.warning(self, "Consistency Check", extended_message)
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to check consistency: {str(e)}")
+
+    def _check_ahp_consistency(self, matrix: np.ndarray) -> tuple[bool, float, str]:
+        """
+        Check AHP matrix consistency before submission
+        
+        Returns:
+            tuple: (is_consistent, consistency_ratio, message)
+        """
+        try:
+            # Create AHP analyzer instance
+            ahp = AHPAnalyzer()
+            
+            # Calculate weights using eigenvalue method
+            weights = ahp.calculate_weights(matrix)
+            
+            # Calculate consistency ratio
+            cr = ahp.calculate_consistency_ratio(matrix, weights)
+            
+            # Check if consistency is acceptable (CR < 0.1)
+            is_consistent = cr < 0.1
+            
+            if is_consistent:
+                message = f"✓ Consistency check passed!\nConsistency Ratio: {cr:.3f} (< 0.1)\n\nYour comparisons are mathematically consistent and can be submitted."
+            else:
+                message = f"⚠ Consistency check failed!\nConsistency Ratio: {cr:.3f} (≥ 0.1)\n\nYour pairwise comparisons are inconsistent. Please review and adjust your judgments to improve consistency.\n\nGuideline: CR should be less than 0.1 for acceptable consistency."
+            
+            return is_consistent, cr, message
+            
+        except Exception as e:
+            return False, 0.0, f"Error checking consistency: {str(e)}"
+
+    def _submit_ahp_comparisons(self):
+        """Submit AHP pairwise comparisons after consistency validation"""
+        if not self.current_session:
+            QMessageBox.warning(self, "Error", "No session selected.")
+            return
+            
+        try:
+            # Extract matrix from table (dropdowns in upper triangle, items in lower triangle)
+            n = self.ahp_table.rowCount()
+            matrix = np.ones((n, n))
+            
+            for i in range(n):
+                for j in range(n):
+                    if i == j:
+                        matrix[i, j] = 1.0  # Diagonal is always 1
+                    elif i < j:  # Upper triangle: get value from dropdown
+                        dropdown = self.ahp_table.cellWidget(i, j)
+                        if dropdown and isinstance(dropdown, QComboBox):
+                            value = dropdown.currentData()
+                            matrix[i, j] = float(value) if value else 1.0
+                        else:
+                            matrix[i, j] = 1.0
+                    else:  # Lower triangle: get reciprocal from item
+                        item = self.ahp_table.item(i, j)
+                        if item:
+                            try:
+                                value = float(item.text())
+                                matrix[i, j] = value
+                            except ValueError:
+                                matrix[i, j] = 1.0 / matrix[j, i]  # Calculate reciprocal
+                        else:
+                            matrix[i, j] = 1.0 / matrix[j, i]  # Calculate reciprocal
+                        
+            # Basic validation
+            if np.any(matrix <= 0):
+                QMessageBox.warning(self, "Error", "All comparison values must be positive.")
+                return
+                
+            # Check consistency before submission
+            is_consistent, cr, consistency_message = self._check_ahp_consistency(matrix)
+            
+            # Show consistency check result
+            if is_consistent:
+                # Consistency is good - ask for confirmation
+                reply = QMessageBox.question(
+                    self, 
+                    "Consistency Check Passed", 
+                    f"{consistency_message}\n\nDo you want to submit these comparisons?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                
+                if reply == QMessageBox.StandardButton.No:
+                    return
+            else:
+                # Consistency is poor - offer options
+                reply = QMessageBox.question(
+                    self,
+                    "Consistency Check Warning",
+                    f"{consistency_message}\n\nOptions:\n• Click 'Yes' to submit anyway (not recommended)\n• Click 'No' to revise your comparisons\n\nSubmit despite poor consistency?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                
+                if reply == QMessageBox.StandardButton.No:
+                    # Show additional guidance
+                    QMessageBox.information(
+                        self,
+                        "Improving Consistency",
+                        "Tips for improving consistency:\n\n"
+                        "1. Review your pairwise comparisons for logical conflicts\n"
+                        "2. If A > B and B > C, then A should be > C\n"
+                        "3. Use intermediate values (2, 4, 6, 8) when unsure\n"
+                        "4. Consider if extreme values (9, 1/9) are really justified\n"
+                        "5. Double-check reciprocal relationships\n\n"
+                        "Adjust your comparisons and try submitting again."
+                    )
+                    return
                 
             # Submit to database
             success = self.db_manager.submit_ahp_comparison(
@@ -730,7 +951,7 @@ class UserInterface(QMainWindow):
         <li>Select an active decision making session from the dropdown</li>
         <li>Provide your criteria comparisons using both methods:</li>
         <ul>
-        <li><b>AHP:</b> Compare pairs of criteria using the 1-9 scale</li>
+        <li><b>AHP:</b> Select importance levels from dropdown menus for criterion pairs</li>
         <li><b>TOPSIS:</b> Assign importance weights to each criterion</li>
         </ul>
         <li>Submit your inputs - they will be combined with other users' inputs</li>
@@ -748,11 +969,22 @@ class UserInterface(QMainWindow):
         <li><b>1/3, 1/5, etc.:</b> Reverse importance</li>
         </ul>
         
+        <h4>Consistency Guidelines:</h4>
+        <ul>
+        <li><b>Consistency Ratio (CR) < 0.1:</b> Acceptable consistency</li>
+        <li><b>CR ≥ 0.1:</b> Poor consistency - revise your comparisons</li>
+        <li><b>Logical consistency:</b> If A > B and B > C, then A should be > C</li>
+        <li><b>Use "Check Consistency" button</b> to test before submitting</li>
+        </ul>
+        
         <h4>Tips:</h4>
         <ul>
-        <li>Use "Auto-fill Reciprocals" to maintain consistency in AHP</li>
+        <li>Dropdown menus automatically update reciprocal values in AHP</li>
+        <li>Use "Check Consistency" to verify your comparisons before submitting</li>
+        <li>Consistency Ratio (CR) should be less than 0.1 for acceptable consistency</li>
         <li>TOPSIS weights are automatically normalized</li>
         <li>You can update your submissions until the admin runs the analysis</li>
+        <li>All Saaty scale values (1/9 through 9) are available in dropdowns</li>
         </ul>
         """
         

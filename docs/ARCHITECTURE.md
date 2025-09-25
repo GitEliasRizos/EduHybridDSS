@@ -17,27 +17,30 @@ who want to understand, maintain, or extend the application.
 ## 🏗 Architectural Overview
 
 The PyMOO GUI follows a **Model-View-Controller (MVC)** pattern with additional
-separation of concerns for optimization-specific functionality. The architecture
-is designed for:
+separation of concerns for optimization-specific functionality and **multi-user group decision making**. The architecture is designed for:
 
 - **Modularity**: Each component has clear responsibilities
-- **Extensibility**: Easy addition of new algorithms, problems, or UI features
+- **Extensibility**: Easy addition of new algorithms, problems, or UI features  
 - **Maintainability**: Clear separation between GUI and optimization logic
 - **Testability**: Components can be tested independently
 - **Performance**: Multi-threaded execution for responsive user experience
+- **🆕 Scalability**: Multi-user group decision system with database persistence
+- **🆕 Security**: Role-based authentication and session management
 
 ### High-Level Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Presentation  │    │    Business     │    │      Data       │
-│     Layer       │    │     Logic       │    │     Layer       │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • MainWindow    │◄──►│ • ProblemMgr    │◄──►│ • Configuration │
-│ • ProblemTab    │    │ • AlgorithmMgr  │    │ • Results       │
-│ • AlgorithmTab  │    │ • Optimizer     │    │ • Templates     │
-│ • ResultsTab    │    │ • Validators    │    │ • Export Data   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Presentation  │    │    Business     │    │   Decision      │    │      Data       │
+│     Layer       │    │     Logic       │    │    Layer        │    │     Layer       │
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ • MainWindow    │◄──►│ • ProblemMgr    │◄──►│ • AHPAnalyzer   │◄──►│ • Configuration │
+│ • ProblemTab    │    │ • AlgorithmMgr  │    │ • TOPSISAnalyzer│    │ • Results       │
+│ • AlgorithmTab  │    │ • Optimizer     │    │ • GroupDecision │    │ • User Database │
+│ • ResultsTab    │    │ • Validators    │    │ • SessionMgr    │    │ • Templates     │
+│ • 🆕 MCDATab    │    │ • 🆕 UserMgr    │    │ • 🆕 AuthSystem │    │ • 🆕 Sessions   │
+│ • 🆕 UserUI     │    │                 │    │                 │    │ • Export Data   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## 🎯 Design Patterns
@@ -110,11 +113,28 @@ is designed for:
 ### 6. MCDA Integration
 
 #### MCDATab
-- **Purpose**: Multi-criteria decision analysis interface for optimization results
+- **Purpose**: Individual multi-criteria decision analysis interface for optimization results
 - **Responsibilities**:
   - Criteria definition and weight configuration
-  - AHP (Analytic Hierarchy Process) pairwise comparison interface
+  - AHP (Analytic Hierarchy Process) pairwise comparison interface with consistency checking
   - TOPSIS analysis configuration and execution
+  - Results visualization and ranking display
+
+#### 🆕 GroupDecisionTab
+- **Purpose**: Administrative interface for group decision making sessions
+- **Responsibilities**:
+  - Session creation and management
+  - User coordination and monitoring
+  - Group analysis execution (AHP/TOPSIS aggregation)
+  - Consensus results visualization and export
+
+#### 🆕 UserInterface  
+- **Purpose**: Simplified interface for regular users to provide decision input
+- **Responsibilities**:
+  - Session selection and context display
+  - AHP pairwise comparison input with consistency validation
+  - TOPSIS weight specification
+  - Submission tracking and status updates
   - MCDA results visualization and interpretation
 - **Key Features**:
   - Dropdown-based Saaty scale for AHP comparisons
@@ -123,41 +143,55 @@ is designed for:
   - Interactive results tables with sorting and ranking
 
 #### MCDAManager (in `core/mcda.py`)
-- **Purpose**: Multi-criteria decision analysis coordinator
+- **Purpose**: Individual and group multi-criteria decision analysis coordinator
 - **Responsibilities**:
   - Integrate optimization results with MCDA methods
-  - Coordinate AHP and TOPSIS analysis workflows
+  - Coordinate individual AHP and TOPSIS analysis workflows
+  - 🆕 Manage group decision aggregation processes
   - Process PyMOO results into MCDA-compatible format
-  - Manage criteria definitions and user preferences
 - **Key Features**:
   - Seamless PyMOO integration for result processing
-  - Support for both AHP and TOPSIS methodologies
-  - Comprehensive mathematical documentation with APA references
-  - Professional-grade implementations with academic rigor
+  - Support for both individual and group MCDA methodologies
+  - Mathematical rigor with comprehensive academic documentation
+  - 🆕 Group aggregation using geometric and arithmetic means
 
 #### AHPAnalyzer
-- **Purpose**: Analytic Hierarchy Process implementation
+- **Purpose**: Individual and group Analytic Hierarchy Process implementation
 - **Responsibilities**:
-  - Process pairwise comparison matrices using Saaty's 1-9 scale
+  - Process individual pairwise comparison matrices using Saaty's 1-9 scale
   - Calculate criteria weights using eigenvalue decomposition
-  - Compute and validate consistency ratios
-  - Handle complex eigenvalue scenarios with mathematical rigor
+  - 🆕 Validate consistency with real-time feedback before submission
+  - 🆕 Aggregate multiple user matrices using geometric mean
 - **Mathematical Foundation**:
   - Principal eigenvalue-based weight calculation following Saaty (1980)
   - Consistency ratio validation using Random Index methodology
-  - Robust handling of complex eigenvalues from numerical precision
-  - Comprehensive documentation with academic references
+  - 🆕 Pre-submission consistency checking prevents invalid data entry
+  - Robust handling of complex eigenvalues with educational user feedback
 
 #### TOPSISAnalyzer  
-- **Purpose**: Technique for Order Preference by Similarity to Ideal Solution
+- **Purpose**: Individual and group TOPSIS implementation
 - **Responsibilities**:
-  - Implement vector and linear normalization methods
+  - Implement vector and linear normalization methods for individual analysis
   - Calculate positive and negative ideal solutions
-  - Compute relative closeness coefficients for ranking
-  - Handle both minimization and maximization criteria
+  - 🆕 Aggregate multiple user weight vectors using arithmetic mean
+  - Handle both minimization and maximization criteria in group context
 - **Mathematical Foundation**:
   - Multiple normalization approaches (Hwang & Yoon, 1981)
   - Euclidean distance-based similarity measurements
+  - 🆕 Group weight aggregation maintaining normalization properties
+
+#### 🆕 UserDatabaseManager (in `core/user_manager.py`)
+- **Purpose**: Multi-user system database management and authentication
+- **Responsibilities**:
+  - User registration, authentication, and role management
+  - Session creation and management for group decisions
+  - AHP/TOPSIS submission storage and retrieval
+  - Group analysis execution and result persistence
+- **Key Features**:
+  - SQLite database with automated schema migration
+  - Secure password hashing and session management
+  - Role-based access control (admin/user)
+  - Comprehensive group decision data model
   - Robust handling of mixed objective directions
   - Professional implementation with comprehensive documentation
 
@@ -384,6 +418,65 @@ The architecture provides several extension points for future enhancements:
 ### 8. Mathematical Extensions
 - **Interface**: Add advanced mathematical operators and validations
 - **Integration**: Extend eigenvalue handling, add sensitivity analysis
+
+---
+
+## 📊 Current System Status
+
+### ✅ Production-Ready Components
+
+#### Core Optimization System
+- **Complete Implementation**: All 5 algorithms (NSGA-II, NSGA-III, SPEA2, MOEA/D, RVEA)
+- **Full Parameter Control**: Crossover, mutation, selection operators
+- **Mixed Variable Support**: Real, Integer, Binary variables with constraints
+- **Results System**: Comprehensive visualization and export capabilities
+
+#### Individual MCDA System
+- **AHP Implementation**: Complete eigenvalue-based weight calculation
+- **TOPSIS Implementation**: Full distance-based ranking system
+- **Professional UI**: Dropdown-based Saaty scale, real-time validation
+- **Mathematical Rigor**: Academic-quality implementation with proper references
+
+#### 🆕 Group Decision System
+- **Multi-User Authentication**: Secure role-based access (admin/user)
+- **Session Management**: Custom dialog with rich problem descriptions
+- **Consistency Validation**: Pre-submission AHP consistency checking
+- **Group Aggregation**: Geometric mean (AHP) and arithmetic mean (TOPSIS)
+- **Database Integration**: SQLite with automated schema migration
+
+### 🔄 Enhanced Features (Recently Updated)
+
+#### Consistency Validation System
+- **Pre-submission Checking**: Prevents inconsistent AHP data from database entry
+- **Educational Feedback**: Real-time guidance helps users improve comparisons
+- **Mathematical Validation**: Uses Saaty's CR < 0.1 threshold with Random Index
+- **User Experience**: Clear error messages with specific improvement suggestions
+
+#### Session Creation Enhancement
+- **Rich Problem Context**: Multi-line description replaces simple name input
+- **Administrative Tools**: Comprehensive dialog for session setup
+- **Validation System**: Input validation ensures meaningful session information
+- **Database Migration**: Seamless upgrade from problem_name to problem_description
+
+### 🚧 Areas for Future Enhancement
+
+#### Advanced Group Features
+- **Fuzzy MCDA Methods**: Theoretical framework documented, implementation needed
+- **Advanced Aggregation**: Alternative methods beyond geometric/arithmetic means
+- **Real-time Collaboration**: Live updates when users submit comparisons
+- **Sensitivity Analysis**: Mathematical framework exists, UI integration needed
+
+#### System Infrastructure
+- **Cloud Deployment**: Currently local SQLite, could expand to cloud databases
+- **REST API**: No external API currently, potential for system integration
+- **Advanced Security**: Basic password hashing, could implement stronger methods
+- **Comprehensive Audit Trail**: Basic logging, could expand for full user action tracking
+
+#### Performance & Scalability
+- **Large Group Handling**: Current system works well for typical group sizes
+- **Parallel Processing**: Framework documented for large-scale analysis
+- **Memory Optimization**: Current implementation efficient, could optimize for very large problems
+- **Real-time Updates**: Session management exists, could add live collaboration features
 - **Features**: Uncertainty analysis, robustness testing, what-if scenarios
 
 ## 📊 Performance Considerations

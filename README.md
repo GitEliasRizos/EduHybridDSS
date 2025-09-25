@@ -33,21 +33,21 @@ A comprehensive graphical user interface for PyMOO (Multi-objective Optimization
 - **Statistical Analysis**: Built-in metrics and performance indicators
 
 ### 🎖️ **Multi-Criteria Decision Analysis (MCDA)**
-**NEW**: Advanced decision support for Pareto-optimal solution ranking and selection.
+**ENHANCED**: Professional-grade decision support with group collaboration capabilities.
 
-#### **Analytic Hierarchy Process (AHP)**
-- **Pairwise Comparisons**: Intuitive dropdown interface using Saaty's 1-9 scale
-- **Weight Calculation**: Principal eigenvalue method following Saaty (1980) methodology
-- **Consistency Validation**: Real-time consistency ratio monitoring with Random Index
-- **Mathematical Rigor**: Robust handling of complex eigenvalues and numerical precision issues
-- **Professional Implementation**: Comprehensive documentation with APA-style academic references
+#### **Individual MCDA Methods**
+- **Analytic Hierarchy Process (AHP)**: Pairwise comparisons with Saaty's 1-9 scale and eigenvalue method
+- **TOPSIS Analysis**: Distance-based ranking with ideal solutions and mixed objectives
+- **Consistency Validation**: Real-time CR checking with educational feedback
+- **Mathematical Rigor**: Robust eigenvalue handling and numerical precision
 
-#### **TOPSIS Analysis**
-- **Ideal Solution Ranking**: Distance-based ranking relative to positive and negative ideal solutions
-- **Multiple Normalization**: Vector and linear normalization methods (Hwang & Yoon, 1981)
-- **Mixed Objectives**: Seamless handling of minimize/maximize objective directions
-- **Closeness Coefficients**: Relative closeness calculations for solution ranking
-- **Comprehensive Results**: Detailed analysis with ranking tables and score interpretation
+#### **🆕 Group Decision Making System**
+- **Multi-User Authentication**: Secure login system with admin/user role management
+- **Collaborative Sessions**: Administrators create group decision sessions with rich problem descriptions
+- **AHP Consistency Checking**: Pre-submission validation prevents inconsistent data entry
+- **Group Aggregation**: Geometric mean for AHP matrices, arithmetic mean for TOPSIS weights
+- **Consensus Analysis**: Complete group decision pipeline with ranking aggregation
+- **Session Management**: Custom dialog for detailed problem context and user guidance
 
 #### **Integration Features**
 - **Seamless PyMOO Integration**: Direct analysis of optimization results
@@ -120,14 +120,37 @@ A comprehensive graphical user interface for PyMOO (Multi-objective Optimization
    - Visualize Pareto front and convergence
    - Export optimization results
 
-4. **Apply Decision Analysis** (MCDA Tab) ⭐ **NEW**
-   - **AHP Method**: Define criteria importance using pairwise comparisons
+4. **Apply Decision Analysis** (MCDA Tab)
+   - **Individual AHP**: Define criteria importance using pairwise comparisons
      - Use intuitive dropdown with Saaty scale (1/9 to 9)
-     - Monitor consistency ratio in real-time
+     - Monitor consistency ratio in real-time with validation
      - Generate criteria weights automatically
-   - **TOPSIS Analysis**: Rank solutions based on ideal solution similarity
+   - **Individual TOPSIS**: Rank solutions based on ideal solution similarity
      - Apply calculated weights to optimization results
      - View ranked solutions with closeness coefficients
+
+### 🆕 Group Decision Workflow (Admin)
+
+1. **Complete Individual Optimization** (As above)
+   - Run optimization to generate Pareto-optimal solutions
+   - Review results and validate solution quality
+
+2. **Create Collaborative Session**
+   - Accept prompt to create group decision session after optimization
+   - Use custom dialog to provide detailed problem description
+   - System automatically creates session with optimization results
+
+3. **Coordinate Group Input**
+   - Share user credentials with decision participants
+   - Users log in with simple interface focused on comparisons
+   - Each user provides either AHP pairwise comparisons or TOPSIS weights
+   - Built-in consistency checking prevents invalid submissions
+
+4. **Analyze Group Consensus**
+   - Access "Group Decisions" menu from main application
+   - Select target session and analysis method
+   - Run AHP aggregation (geometric mean), TOPSIS aggregation (arithmetic mean), or complete consensus
+   - Export comprehensive group decision reports with individual and aggregate results
      - Export comprehensive MCDA results
 
 ### Example MCDA Workflow
@@ -177,18 +200,27 @@ A comprehensive graphical user interface for PyMOO (Multi-objective Optimization
 
 ## Usage
 
-### Basic Usage
+### Individual Usage
 Run the main application:
 ```bash
 python main.py
 ```
 
-### Advanced Workflow
-1. **Problem Setup**: Define your optimization problem
-2. **Algorithm Selection**: Choose and configure optimization algorithm
-3. **Run Optimization**: Execute optimization and view Pareto front
-4. **MCDA Analysis**: Apply AHP or TOPSIS to rank solutions based on preferences
-5. **Export Results**: Save optimization results and decision analysis
+**Login**: Use default admin credentials (shown on startup) or create new user account.
+
+### Individual Analysis Workflow
+1. **Problem Setup**: Define your optimization problem with variables, objectives, constraints
+2. **Algorithm Selection**: Choose and configure optimization algorithm with appropriate operators
+3. **Run Optimization**: Execute optimization and view Pareto front with real-time progress
+4. **MCDA Analysis**: Apply AHP or TOPSIS to rank solutions based on your preferences
+5. **Export Results**: Save optimization results and decision analysis for documentation
+
+### 🆕 Group Decision Workflow
+1. **Admin Setup**: Complete individual optimization workflow above
+2. **Session Creation**: Accept group session creation prompt with detailed problem description
+3. **User Coordination**: Share credentials with decision participants for collaborative input
+4. **Group Analysis**: Aggregate user inputs using mathematical methods (geometric/arithmetic means)
+5. **Consensus Results**: Export comprehensive group decision reports with rankings and analysis
 
 ### Example Configurations
 The `examples/` directory contains ready-to-use problem configurations:
@@ -203,27 +235,42 @@ The `examples/` directory contains ready-to-use problem configurations:
 
 ## 🎯 **Multi-Criteria Decision Analysis (MCDA)**
 
-**NEW FEATURE**: The application now includes comprehensive MCDA capabilities to help you select the best solution from Pareto optimal results.
+**ENHANCED FEATURE**: Comprehensive individual and group MCDA capabilities for collaborative decision making.
 
-### **AHP (Analytic Hierarchy Process)**
-- **Interactive pairwise comparisons** using 1-9 scale
-- **Automatic consistency checking** (CR < 0.1)
-- **Criteria weight calculation** via eigenvalue method
-- **Best for**: When you can express preferences as pairwise comparisons
+### **Individual MCDA Methods**
 
-### **TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution)**  
-- **Configurable criteria weights** (0-1 scale with normalization)
-- **Ideal and anti-ideal solution identification**
-- **Distance-based ranking** using Euclidean distance
-- **Best for**: When you have specific weight preferences for each criterion
+#### **AHP (Analytic Hierarchy Process)**
+- **Interactive pairwise comparisons** using Saaty's 1-9 scale with dropdown interface
+- **Real-time consistency checking** (CR < 0.1) with educational feedback
+- **Automatic weight calculation** via eigenvalue method following Saaty (1980)
+- **Best for**: When decision makers can express relative importance between criteria pairs
 
-### **MCDA Workflow**
-1. **Complete Optimization**: Run any PyMOO algorithm to get Pareto solutions
-2. **Access MCDA Tab**: Automatically enabled after optimization completion
-3. **Choose Method**: Select AHP (pairwise) or TOPSIS (weights)
-4. **Configure Preferences**: Set comparisons (AHP) or weights (TOPSIS)
-5. **Analyze Results**: View rankings, scores, and detailed analysis
-6. **Export Rankings**: Save to CSV or JSON for documentation
+#### **TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution)**  
+- **Configurable criteria weights** with normalization and validation
+- **Multiple normalization methods** (vector and linear normalization)
+- **Distance-based ranking** using positive and negative ideal solutions
+- **Best for**: When decision makers have specific weight preferences for each criterion
+
+### **🆕 Group Decision System**
+
+#### **Multi-User Architecture**
+- **Secure Authentication**: Role-based access (admin/user) with password protection
+- **Session Management**: Administrators create collaborative decision sessions
+- **User Interface**: Simplified interface for regular users focused on comparisons
+- **Consistency Validation**: Pre-submission checking prevents invalid data entry
+
+#### **Group Aggregation Methods**
+- **AHP Aggregation**: Geometric mean of pairwise comparison matrices (Saaty, 1989)
+- **TOPSIS Aggregation**: Arithmetic mean of individual weight vectors
+- **Consensus Analysis**: Complete group decision pipeline with ranking synthesis
+- **Mathematical Rigor**: Maintains reciprocal properties and normalization constraints
+
+### **Complete MCDA Workflow**
+1. **Individual Analysis**: Run optimization → apply personal MCDA preferences
+2. **Group Session Creation**: Admin creates collaborative session with problem context
+3. **Distributed Input**: Multiple users provide AHP comparisons or TOPSIS weights
+4. **Group Aggregation**: System combines inputs using appropriate mathematical methods
+5. **Consensus Results**: Export comprehensive reports with individual and group rankings
 
 ### **MCDA Demo**
 Test the MCDA integration:

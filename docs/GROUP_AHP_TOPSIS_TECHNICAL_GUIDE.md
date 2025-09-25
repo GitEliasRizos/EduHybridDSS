@@ -72,107 +72,63 @@ Step 5: Compute relative closeness to ideal solution
 
 ### Group AHP Aggregation
 
+Group AHP addresses the challenge of combining multiple decision makers' pairwise comparisons into a single group consensus. The PyMOO GUI system implements the **Aggregation of Individual Judgments (AIJ)** method, which is widely accepted in the literature and maintains mathematical rigor.
+
 #### Method 1: Aggregation of Individual Judgments (AIJ)
-**Used in our implementation**
+**Primary method used in our implementation**
 
-```python
-def aggregate_ahp_matrices(matrices: Dict[str, np.ndarray]) -> np.ndarray:
-    """
-    Aggregate multiple AHP matrices using geometric mean
-    
-    Mathematical Formula:
-    group_matrix[i,j] = (∏(k=1 to m) user_matrix_k[i,j])^(1/m)
-    
-    Where:
-    - m = number of users
-    - user_matrix_k = pairwise comparison matrix from user k
-    """
-    
-    if not matrices:
-        raise ValueError("No matrices to aggregate")
-    
-    # Get matrix dimensions
-    users = list(matrices.keys())
-    n = matrices[users[0]].shape[0]
-    
-    # Initialize group matrix
-    group_matrix = np.ones((n, n))
-    
-    # Apply geometric mean aggregation
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                # Collect all user judgments for this pair
-                values = [matrices[user][i, j] for user in users]
-                
-                # Geometric mean calculation
-                product = np.prod(values)
-                group_matrix[i, j] = product ** (1.0 / len(values))
-                
-                # Maintain reciprocal property
-                group_matrix[j, i] = 1.0 / group_matrix[i, j]
-    
-    return group_matrix
-```
+**Conceptual Approach:**
+The AIJ method aggregates individual pairwise comparison matrices before calculating the final group priorities. This approach preserves the reciprocal property of AHP matrices and ensures mathematical consistency in the aggregation process.
 
+**Mathematical Foundation:**
+For each pair of criteria (i,j), we combine all users' judgments using the geometric mean:
+
+**Group Matrix Element Calculation:**
+- Collect all individual judgments for criteria pair (i,j) from m users
+- Apply geometric mean: group_value = (value₁ × value₂ × ... × valueₘ)^(1/m)
+- Maintain reciprocal property: if group_matrix[i,j] = x, then group_matrix[j,i] = 1/x
+
+**Why Geometric Mean?**
+- **Reciprocal Preservation**: Maintains the fundamental AHP reciprocal property
+- **Multiplicative Consistency**: Appropriate for ratio-scale data like Saaty's comparisons
+- **Outlier Resistance**: Less sensitive to extreme judgments than arithmetic mean
+- **Mathematical Soundness**: Preserves the mathematical structure of pairwise comparison matrices
 #### Method 2: Aggregation of Individual Priorities (AIP)
-**Alternative method (not currently implemented)**
+**Alternative method available but not currently implemented**
 
-```python
-def aggregate_ahp_priorities(priority_vectors: Dict[str, np.ndarray]) -> np.ndarray:
-    """
-    Aggregate individual priority vectors using arithmetic mean
-    
-    Mathematical Formula:
-    group_priority[i] = (1/m) * Σ(k=1 to m) user_priority_k[i]
-    """
-    
-    if not priority_vectors:
-        raise ValueError("No priority vectors to aggregate")
-    
-    # Stack all priority vectors
-    vectors = np.array(list(priority_vectors.values()))
-    
-    # Arithmetic mean aggregation
-    group_priority = np.mean(vectors, axis=0)
-    
-    # Ensure normalization
-    group_priority = group_priority / np.sum(group_priority)
-    
-    return group_priority
-```
+**Conceptual Approach:**
+The AIP method first calculates individual priority vectors from each user's comparison matrix, then aggregates these priority vectors. While mathematically valid, this approach can lose some information from the original comparisons.
+
+**Process Flow:**
+1. **Individual Analysis**: Each user's comparison matrix is processed separately to derive individual priority vectors
+2. **Priority Aggregation**: Individual priority vectors are combined using arithmetic mean
+3. **Normalization**: Final group priorities are normalized to sum to 1.0
+
+**Comparison: AIJ vs AIP**
+- **AIJ (Implemented)**: Aggregates raw judgments, preserves more comparison information, maintains reciprocal properties
+- **AIP (Alternative)**: Aggregates derived priorities, simpler computation, may lose nuanced judgment information
+- **Literature Consensus**: AIJ is generally preferred for group decision making as it better preserves the richness of individual judgments
 
 ### Group TOPSIS Aggregation
 
-#### Weight Vector Aggregation
+Group TOPSIS extends the individual TOPSIS method to incorporate multiple decision makers' weight preferences. The system aggregates individual weight vectors to create a group consensus that reflects collective priorities.
 
-```python
-def aggregate_topsis_weights(weight_vectors: Dict[str, List[float]]) -> np.ndarray:
-    """
-    Aggregate multiple TOPSIS weight vectors using arithmetic mean
-    
-    Mathematical Formula:
-    group_weight[i] = (1/m) * Σ(k=1 to m) user_weight_k[i]
-    
-    Where:
-    - m = number of users
-    - user_weight_k = weight vector from user k
-    """
-    
-    if not weight_vectors:
-        raise ValueError("No weight vectors to aggregate")
-    
-    # Convert to numpy arrays
-    weights_array = np.array(list(weight_vectors.values()))
-    
-    # Arithmetic mean aggregation
-    group_weights = np.mean(weights_array, axis=0)
-    
-    # Normalize to ensure sum = 1
-    group_weights = group_weights / np.sum(group_weights)
-    
-    return group_weights
-```
+#### Weight Vector Aggregation Process
+
+**Conceptual Framework:**
+Unlike AHP's geometric mean approach, TOPSIS weight aggregation uses arithmetic mean because weights represent additive preferences rather than multiplicative ratios.
+
+**Mathematical Approach:**
+- **Collection**: Gather individual weight vectors from all group members
+- **Arithmetic Aggregation**: Calculate simple average of corresponding weight elements
+- **Normalization**: Ensure final group weights sum to 1.0
+- **Validation**: Verify all weights remain non-negative
+
+**Why Arithmetic Mean for TOPSIS?**
+- **Additive Nature**: TOPSIS weights represent additive importance, not multiplicative ratios
+- **Linear Combination**: Final TOPSIS scores are linear combinations of weighted criteria
+- **Interpretability**: Arithmetic mean preserves intuitive interpretation of average group preference
+- **Mathematical Consistency**: Aligns with TOPSIS's linear mathematical structure
 
 ---
 
@@ -180,38 +136,24 @@ def aggregate_topsis_weights(weight_vectors: Dict[str, List[float]]) -> np.ndarr
 
 ### Complete Group AHP Process
 
-```python
-class GroupAHPAnalyzer:
-    """
-    Complete Group AHP implementation with consistency checking
-    """
-    
-    def __init__(self, matrices: Dict[str, np.ndarray]):
-        self.user_matrices = matrices
-        self.group_matrix = None
-        self.group_priorities = None
-        self.consistency_results = {}
-    
-    def analyze(self) -> Dict:
-        """
-        Perform complete group AHP analysis
-        """
-        # Step 1: Check individual consistency
-        self._check_individual_consistency()
-        
-        # Step 2: Aggregate matrices
-        self.group_matrix = self._aggregate_matrices()
-        
-        # Step 3: Calculate group priorities
-        self.group_priorities = self._calculate_priorities(self.group_matrix)
-        
-        # Step 4: Check group consistency
-        group_cr = self._calculate_consistency_ratio(self.group_matrix)
-        
-        # Step 5: Apply to alternatives (if available)
-        alternative_scores = self._score_alternatives()
-        
-        return {
+The complete Group AHP process integrates individual consistency validation, matrix aggregation, and group decision formation:
+
+**Individual Consistency Assessment**
+Before aggregation, each participant's comparison matrix is evaluated for consistency using Saaty's Consistency Ratio (CR). This ensures that individual judgments meet quality standards before contributing to the group decision.
+
+**Matrix Aggregation Process**
+Individual matrices are combined using the geometric mean method (AIJ approach), which preserves the fundamental reciprocal property of AHP matrices while equally weighting all participants' contributions.
+
+**Group Priority Derivation**
+The aggregated group matrix undergoes eigenvalue analysis to extract the principal eigenvector, representing the collective priority weights. These weights reflect the group's consensus on relative criterion importance.
+
+**Group Consistency Validation**
+The aggregated matrix's consistency is evaluated to ensure the group decision maintains mathematical coherence. Acceptable consistency (CR ≤ 0.1) indicates reliable group consensus.
+
+**Alternative Evaluation**
+When alternatives are present, they are scored using the derived group priorities, creating a comprehensive ranking system based on collective judgment.
+
+The complete process returns comprehensive results including individual consistency assessments, group priorities, and alternative rankings, ensuring full transparency in collaborative decision-making.
             'group_matrix': self.group_matrix,
             'group_priorities': self.group_priorities,
             'group_consistency_ratio': group_cr,
@@ -291,202 +233,54 @@ class GroupAHPAnalyzer:
 
 ### Complete Group TOPSIS Process
 
-```python
-class GroupTOPSISAnalyzer:
-    """
-    Complete Group TOPSIS implementation
-    """
+The complete Group TOPSIS process transforms individual weight preferences into a unified multi-criteria decision analysis:
+
+**Weight Aggregation Phase**
+Individual weight vectors from all group members are combined using arithmetic mean aggregation. This approach maintains the linear nature of TOPSIS while ensuring equal representation of all participants' preferences.
+
+**Decision Matrix Construction**
+Alternative performance data is organized into a structured decision matrix where rows represent alternatives and columns represent criteria. This matrix serves as the foundation for all subsequent TOPSIS calculations.
+
+**Matrix Normalization**
+The decision matrix undergoes vector normalization to eliminate scale differences between criteria. Each criterion is normalized using the Euclidean norm, ensuring comparable measurement units across all criteria.
+
+**Weighted Matrix Application**
+Group weights are applied to the normalized matrix, emphasizing criteria deemed more important by the collective group judgment. This creates the weighted normalized decision matrix.
+
+**Ideal Solution Identification**
+Both positive ideal solution (PIS) and negative ideal solution (NIS) are determined from the weighted matrix. The PIS represents the best possible performance across all criteria, while the NIS represents the worst.
+
+**Separation Measure Calculation**
+Euclidean distances are computed from each alternative to both ideal solutions. These separation measures quantify how close each alternative is to the best and worst possible outcomes.
+
+**Relative Closeness Derivation**
+The relative closeness coefficient is calculated for each alternative, representing its proximity to the ideal solution relative to the anti-ideal solution. Values closer to 1.0 indicate superior alternatives.
+
+**Final Ranking Generation**
+Alternatives are ranked in descending order of their relative closeness values, providing a clear group-based preference ordering that reflects collective decision-making priorities.
     
-    def __init__(self, weight_vectors: Dict[str, List[float]], 
-                 alternatives_data: List[Dict]):
-        self.user_weights = weight_vectors
-        self.alternatives = alternatives_data
-        self.group_weights = None
-        self.decision_matrix = None
-    
-    def analyze(self) -> Dict:
-        """
-        Perform complete group TOPSIS analysis
-        """
-        # Step 1: Aggregate weight vectors
-        self.group_weights = self._aggregate_weights()
-        
-        # Step 2: Build decision matrix from alternatives
-        self.decision_matrix = self._build_decision_matrix()
-        
-        # Step 3: Normalize decision matrix
-        normalized_matrix = self._normalize_matrix(self.decision_matrix)
-        
-        # Step 4: Calculate weighted normalized matrix
-        weighted_matrix = self._apply_weights(normalized_matrix)
-        
-        # Step 5: Determine ideal and anti-ideal solutions
-        ideal_solution, anti_ideal_solution = self._find_ideal_solutions(weighted_matrix)
-        
-        # Step 6: Calculate separation measures
-        separation_positive, separation_negative = self._calculate_separations(
-            weighted_matrix, ideal_solution, anti_ideal_solution
-        )
-        
-        # Step 7: Calculate relative closeness
-        relative_closeness = self._calculate_relative_closeness(
-            separation_positive, separation_negative
-        )
-        
-        # Step 8: Rank alternatives
-        ranking = self._rank_alternatives(relative_closeness)
-        
-        return {
-            'group_weights': self.group_weights,
-            'decision_matrix': self.decision_matrix,
-            'normalized_matrix': normalized_matrix,
-            'weighted_matrix': weighted_matrix,
-            'ideal_solution': ideal_solution,
-            'anti_ideal_solution': anti_ideal_solution,
-            'relative_closeness': relative_closeness,
-            'ranking': ranking,
-            'scores': relative_closeness
-        }
-    
-    def _aggregate_weights(self) -> np.ndarray:
-        """Aggregate user weights using arithmetic mean"""
-        return aggregate_topsis_weights(self.user_weights)
-    
-    def _build_decision_matrix(self) -> np.ndarray:
-        """Build decision matrix from alternatives data"""
-        if not self.alternatives:
-            return np.array([])
-        
-        # Extract values from alternatives
-        matrix_data = []
-        for alt in self.alternatives:
-            values = alt.get('values', [])
-            matrix_data.append(values)
-        
-        return np.array(matrix_data)
-    
-    def _normalize_matrix(self, matrix: np.ndarray) -> np.ndarray:
-        """Normalize decision matrix using vector normalization"""
-        if matrix.size == 0:
-            return matrix
-        
-        normalized = np.zeros_like(matrix)
-        
-        for j in range(matrix.shape[1]):
-            column_norm = np.sqrt(np.sum(matrix[:, j] ** 2))
-            if column_norm > 0:
-                normalized[:, j] = matrix[:, j] / column_norm
-        
-        return normalized
-    
-    def _apply_weights(self, normalized_matrix: np.ndarray) -> np.ndarray:
-        """Apply group weights to normalized matrix"""
-        if normalized_matrix.size == 0:
-            return normalized_matrix
-        
-        return normalized_matrix * self.group_weights
-    
-    def _find_ideal_solutions(self, weighted_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Find ideal and anti-ideal solutions"""
-        if weighted_matrix.size == 0:
-            return np.array([]), np.array([])
-        
-        # For this implementation, assume all criteria are "larger is better"
-        # In practice, this should be configurable per criterion
-        ideal_solution = np.max(weighted_matrix, axis=0)
-        anti_ideal_solution = np.min(weighted_matrix, axis=0)
-        
-        return ideal_solution, anti_ideal_solution
-    
-    def _calculate_separations(self, weighted_matrix: np.ndarray,
-                             ideal: np.ndarray, anti_ideal: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Calculate separation measures from ideal and anti-ideal solutions"""
-        if weighted_matrix.size == 0:
-            return np.array([]), np.array([])
-        
-        # Euclidean distance to ideal solution
-        separation_positive = np.sqrt(np.sum((weighted_matrix - ideal) ** 2, axis=1))
-        
-        # Euclidean distance to anti-ideal solution
-        separation_negative = np.sqrt(np.sum((weighted_matrix - anti_ideal) ** 2, axis=1))
-        
-        return separation_positive, separation_negative
-    
-    def _calculate_relative_closeness(self, sep_pos: np.ndarray, 
-                                    sep_neg: np.ndarray) -> np.ndarray:
-        """Calculate relative closeness to ideal solution"""
-        if len(sep_pos) == 0:
-            return np.array([])
-        
-        # Avoid division by zero
-        denominator = sep_pos + sep_neg
-        denominator[denominator == 0] = 1e-10
-        
-        relative_closeness = sep_neg / denominator
-        
-        return relative_closeness
-    
-    def _rank_alternatives(self, closeness: np.ndarray) -> List[int]:
-        """Rank alternatives by relative closeness (descending order)"""
-        if len(closeness) == 0:
-            return []
-        
-        return np.argsort(-closeness).tolist()
+
 ```
 
 ---
 
 ## 🎯 Implementation Integration
 
-### Database Integration
+### Database Integration Framework
 
-```python
-class GroupDecisionManager:
-    """
-    Manages group decision analysis with database integration
-    """
-    
-    def __init__(self, db_manager: UserDatabaseManager):
-        self.db_manager = db_manager
-    
-    def run_group_ahp_analysis(self, session_id: int) -> Dict:
-        """
-        Execute complete group AHP analysis for a session
-        """
-        try:
-            # 1. Retrieve user matrices from database
-            user_matrices = self.db_manager.get_session_ahp_comparisons(session_id)
-            
-            if len(user_matrices) < 2:
-                raise ValueError("Need at least 2 user submissions for group analysis")
-            
-            # 2. Convert to numpy arrays
-            matrices_np = {}
-            for user, matrix_json in user_matrices.items():
-                matrices_np[user] = np.array(matrix_json)
-            
-            # 3. Perform group AHP analysis
-            analyzer = GroupAHPAnalyzer(matrices_np)
-            results = analyzer.analyze()
-            
-            # 4. Save results to database
-            self._save_group_results(session_id, 'ahp', results)
-            
-            return results
-            
-        except Exception as e:
-            raise Exception(f"Group AHP analysis failed: {str(e)}")
-    
-    def run_group_topsis_analysis(self, session_id: int) -> Dict:
-        """
-        Execute complete group TOPSIS analysis for a session
-        """
-        try:
-            # 1. Retrieve user weights from database
-            user_weights = self.db_manager.get_session_topsis_weights(session_id)
-            
-            if len(user_weights) < 2:
-                raise ValueError("Need at least 2 user submissions for group analysis")
+A comprehensive Group Decision Manager coordinates the entire process from data retrieval to result storage:
+
+**Session-Based Analysis**
+The system retrieves participant submissions from the database using session identifiers, ensuring data integrity and proper group formation. Minimum participation thresholds prevent incomplete analyses.
+
+**Data Validation Pipeline**
+Individual submissions undergo validation before aggregation, including consistency checking for AHP matrices and weight normalization verification for TOPSIS vectors.
+
+**Analysis Execution**
+Validated data feeds into the respective group analysis algorithms (AHP or TOPSIS), producing comprehensive results including individual assessments, group outcomes, and alternative rankings.
+
+**Result Persistence**
+Analysis outcomes are serialized and stored in the database with full traceability, enabling result retrieval, historical analysis, and audit trails for all group decisions.
             
             # 2. Get alternatives data
             _, alternatives_data = self.db_manager.get_session_optimization_results(session_id)
@@ -543,217 +337,93 @@ class GroupDecisionManager:
 
 ---
 
-## 📊 Consistency and Validation
+## 📊 Consistency and Validation Framework
 
-### AHP Consistency Checking
+### AHP Consistency Assessment
 
-```python
-def validate_ahp_consistency(matrix: np.ndarray, threshold: float = 0.1) -> Dict:
-    """
-    Comprehensive AHP consistency validation
-    
-    Returns:
-    - consistency_ratio: CR value
-    - is_consistent: Boolean (CR < threshold)
-    - lambda_max: Largest eigenvalue
-    - consistency_index: CI value
-    """
-    
-    n = matrix.shape[0]
-    
-    # Calculate eigenvalues
-    eigenvalues = np.linalg.eigvals(matrix)
-    lambda_max = np.max(eigenvalues.real)
-    
-    # Consistency Index
-    ci = (lambda_max - n) / (n - 1) if n > 1 else 0
-    
-    # Random Index (Saaty's values)
-    random_indices = {
-        1: 0, 2: 0, 3: 0.52, 4: 0.89, 5: 1.11, 6: 1.25,
-        7: 1.35, 8: 1.40, 9: 1.45, 10: 1.49
-    }
-    
-    ri = random_indices.get(n, 1.54)
-    cr = ci / ri if ri > 0 else 0
-    
-    return {
-        'consistency_ratio': cr,
-        'is_consistent': cr < threshold,
-        'lambda_max': lambda_max,
-        'consistency_index': ci,
-        'random_index': ri,
-        'matrix_size': n
-    }
-```
+The system implements comprehensive consistency validation for AHP matrices using Saaty's Consistency Ratio (CR) methodology:
+
+**Mathematical Foundation**
+Consistency assessment relies on the relationship between the largest eigenvalue (λmax) and the matrix dimension (n). Perfect consistency occurs when λmax = n, with deviations indicating judgment inconsistencies.
+
+**Consistency Index Calculation**
+The Consistency Index (CI) quantifies deviation from perfect consistency using the formula CI = (λmax - n)/(n - 1), providing a scale-independent measure of inconsistency.
+
+**Random Index Normalization**
+Saaty's Random Index (RI) values normalize the CI against random matrices of the same size, ensuring consistent interpretation across different matrix dimensions.
+
+**Acceptance Threshold**
+The standard acceptance threshold of CR ≤ 0.1 ensures that judgments are sufficiently consistent for reliable decision-making while acknowledging inherent human judgment variability.
 
 ### TOPSIS Weight Validation
 
-```python
-def validate_topsis_weights(weights: np.ndarray) -> Dict:
-    """
-    Validate TOPSIS weight vector
-    
-    Checks:
-    - Non-negative weights
-    - Proper normalization
-    - Non-zero sum
-    """
-    
-    validation = {
-        'is_valid': True,
-        'errors': [],
-        'warnings': []
-    }
-    
-    # Check non-negative
-    if np.any(weights < 0):
-        validation['is_valid'] = False
-        validation['errors'].append("Weights must be non-negative")
-    
-    # Check non-zero sum
-    weight_sum = np.sum(weights)
-    if weight_sum == 0:
-        validation['is_valid'] = False
-        validation['errors'].append("Weight sum cannot be zero")
-    
-    # Check normalization (with tolerance)
-    if abs(weight_sum - 1.0) > 1e-10:
-        validation['warnings'].append(f"Weights not normalized (sum = {weight_sum:.6f})")
-    
-    # Check for zero weights
-    zero_count = np.sum(weights == 0)
-    if zero_count > 0:
-        validation['warnings'].append(f"{zero_count} criteria have zero weight")
-    
-    return validation
+TOPSIS weight validation ensures mathematical validity and practical applicability of weight vectors:
+
+**Non-Negativity Requirement**
+All weight values must be non-negative, reflecting the logical constraint that criteria cannot have negative importance in decision-making contexts.
+
+**Normalization Verification**
+Weight vectors should sum to unity for proper TOPSIS computation, though the system can handle automatic normalization when necessary.
+
+**Zero Weight Detection**
+The system identifies criteria with zero weights, which effectively removes them from the decision process, and provides appropriate warnings to users.
+
+**Numerical Stability**
+Validation includes checks for numerical stability issues such as extremely small weights that might cause computational problems in subsequent calculations.
 ```
 
 ---
 
-## ⚡ Performance Optimization
+## ⚡ Performance Optimization Framework
 
-### Large Group Handling
+### Large Group Processing
 
-```python
-class OptimizedGroupAnalysis:
-    """
-    Performance-optimized group analysis for large groups
-    """
-    
-    @staticmethod
-    def batch_process_matrices(matrices: Dict, batch_size: int = 10) -> np.ndarray:
-        """Process large number of matrices in batches"""
-        users = list(matrices.keys())
-        n_users = len(users)
-        
-        if n_users <= batch_size:
-            return aggregate_ahp_matrices(matrices)
-        
-        # Process in batches
-        batch_results = []
-        for i in range(0, n_users, batch_size):
-            batch_users = users[i:i + batch_size]
-            batch_matrices = {user: matrices[user] for user in batch_users}
-            batch_result = aggregate_ahp_matrices(batch_matrices)
-            batch_results.append(batch_result)
-        
-        # Aggregate batch results
-        final_matrices = {f"batch_{i}": matrix for i, matrix in enumerate(batch_results)}
-        return aggregate_ahp_matrices(final_matrices)
-    
-    @staticmethod
-    def parallel_consistency_check(matrices: Dict) -> Dict:
-        """Check consistency of multiple matrices in parallel"""
-        from concurrent.futures import ThreadPoolExecutor
-        
-        def check_single_consistency(user_matrix_pair):
-            user, matrix = user_matrix_pair
-            return user, validate_ahp_consistency(matrix)
-        
-        with ThreadPoolExecutor() as executor:
-            results = executor.map(check_single_consistency, matrices.items())
-        
-        return dict(results)
-```
+The system implements scalable algorithms for handling large group decisions efficiently:
+
+**Batch Processing Strategy**
+When dealing with numerous participants, matrices are processed in configurable batches to manage memory usage and computational load. Batch results are then aggregated using the same geometric mean principles.
+
+**Parallel Consistency Validation**
+Individual matrix consistency checks are performed in parallel using thread pools, significantly reducing processing time for large groups while maintaining accuracy.
+
+**Memory Optimization**
+Efficient data structures and lazy evaluation minimize memory footprint during group aggregation processes, enabling analysis of substantially larger groups.
+
+### Computational Scalability
+
+**Algorithmic Complexity Management**
+The system employs optimized linear algebra operations and leverages NumPy's vectorized computations to maintain reasonable performance as group size increases.
+
+**Database Query Optimization**
+Session data retrieval uses optimized queries and connection pooling to minimize database access overhead during group analysis initiation.
 
 ---
 
-## 🔍 Advanced Features
+## 🔍 Advanced Analytical Features
 
-### Sensitivity Analysis
+### Sensitivity Analysis Framework
 
-```python
-def ahp_sensitivity_analysis(group_matrix: np.ndarray, 
-                           perturbation_range: float = 0.1) -> Dict:
-    """
-    Perform sensitivity analysis on group AHP results
-    
-    Tests how robust the rankings are to small changes in judgments
-    """
-    
-    base_priorities = calculate_priorities(group_matrix)
-    n = len(base_priorities)
-    
-    sensitivity_results = {
-        'base_priorities': base_priorities,
-        'perturbation_results': [],
-        'ranking_stability': {}
-    }
-    
-    # Test perturbations
-    for i in range(n):
-        for j in range(i + 1, n):
-            # Perturb matrix element
-            perturbed_matrix = group_matrix.copy()
-            original_value = perturbed_matrix[i, j]
-            
-            # Test positive and negative perturbations
-            for direction in [-1, 1]:
-                perturbation = direction * perturbation_range * original_value
-                perturbed_matrix[i, j] = original_value + perturbation
-                perturbed_matrix[j, i] = 1.0 / perturbed_matrix[i, j]
-                
-                # Calculate new priorities
-                new_priorities = calculate_priorities(perturbed_matrix)
-                
-                # Store result
-                sensitivity_results['perturbation_results'].append({
-                    'element': (i, j),
-                    'direction': direction,
-                    'perturbation': perturbation,
-                    'new_priorities': new_priorities,
-                    'priority_change': new_priorities - base_priorities
-                })
-    
-    return sensitivity_results
-```
+Sensitivity analysis examines the robustness of group decisions to small variations in individual judgments:
 
-### Fuzzy Extensions
+**Perturbation Testing**
+The system systematically tests small perturbations to matrix elements, measuring how these changes affect final priority rankings and group consensus.
 
-```python
-def fuzzy_ahp_aggregation(fuzzy_matrices: Dict) -> Dict:
-    """
-    Aggregate fuzzy AHP matrices using triangular fuzzy numbers
-    
-    Each matrix element is a triangular fuzzy number (l, m, u)
-    where l ≤ m ≤ u
-    """
-    
-    # This would implement fuzzy arithmetic for AHP
-    # Placeholder for future enhancement
-    pass
+**Stability Metrics**
+Ranking stability is quantified by measuring priority vector changes under various perturbation scenarios, identifying which judgments most critically affect group outcomes.
 
-def interval_topsis(interval_weights: Dict) -> Dict:
-    """
-    TOPSIS with interval weights for handling uncertainty
-    
-    Each weight is an interval [w_min, w_max]
-    """
-    
-    # This would implement interval TOPSIS
-    # Placeholder for future enhancement
-    pass
+**Robustness Assessment**
+Results include stability measures that help decision-makers understand the confidence level of their group consensus and identify potentially sensitive judgment areas.
+
+### Future Enhancement Capabilities
+
+**Fuzzy Logic Extensions**
+The architecture supports future implementation of fuzzy AHP and TOPSIS methods for handling uncertainty and imprecision in group judgments.
+
+**Advanced Aggregation Methods**
+Framework accommodates integration of sophisticated aggregation techniques such as ordered weighted averaging and consensus-reaching algorithms.
+
+**Real-Time Analysis**
+System design enables future real-time sensitivity analysis and dynamic consensus monitoring during active group decision sessions.
 ```
 
 ---

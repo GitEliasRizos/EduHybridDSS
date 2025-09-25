@@ -3,8 +3,8 @@ PyMOO GUI - Developer Guide
 
 This guide provides comprehensive information for developers working on the
 PyMOO GUI project, including coding standards, development workflows, and
-contribution guidelines. Special attention is given to MCDA module development
-and mathematical implementation patterns.
+contribution guidelines. Special attention is given to MCDA module development,
+group decision system architecture, and mathematical implementation patterns.
 
 ## 📋 Table of Contents
 
@@ -13,8 +13,10 @@ and mathematical implementation patterns.
 3. [Project Structure](#project-structure)
 4. [Development Workflow](#development-workflow)
 5. [MCDA Development](#mcda-development)
-6. [Testing Guidelines](#testing-guidelines)
-7. [Contributing](#contributing)
+6. [🆕 Group Decision System](#group-decision-system)
+7. [Database Development](#database-development)
+8. [Testing Guidelines](#testing-guidelines)
+9. [Contributing](#contributing)
 
 ## 🛠 Development Setup
 
@@ -249,7 +251,9 @@ pymoo-gui/
 │   ├── __init__.py
 │   ├── problem_manager.py # Problem definition and creation
 │   ├── algorithm_manager.py # Algorithm configuration
-│   └── optimizer.py       # Optimization execution
+│   ├── optimizer.py       # Optimization execution
+│   ├── mcda.py            # 🆕 Multi-criteria decision analysis
+│   └── user_manager.py    # 🆕 Group decision system and database
 │
 ├── utils/                 # Utility functions
 │   ├── __init__.py
@@ -668,6 +672,238 @@ def _process_large_decision_matrix(self, matrix: np.ndarray) -> np.ndarray:
         return self._chunked_normalization(matrix)
     else:
         return self._standard_normalization(matrix)
+```
+
+## 🆕 Group Decision System
+
+The group decision system enables collaborative multi-criteria decision making with mathematical rigor. This section covers development patterns for multi-user functionality, database management, and aggregation algorithms.
+
+### Database Schema Design
+
+#### Core Tables
+```sql
+-- Users table with role-based access
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+);
+
+-- Sessions for group decision problems
+CREATE TABLE sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_name TEXT NOT NULL,
+    problem_description TEXT,  -- Rich problem context
+    criteria_names TEXT NOT NULL,  -- JSON array
+    objectives_info TEXT NOT NULL,  -- JSON object
+    created_by_user_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    is_active INTEGER DEFAULT 1,
+    optimization_results TEXT,  -- JSON optimization data
+    alternatives_data TEXT,     -- JSON alternatives
+    FOREIGN KEY (created_by_user_id) REFERENCES users (id)
+);
+
+-- User submissions for AHP comparisons
+CREATE TABLE ahp_comparisons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    comparison_matrix TEXT NOT NULL,  -- JSON matrix
+    consistency_ratio REAL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES sessions (id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    UNIQUE(session_id, user_id)  -- One submission per user per session
+);
+```
+
+### Mathematical Aggregation Patterns
+
+#### AHP Matrix Aggregation (Geometric Mean)
+```python
+def aggregate_ahp_matrices(self, matrices: Dict[str, np.ndarray]) -> np.ndarray:
+    """
+    Aggregate multiple AHP matrices using geometric mean.
+    
+    Mathematical Foundation:
+    group_matrix[i,j] = (∏(k=1 to m) user_matrix_k[i,j])^(1/m)
+    
+    This method preserves the reciprocal property: if group_matrix[i,j] = x,
+    then group_matrix[j,i] = 1/x
+    
+    Args:
+        matrices: Dictionary mapping usernames to comparison matrices
+        
+    Returns:
+        Aggregated group matrix maintaining reciprocal properties
+        
+    Raises:
+        ValueError: If matrices have inconsistent dimensions
+    """
+    if not matrices:
+        raise ValueError("No matrices to aggregate")
+    
+    # Validate matrix dimensions
+    users = list(matrices.keys())
+    n = matrices[users[0]].shape[0]
+    
+    for user, matrix in matrices.items():
+        if matrix.shape != (n, n):
+            raise ValueError(f"Matrix dimension mismatch for user {user}")
+    
+    # Initialize group matrix
+    group_matrix = np.ones((n, n))
+    
+    # Apply geometric mean aggregation
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                # Collect all user judgments for this comparison pair
+                values = [matrices[user][i, j] for user in users]
+                
+                # Geometric mean calculation with numerical stability
+                log_values = np.log(values)
+                mean_log = np.mean(log_values)
+                group_matrix[i, j] = np.exp(mean_log)
+                
+                # Maintain reciprocal property
+                group_matrix[j, i] = 1.0 / group_matrix[i, j]
+    
+    return group_matrix
+```
+
+#### Consistency Validation Patterns
+```python
+def validate_pre_submission(self, matrix: np.ndarray, user_id: int) -> Dict:
+    """
+    Validate AHP matrix consistency before allowing database submission.
+    
+    This prevents inconsistent data from polluting group analysis results
+    and provides educational feedback to improve user understanding.
+    """
+    try:
+        # Calculate consistency metrics
+        analyzer = AHPAnalyzer()
+        weights = analyzer.calculate_weights(matrix)
+        cr = analyzer.calculate_consistency_ratio(matrix, weights)
+        
+        # Determine consistency status
+        is_consistent = cr < 0.1  # Saaty's threshold
+        
+        if is_consistent:
+            return {
+                'status': 'valid',
+                'consistency_ratio': cr,
+                'message': f"✓ Excellent consistency (CR: {cr:.3f}). Ready to submit!",
+                'can_submit': True
+            }
+        else:
+            return {
+                'status': 'inconsistent',
+                'consistency_ratio': cr,
+                'message': f"⚠ Inconsistent comparisons (CR: {cr:.3f}). Please review your judgments.",
+                'suggestions': self._generate_consistency_suggestions(matrix),
+                'can_submit': False
+            }
+            
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f"Validation error: {str(e)}",
+            'can_submit': False
+        }
+```
+
+### Session Management Patterns
+
+#### Session Creation with Rich Context
+```python
+class SessionCreationDialog(QDialog):
+    """
+    Dialog for creating group decision sessions with comprehensive problem context.
+    
+    Provides administrators with tools to create meaningful session descriptions
+    that help users understand the decision context before providing input.
+    """
+    
+    def _validate_session_input(self) -> bool:
+        """Validate session creation inputs with comprehensive checks."""
+        session_name = self.session_name_input.text().strip()
+        description = self.description_input.toPlainText().strip()
+        
+        # Session name validation
+        if not session_name:
+            self._show_validation_error("Session name is required.")
+            return False
+            
+        if len(session_name) < 3:
+            self._show_validation_error("Session name must be at least 3 characters.")
+            return False
+        
+        # Description validation
+        if not description:
+            self._show_validation_error("Problem description is required.")
+            return False
+            
+        if len(description) < 20:
+            self._show_validation_error("Please provide a more detailed problem description (minimum 20 characters).")
+            return False
+            
+        return True
+```
+
+### Database Migration Patterns
+
+#### Schema Evolution Management
+```python
+def _migrate_database(self):
+    """Apply schema migrations with backward compatibility."""
+    with sqlite3.connect(self.db_path) as conn:
+        cursor = conn.cursor()
+        
+        # Check current schema version
+        current_version = self._get_schema_version(cursor)
+        
+        # Apply migrations sequentially
+        migrations = [
+            (1, self._migrate_to_v1),
+            (2, self._migrate_to_v2_problem_description),
+            (3, self._migrate_to_v3_enhanced_sessions)
+        ]
+        
+        for version, migration_func in migrations:
+            if current_version < version:
+                try:
+                    migration_func(cursor)
+                    self._update_schema_version(cursor, version)
+                    print(f"✅ Applied migration to version {version}")
+                except Exception as e:
+                    print(f"❌ Migration to version {version} failed: {e}")
+                    raise
+
+def _migrate_to_v2_problem_description(self, cursor):
+    """Migrate from problem_name to problem_description field."""
+    # Check if migration needed
+    cursor.execute("PRAGMA table_info(sessions)")
+    columns = [col[1] for col in cursor.fetchall()]
+    
+    if 'problem_name' in columns and 'problem_description' not in columns:
+        # Add new column
+        cursor.execute("ALTER TABLE sessions ADD COLUMN problem_description TEXT")
+        
+        # Migrate existing data
+        cursor.execute("""
+            UPDATE sessions 
+            SET problem_description = problem_name 
+            WHERE problem_name IS NOT NULL
+        """)
+        
+        print("🔄 Migrated problem_name to problem_description")
 ```
 
 ## �🧪 Testing Guidelines

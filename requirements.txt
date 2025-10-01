@@ -10,7 +10,7 @@ PyQt6>=6.5.0          # Complete desktop application interface
 pymoo>=0.6.0          # Core Pareto front algorithms and MOO methods
 #
 # Essential mathematical foundation
-numpy>=1.21.0         # CRITICAL: Matrix operations, linear algebra, statistics (140+ uses)
+numpy>=1.21.0         # CRITICAL: Matrix operations, linear algebra, statistics
 pandas>=1.3.0         # Data export (Excel/CSV), results analysis, MCDA data processing
 #
 # Visualization and export

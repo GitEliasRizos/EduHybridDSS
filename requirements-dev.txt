@@ -1,0 +1,40 @@
+# Development Dependencies for PyMOO GUI
+#
+# Install using: pip install -r requirements-dev.txt
+# (This assumes requirements.txt is already installed)
+#
+# Testing framework
+pytest>=7.0.0         # Modern testing framework with fixtures and parametrization
+pytest-qt>=4.2.0      # PyQt6 testing support with QTest integration
+pytest-cov>=4.0.0     # Test coverage reporting and analysis
+pytest-mock>=3.10.0   # Enhanced mocking capabilities for testing
+
+# Code quality and formatting
+black>=23.0.0          # Automatic code formatting with consistent style
+flake8>=6.0.0          # Linting, style checking, and complexity analysis
+mypy>=1.0.0            # Static type checking for better code reliability
+isort>=5.12.0          # Import statement sorting and organization
+
+# Documentation and analysis
+sphinx>=5.0.0          # Documentation generation from docstrings
+sphinx-rtd-theme>=1.2.0  # ReadTheDocs theme for professional documentation
+
+# Performance and debugging
+memory-profiler>=0.60.0   # Memory usage profiling and leak detection
+line-profiler>=4.0.0      # Line-by-line execution time profiling
+py-spy>=0.3.14            # Low-overhead production profiler
+
+# Enhanced visualization (optional)
+seaborn>=0.11.0        # Statistical data visualization built on matplotlib
+plotly>=5.0.0          # Interactive plotting for advanced result analysis
+
+# Development utilities
+ipython>=8.0.0         # Enhanced interactive Python shell for debugging
+jupyter>=1.0.0         # Notebook environment for prototyping and analysis
+pre-commit>=3.0.0      # Git hooks for automated quality checks
+
+# Build and packaging tools (for distribution)
+build>=0.10.0          # Modern Python build system
+twine>=4.0.0           # Package upload to PyPI
+setuptools>=65.0.0     # Package setup and configuration
+wheel>=0.40.0          # Binary distribution format

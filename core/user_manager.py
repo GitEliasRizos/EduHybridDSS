@@ -3,6 +3,19 @@ User Database Manager for PyMOO GUI Multi-User System
 =====================================================
 
 This module manages user data, authentication, and group decision making data storage.
+
+IMPORTANT NOTE ON GROUP WEIGHT AGGREGATION:
+==========================================
+🔍 For group weight aggregation algorithms, see: core/group_aggregation.py
+
+That module contains all the mathematical aggregation functions:
+- aggregate_ahp_matrices() - Geometric mean for AHP matrices
+- aggregate_topsis_weights() - Arithmetic mean for TOPSIS weights
+- Complete validation and consistency checking
+- Full documentation and examples
+
+This module (user_manager.py) handles database operations and calls
+the aggregation functions from the dedicated group_aggregation module.
 """
 
 import sqlite3
@@ -12,6 +25,16 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
+
+# Import centralized group aggregation functions
+from .group_aggregation import (
+    aggregate_ahp_matrices,
+    aggregate_topsis_weights,
+    compute_group_ahp_priorities,
+    compute_group_topsis_weights,
+    validate_ahp_matrix_consistency,
+    validate_weight_vector
+)
 
 
 class UserDatabaseManager:
@@ -543,17 +566,19 @@ class UserDatabaseManager:
             
     def aggregate_ahp_matrices(self, matrices: Dict[str, np.ndarray]) -> np.ndarray:
         """
-        Aggregate AHP matrices using geometric mean method
+        Aggregate AHP matrices using geometric mean method.
         
-        This is the standard approach for AHP group decision making:
-        For each matrix element (i,j): geometric_mean = (a1_ij × a2_ij × ... × an_ij)^(1/n)
+        🔍 IMPORTANT: This method now uses the centralized aggregation algorithm
+        from core.group_aggregation module. For algorithm details, see that module.
+        
+        This is a wrapper method that maintains API compatibility while
+        delegating to the centralized group aggregation functions.
         """
-        print(f"Debug aggregate_ahp_matrices: input matrices type: {type(matrices)}")
-        if not matrices:
-            raise ValueError("No matrices to aggregate")
-            
-        print(f"Debug aggregate_ahp_matrices: matrices keys: {list(matrices.keys())}")
-        print(f"Debug aggregate_ahp_matrices: matrices count: {len(matrices)}")
+        print(f"Debug: Delegating AHP aggregation to core.group_aggregation module")
+        print(f"Debug: Processing {len(matrices)} matrices from participants: {list(matrices.keys())}")
+        
+        # Use centralized aggregation function
+        return aggregate_ahp_matrices(matrices)
         
         # Get matrix dimensions from first matrix
         first_matrix = next(iter(matrices.values()))
@@ -593,45 +618,19 @@ class UserDatabaseManager:
         
     def aggregate_topsis_weights(self, weights_dict: Dict[str, List[float]]) -> List[float]:
         """
-        Aggregate TOPSIS weights using arithmetic mean
-        """
-        print(f"Debug aggregate_topsis_weights: input weights_dict type: {type(weights_dict)}")
-        if not weights_dict:
-            raise ValueError("No weights to aggregate")
-            
-        print(f"Debug aggregate_topsis_weights: weights_dict keys: {list(weights_dict.keys())}")
-        print(f"Debug aggregate_topsis_weights: weights_dict count: {len(weights_dict)}")
+        Aggregate TOPSIS weights using arithmetic mean.
         
-        # Convert to numpy array for easier calculation
-        try:
-            weights_arrays = [np.array(weights) for weights in weights_dict.values()]
-            print(f"Debug aggregate_topsis_weights: created {len(weights_arrays)} weight arrays")
-            
-            if not weights_arrays:
-                raise ValueError("No weight arrays created")
-                
-            # Check if weights_dict.values() might be None
-            weights_values = weights_dict.values()
-            print(f"Debug aggregate_topsis_weights: weights_dict.values() type: {type(weights_values)}")
-            print(f"Debug aggregate_topsis_weights: weights_dict.values(): {list(weights_values)}")
-            
-            weights_matrix = np.stack(weights_arrays)
-            print(f"Debug aggregate_topsis_weights: weights_matrix shape: {weights_matrix.shape}")
-            
-        except Exception as e:
-            print(f"Debug aggregate_topsis_weights: Error creating arrays: {e}")
-            print(f"Debug aggregate_topsis_weights: weights_dict content: {weights_dict}")
-            raise
+        🔍 IMPORTANT: This method now uses the centralized aggregation algorithm
+        from core.group_aggregation module. For algorithm details, see that module.
         
-        # Calculate arithmetic mean
-        aggregated_weights = np.mean(weights_matrix, axis=0)
-        print(f"Debug aggregate_topsis_weights: aggregated_weights before normalization: {aggregated_weights}")
+        This is a wrapper method that maintains API compatibility while
+        delegating to the centralized group aggregation functions.
+        """        
+        print(f"Debug: Delegating TOPSIS aggregation to core.group_aggregation module")
+        print(f"Debug: Processing {len(weights_dict)} weight vectors from participants: {list(weights_dict.keys())}")
         
-        # Normalize to sum to 1
-        aggregated_weights = aggregated_weights / np.sum(aggregated_weights)
-        print(f"Debug aggregate_topsis_weights: final aggregated_weights: {aggregated_weights}")
-        
-        return aggregated_weights.tolist()
+        # Use centralized aggregation function
+        return aggregate_topsis_weights(weights_dict)
         
     def save_group_result(self, session_id: int, method: str, 
                          aggregated_data: Any, final_scores: List[float],

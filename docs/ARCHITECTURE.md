@@ -31,14 +31,21 @@ separation of concerns for optimization-specific functionality and **multi-user 
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Presentation  │    │    Business     │    │   Decision      │    │      Data       │
-│     Layer       │    │     Logic       │    │    Layer        │    │     Layer       │
+│   Presentation  │    │    Business     │    
+│   Decision      │    │      Data       │
+│     Layer       │    │     Logic       │    
+│    Layer        │    │     Layer       │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • MainWindow    │◄──►│ • ProblemMgr    │◄──►│ • AHPAnalyzer   │◄──►│ • Configuration │
-│ • ProblemTab    │    │ • AlgorithmMgr  │    │ • TOPSISAnalyzer│    │ • Results       │
-│ • AlgorithmTab  │    │ • Optimizer     │    │ • GroupDecision │    │ • User Database │
-│ • ResultsTab    │    │ • Validators    │    │ • SessionMgr    │    │ • Templates     │
-│ • 🆕 MCDATab    │    │ • 🆕 UserMgr    │    │ • 🆕 AuthSystem │    │ • 🆕 Sessions   │
+│ • MainWindow    │◄──►│ • ProblemMgr    │◄──►
+│ • AHPAnalyzer   │◄──►│ • Configuration │
+│ • ProblemTab    │    │ • AlgorithmMgr  │    
+│ • TOPSISAnalyzer│    │ • Results       │
+│ • AlgorithmTab  │    │ • Optimizer     │    
+│ • GroupDecision │    │ • User Database │
+│ • ResultsTab    │    │ • Validators    │    
+│ • SessionMgr    │    │ • Templates     │
+│ • 🆕 MCDATab    │    │ • 🆕 UserMgr   │    
+│ • 🆕 AuthSystem │    │ • 🆕 Sessions  │
 │ • 🆕 UserUI     │    │                 │    │                 │    │ • Export Data   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```

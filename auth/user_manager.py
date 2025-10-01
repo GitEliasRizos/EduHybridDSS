@@ -6,7 +6,13 @@ import numpy as np
 import json
 
 class UserManager:
-    """Manages user authentication and group decision making data"""
+    """ 
+    ==========================================================================
+    This class is used:
+       1. To manage user authentication (create, verify, delete users)
+       2. To store and retrieve AHP and TOPSIS data for group decision making
+    ==========================================================================
+    """ 
     
     ADMIN_USERNAME = "iiooooiooi"
     ADMIN_PASSWORD = "301415"
@@ -78,8 +84,8 @@ class UserManager:
         conn.commit()
         conn.close()
     
+    # Ensure the admin user exists
     def ensure_admin_user(self):
-        """Ensure the admin user exists"""
         if not self.user_exists(self.ADMIN_USERNAME):
             self._create_admin_user()
     
@@ -184,20 +190,21 @@ class UserManager:
             print(f"Error getting user role: {e}")
             return None
     
+    # Update a user's role (user to admin / admin to user) (only callable by System (main) Admin)
     def update_user_role(self, username: str, new_role: str, admin_username: str) -> bool:
-        """Update a user's role (only callable by admin)"""
-        # Verify that the caller is admin
+        # Verify that the caller is the system (main) admin
         if admin_username != self.ADMIN_USERNAME:
             raise PermissionError("Only admin can update user roles")
         
-        # Prevent changing the main admin's role
+        # Prevent changing the main admin's role [System (main) Admin is a unique role]
         if username == self.ADMIN_USERNAME:
             raise PermissionError("Cannot change the main admin's role")
         
-        # Validate role
+        # Validate role [this ValueError cannot be raised as the role changing happens via a controlled UI element]
         if new_role not in ['user', 'admin']:
             raise ValueError("Role must be 'user' or 'admin'")
         
+        # try to update the user role or raise exception
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -211,9 +218,9 @@ class UserManager:
             print(f"Error updating user role: {e}")
             return False
 
+    # Delete a user and all their data (only callable by System (main) Admin)
     def delete_user(self, username: str, admin_username: str) -> bool:
-        """Delete a user and all their data (only callable by admin)"""
-        # Verify that the caller is admin
+        # Verify that the caller is the system (main) admin
         if admin_username != self.ADMIN_USERNAME:
             raise PermissionError("Only admin can delete users")
         
@@ -241,13 +248,13 @@ class UserManager:
             print(f"Error deleting user: {e}")
             return False
     
+    # Update a user's username (only callable by System (main) Admin)
     def update_username(self, old_username: str, new_username: str, admin_username: str) -> bool:
-        """Update a user's username (only callable by admin)"""
-        # Verify that the caller is admin
+        # Verify that the caller is the system (main) admin
         if admin_username != self.ADMIN_USERNAME:
             raise PermissionError("Only admin can update usernames")
         
-        # Prevent updating admin username this way
+        # Prevent updating admin username this way [Uses dedicated method, this PermissionError cannot be raised]
         if old_username == self.ADMIN_USERNAME:
             raise PermissionError("Use update_admin_username for admin account")
         
@@ -269,10 +276,10 @@ class UserManager:
         except Exception as e:
             print(f"Error updating username: {e}")
             return False
-    
+
+    # Reset a user's password (only callable by System (main) Admin)
     def reset_password(self, username: str, new_password: str, admin_username: str) -> bool:
-        """Reset a user's password (only callable by admin)"""
-        # Verify that the caller is admin
+        # Verify that the caller is the system (main) admin
         if admin_username != self.ADMIN_USERNAME:
             raise PermissionError("Only admin can reset passwords")
         
@@ -293,9 +300,9 @@ class UserManager:
         except Exception as e:
             print(f"Error resetting password: {e}")
             return False
-    
+
+    # Update system (main) admin username (requires current password verification)
     def update_admin_username(self, old_username: str, new_username: str, current_password: str) -> bool:
-        """Update admin username (requires current password verification)"""
         # Verify current password
         if not self.verify_user(old_username, current_password):
             raise PermissionError("Current password is incorrect")
@@ -321,9 +328,9 @@ class UserManager:
         except Exception as e:
             print(f"Error updating admin username: {e}")
             return False
-    
+
+    # Update system (main) admin password (requires current password verification)
     def update_admin_password(self, username: str, new_password: str, current_password: str) -> bool:
-        """Update admin password (requires current password verification)"""
         # Verify current password
         if not self.verify_user(username, current_password):
             raise PermissionError("Current password is incorrect")
@@ -341,10 +348,10 @@ class UserManager:
         except Exception as e:
             print(f"Error updating admin password: {e}")
             return False
-    
+
+    # Create a new group decision making session
     def create_group_session(self, session_id: str, problem_name: str, 
-                           criteria_names: List[str], created_by: str) -> bool:
-        """Create a new group decision making session"""
+                             criteria_names: List[str], created_by: str) -> bool:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -360,21 +367,22 @@ class UserManager:
         except Exception as e:
             print(f"Error creating group session: {e}")
             return False
-    
+
+    # Save user's AHP comparison
     def save_ahp_comparison(self, username: str, session_id: str, 
-                          criteria_names: List[str], comparison_matrix: np.ndarray,
-                          weights: np.ndarray, consistency_ratio: float) -> bool:
-        """Save user's AHP comparison"""
+                            criteria_names: List[str], comparison_matrix: np.ndarray,
+                            weights: np.ndarray, consistency_ratio: float) -> bool:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Remove existing comparison for this user and session
+            # If comparison exists for this user and session, remove it
             cursor.execute(
                 "DELETE FROM ahp_comparisons WHERE username = ? AND session_id = ?",
                 (username, session_id)
             )
             
+            # Insert new comparison
             cursor.execute(
                 """INSERT INTO ahp_comparisons 
                    (username, session_id, criteria_names, comparison_matrix, weights, consistency_ratio) 
@@ -391,19 +399,20 @@ class UserManager:
             print(f"Error saving AHP comparison: {e}")
             return False
     
+    # Save user's TOPSIS weights
     def save_topsis_weights(self, username: str, session_id: str,
                           criteria_names: List[str], weights: np.ndarray) -> bool:
-        """Save user's TOPSIS weights"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Remove existing weights for this user and session
+            # If weights exist for this user and session, remove them
             cursor.execute(
                 "DELETE FROM topsis_weights WHERE username = ? AND session_id = ?",
                 (username, session_id)
             )
             
+            # Insert new weights
             cursor.execute(
                 """INSERT INTO topsis_weights 
                    (username, session_id, criteria_names, weights) 

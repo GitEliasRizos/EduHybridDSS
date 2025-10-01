@@ -222,6 +222,8 @@ python main.py
 4. **Group Analysis**: Aggregate user inputs using mathematical methods (geometric/arithmetic means)
 5. **Consensus Results**: Export comprehensive group decision reports with rankings and analysis
 
+🔍 **Group Weight Aggregation Implementation**: All mathematical aggregation algorithms are centralized in `core/group_aggregation.py`. See `docs/GROUP_AGGREGATION_REFERENCE.md` for detailed technical reference.
+
 ### Example Configurations
 The `examples/` directory contains ready-to-use problem configurations:
 - `simple_biobjective.json` - Basic bi-objective optimization

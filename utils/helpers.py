@@ -5,7 +5,20 @@ This module provides utility functions for common operations throughout the
 PyMOO GUI application, including file I/O, data processing, visualization
 helpers, and configuration management.
 
-Key Features:
+🔍 LOOKING FOR GROUP WEIGHT AGGREGATION?
+========================================
+Group decision weight aggregation functions are located in:
+📁 core/group_aggregation.py
+
+That module contains:
+- aggregate_ahp_matrices() - AHP geometric mean aggregation
+- aggregate_topsis_weights() - TOPSIS arithmetic mean aggregation  
+- Complete validation and consistency checking
+- Full documentation and examples
+
+See docs/GROUP_AGGREGATION_REFERENCE.md for quick reference.
+
+Key Features (This Module):
 - Configuration save/load for problems and algorithms
 - Data serialization and validation utilities  
 - Visualization helpers for plots and charts
@@ -21,7 +34,7 @@ Functions are organized by category:
 - Validation: input checking and constraint verification
 
 Author: Elias Rizos [it21490]
-Version: 1.3.2
+Version: 1.3.3
 """
 
 import json

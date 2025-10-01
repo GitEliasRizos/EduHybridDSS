@@ -1,25 +1,34 @@
 # PyMOO GUI Application Dependencies
 #
 # Install using: pip install -r requirements.txt
+# For development: pip install -r requirements.txt -r requirements-dev.txt
 #
 # Cross-platform GUI framework
-PyQt6>=6.5.0
+PyQt6>=6.5.0          # Complete desktop application interface
 #
-# Multi-objective optimization framework
-pymoo>=0.6.0
+# Multi-objective optimization framework  
+pymoo>=0.6.0          # Core Pareto front algorithms and MOO methods
 #
-# Math tools
-numpy>=1.21.0  # Like a super powerful calculator
-scipy>=1.7.0   # More advanced scientific functions
-pandas>=1.3.0  # Smart spreadsheet-like data handling
+# Essential mathematical foundation
+numpy>=1.21.0         # CRITICAL: Matrix operations, linear algebra, statistics (140+ uses)
+pandas>=1.3.0         # Data export (Excel/CSV), results analysis, MCDA data processing
 #
-# Visualization (plots)
-matplotlib>=3.5.0
-#
-# Data export/import as/from excel
-openpyxl>=3.0.0
-#
-# ----------- Optional: Performance enhancements --------------------
-# Optional: Enhanced visualization
-# seaborn>=0.11.0  # For advanced statistical plots
+# Visualization and export
+matplotlib>=3.5.0     # Results plotting, Pareto front visualization
+openpyxl>=3.0.0       # Excel export engine (used via pandas for multi-sheet exports)
+
+# ----------- Development Dependencies (Optional) --------------------
+# Testing framework
+# pytest>=7.0.0       # Unit testing framework
+# pytest-qt>=4.2.0    # PyQt testing support
+# pytest-cov>=4.0.0   # Coverage reporting
+
+# Code quality tools
+# black>=23.0.0        # Code formatting
+# flake8>=6.0.0        # Linting and style checking
+# mypy>=1.0.0          # Static type checking
+
+# Performance and profiling
+# seaborn>=0.11.0      # Enhanced statistical plotting
+# memory-profiler>=0.60.0  # Memory usage profiling
 # -------------------------------------------------------------------

@@ -30,13 +30,13 @@ separation of concerns for optimization-specific functionality and **multi-user 
 ### High-Level Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+┌─────────────────┐    ┌─────────────────┐
 │   Presentation  │    │    Business     │    
 │   Decision      │    │      Data       │
 │     Layer       │    │     Logic       │    
 │    Layer        │    │     Layer       │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • MainWindow    │◄──►│ • ProblemMgr    │◄──►
+├─────────────────┤    ├─────────────────┤
+│ • MainWindow    │◄──►│ • ProblemMgr    │
 │ • AHPAnalyzer   │◄──►│ • Configuration │
 │ • ProblemTab    │    │ • AlgorithmMgr  │    
 │ • TOPSISAnalyzer│    │ • Results       │
@@ -46,8 +46,8 @@ separation of concerns for optimization-specific functionality and **multi-user 
 │ • SessionMgr    │    │ • Templates     │
 │ • 🆕 MCDATab    │    │ • 🆕 UserMgr   │    
 │ • 🆕 AuthSystem │    │ • 🆕 Sessions  │
-│ • 🆕 UserUI     │    │                 │    │                 │    │ • Export Data   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+│ • 🆕 UserUI     │    │                 │
+└─────────────────┘    └─────────────────┘
 ```
 
 ## 🎯 Design Patterns

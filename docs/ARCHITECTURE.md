@@ -341,15 +341,15 @@ The PyMOO GUI includes a comprehensive Multi-Criteria Decision Analysis (MCDA) m
 ### MCDA Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   PyMOO Results │    │   MCDA Module   │    │  Decision       │
-│                 │    │                 │    │  Support        │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • Pareto Front  │───►│ • AHP Analyzer  │───►│ • Ranked Solns  │
-│ • Decision Vars │    │ • TOPSIS Engine │    │ • Weight Vector │
-│ • Objective Vals│    │ • MCDA Manager  │    │ • Consistency   │
-│ • Constraint Vals│    │ • UI Controller │    │ • Preferences  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌──────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  PyMOO Results   │    │   MCDA Module   │    │  Decision       │
+│                  │    │                 │    │  Support        │
+├──────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ • Pareto Front   │───►│ • AHP Analyzer  │───►│ • Ranked Solns  │
+│ • Decision Vars  │    │ • TOPSIS Engine │    │ • Weight Vector │
+│ • Objective Vals │    │ • MCDA Manager  │    │ • Consistency   │
+│ • Constraint Vals│    │ • UI Controller │    │ • Preferences   │
+└──────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Mathematical Foundations
